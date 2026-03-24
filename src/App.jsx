@@ -1804,8 +1804,8 @@ ${DESIGN_UX_FRAMEWORK_FOR_AI}`;
         <div className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-[#ccff00] rounded-full blur-[100px] opacity-10"></div>
       </div>
 
-      {/* Header / Nav */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-black/5 bg-white/70 backdrop-blur-md sticky top-0 z-50">
+      {/* Header / Nav — fixed (not sticky): root uses overflow-hidden, which breaks sticky and can hide the bar after scrollIntoView / extract. */}
+      <header className="fixed top-0 left-0 right-0 z-[100] px-6 flex items-center justify-between border-b border-black/10 bg-white/95 backdrop-blur-md pt-[calc(1rem+env(safe-area-inset-top,0px))] pb-4">
         <button
           type="button"
           onClick={() => {
@@ -1839,11 +1839,13 @@ ${DESIGN_UX_FRAMEWORK_FOR_AI}`;
             onClick={() => {
               setActiveTab('analyze');
               requestAnimationFrame(() => {
-                if (extractWorkspaceRef.current) {
-                  extractWorkspaceRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                } else {
-                  mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                }
+                requestAnimationFrame(() => {
+                  if (extractWorkspaceRef.current) {
+                    extractWorkspaceRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  } else {
+                    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                });
               });
             }}
             label="Extract"
@@ -2036,7 +2038,7 @@ ${DESIGN_UX_FRAMEWORK_FOR_AI}`;
         />
       )}
 
-      <main className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden pt-[calc(4.5rem+env(safe-area-inset-top,0px))]">
         {activeTab === 'home' ? (
           <div
             ref={homeLandingRef}
@@ -2047,7 +2049,9 @@ ${DESIGN_UX_FRAMEWORK_FOR_AI}`;
                 onEnterLab={() => {
                   setActiveTab('analyze');
                   requestAnimationFrame(() => {
-                    extractWorkspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    requestAnimationFrame(() => {
+                      extractWorkspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
                   });
                 }}
               />
