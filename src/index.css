@@ -1,0 +1,340 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Community tag rail — thin scrollbar, mobile-friendly */
+.community-tag-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.community-tag-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@layer utilities {
+  .genom-neon-bg {
+    background: linear-gradient(
+      125deg,
+      #030303 0%,
+      #051a08 18%,
+      #0d2808 32%,
+      #3d5c00 48%,
+      #ccff00 58%,
+      #7fff00 68%,
+      #00e8c5 82%,
+      #030303 100%
+    );
+    background-size: 320% 320%;
+    animation: genom-neon-shift 14s ease-in-out infinite;
+  }
+
+  .genom-float-word {
+    animation: genom-float-y 6s ease-in-out infinite;
+  }
+
+  .genom-glow-text {
+    animation: genom-glow-pulse 3.5s ease-in-out infinite;
+  }
+
+  .genom-glow-text-light {
+    animation: genom-glow-pulse-light 4s ease-in-out infinite;
+  }
+
+  .genom-hud-line {
+    animation: genom-hud-scan 4s linear infinite;
+  }
+
+  .genom-hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform;
+    filter: blur(56px);
+  }
+
+  .genom-blob-1 {
+    width: min(42vw, 300px);
+    height: min(42vw, 300px);
+    background: radial-gradient(
+      circle at 32% 28%,
+      rgba(204, 255, 0, 0.42) 0%,
+      rgba(180, 255, 60, 0.18) 42%,
+      rgba(0, 232, 197, 0.08) 65%,
+      transparent 78%
+    );
+    top: -8%;
+    left: -6%;
+    animation: genom-blob-drift-a 22s ease-in-out infinite;
+  }
+
+  .genom-blob-2 {
+    width: min(36vw, 260px);
+    height: min(36vw, 260px);
+    background: radial-gradient(
+      circle at 60% 40%,
+      rgba(127, 255, 0, 0.35) 0%,
+      rgba(204, 255, 0, 0.14) 48%,
+      transparent 72%
+    );
+    top: 18%;
+    right: -10%;
+    animation: genom-blob-drift-b 26s ease-in-out infinite;
+    animation-delay: -4s;
+  }
+
+  .genom-blob-3 {
+    width: min(28vw, 200px);
+    height: min(28vw, 200px);
+    background: radial-gradient(
+      circle at 45% 55%,
+      rgba(0, 232, 197, 0.28) 0%,
+      rgba(204, 255, 0, 0.12) 50%,
+      transparent 75%
+    );
+    bottom: 12%;
+    left: 8%;
+    animation: genom-blob-drift-c 19s ease-in-out infinite;
+    animation-delay: -7s;
+  }
+
+  .genom-blob-4 {
+    width: min(24vw, 180px);
+    height: min(24vw, 180px);
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba(204, 255, 0, 0.3) 0%,
+      rgba(100, 220, 80, 0.1) 55%,
+      transparent 78%
+    );
+    bottom: -4%;
+    right: 18%;
+    animation: genom-blob-drift-a 24s ease-in-out infinite;
+    animation-delay: -11s;
+  }
+
+  .genom-blob-5 {
+    width: min(20vw, 140px);
+    height: min(20vw, 140px);
+    background: radial-gradient(
+      circle at 40% 40%,
+      rgba(204, 255, 0, 0.22) 0%,
+      rgba(0, 232, 197, 0.1) 60%,
+      transparent 80%
+    );
+    top: 42%;
+    left: 22%;
+    animation: genom-blob-drift-b 21s ease-in-out infinite;
+    animation-delay: -2s;
+  }
+
+  .dna-column-drift {
+    animation: dna-column-drift 42s linear infinite;
+  }
+
+  .dna-strand-path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .dna-strand-a {
+    stroke: #15803d;
+    stroke-width: 1.35;
+    animation: dna-helix-draw 16s ease-in-out infinite;
+  }
+
+  .dna-strand-b {
+    stroke: #22c55e;
+    stroke-width: 1.35;
+    animation: dna-helix-draw 16s ease-in-out infinite;
+    animation-delay: -8s;
+  }
+
+  .dna-rung-path {
+    fill: none;
+    stroke: #84cc16;
+    stroke-width: 1;
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    vector-effect: non-scaling-stroke;
+    animation: dna-helix-draw 12s ease-in-out infinite;
+    animation-delay: -3s;
+  }
+
+  .dna-rung-path-accent {
+    stroke: #ccff00;
+    stroke-width: 1.1;
+    animation-delay: -7s;
+  }
+}
+
+@keyframes genom-neon-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes genom-float-y {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-0.5deg);
+  }
+  50% {
+    transform: translateY(-18px) rotate(0.5deg);
+  }
+}
+
+@keyframes genom-glow-pulse {
+  0%,
+  100% {
+    text-shadow:
+      0 0 32px rgba(204, 255, 0, 0.95),
+      0 0 64px rgba(204, 255, 0, 0.45),
+      0 0 4px rgba(0, 0, 0, 0.9),
+      4px 4px 0 #000000;
+  }
+  50% {
+    text-shadow:
+      0 0 48px rgba(0, 232, 197, 0.85),
+      0 0 96px rgba(204, 255, 0, 0.35),
+      0 0 4px rgba(0, 0, 0, 0.9),
+      4px 4px 0 #000000;
+  }
+}
+
+@keyframes genom-hud-scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.35;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes genom-glow-pulse-light {
+  0%,
+  100% {
+    text-shadow:
+      0 0 20px rgba(204, 255, 0, 0.35),
+      0 0 40px rgba(204, 255, 0, 0.12),
+      3px 3px 0 #000000;
+  }
+  50% {
+    text-shadow:
+      0 0 28px rgba(0, 232, 197, 0.25),
+      0 0 52px rgba(204, 255, 0, 0.18),
+      3px 3px 0 #000000;
+  }
+}
+
+@keyframes genom-blob-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(18px, -14px) scale(1.05);
+  }
+  66% {
+    transform: translate(-12px, 10px) scale(0.96);
+  }
+}
+
+@keyframes genom-blob-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(-22px, 16px) scale(1.06);
+  }
+  70% {
+    transform: translate(14px, -10px) scale(0.94);
+  }
+}
+
+@keyframes genom-blob-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(16px, 20px) scale(1.04);
+  }
+}
+
+@keyframes dna-column-drift {
+  /* Paths are built top → bottom; drift follows the same direction */
+  0% {
+    transform: translateY(-16%);
+  }
+  100% {
+    transform: translateY(16%);
+  }
+}
+
+@keyframes dna-helix-draw {
+  /* stroke-dashoffset 100 → 0 reveals along path from the top downward */
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 0.22;
+  }
+  40% {
+    stroke-dashoffset: 0;
+    opacity: 0.82;
+  }
+  60% {
+    stroke-dashoffset: 0;
+    opacity: 0.82;
+  }
+  100% {
+    stroke-dashoffset: 100;
+    opacity: 0.22;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .genom-neon-bg,
+  .genom-float-word,
+  .genom-glow-text,
+  .genom-glow-text-light,
+  .genom-hud-line,
+  .genom-blob-1,
+  .genom-blob-2,
+  .genom-blob-3,
+  .genom-blob-4,
+  .genom-blob-5,
+  .dna-column-drift,
+  .dna-strand-a,
+  .dna-strand-b,
+  .dna-rung-path {
+    animation: none !important;
+  }
+
+  .dna-strand-path,
+  .dna-rung-path {
+    stroke-dashoffset: 0 !important;
+    opacity: 0.35 !important;
+  }
+
+  .genom-neon-bg {
+    background-position: 40% 50%;
+  }
+}
