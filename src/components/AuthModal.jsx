@@ -188,44 +188,44 @@ export default function AuthModal({ open, onClose, supabase }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zen-ink/40 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="auth-modal-title"
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="relative w-full max-w-md border-2 border-black rounded-[2rem] bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] overflow-hidden max-h-[90vh] overflow-y-auto">
+      <div className="zen-modal-surface">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full border border-black hover:bg-[#ccff00] transition-colors z-10"
+          className="absolute top-4 right-4 p-2 rounded-full border border-zen-ink/15 text-zen-ink hover:bg-zen-ink/[0.04] transition-colors duration-[2000ms] z-10 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40"
           aria-label="Close"
         >
           <X size={18} />
         </button>
 
         <div className="p-8 pt-12">
-          <h2 id="auth-modal-title" className="text-2xl font-black uppercase tracking-tighter mb-1">
+          <h2 id="auth-modal-title" className="font-zenSerif text-2xl font-medium tracking-tight text-zen-ink mb-1">
             {panel === 'signup' ? 'Create account' : 'Sign in'}
           </h2>
-          <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-6">
+          <p className="text-xs font-extralight text-zen-ink/50 uppercase tracking-[0.2em] mb-6">
             {panel === 'signup'
               ? 'New here? Choose email or Google.'
               : 'Welcome back — Google or your email and password.'}
           </p>
 
           {!supabase && (
-            <p className="text-sm font-bold text-red-600 border-2 border-red-500 bg-red-50 rounded-xl p-3 mb-4">
+            <p className="text-sm font-extralight text-red-700 border border-red-200 bg-red-50/80 rounded-xl p-3 mb-4">
               Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env, then restart the dev server.
             </p>
           )}
 
           {msg && (
             <p
-              className={`text-sm font-bold rounded-xl p-3 mb-4 border-2 ${
+              className={`text-sm font-extralight rounded-xl p-3 mb-4 border ${
                 msg.type === 'err'
-                  ? 'text-red-600 border-red-500 bg-red-50'
-                  : 'text-green-800 border-green-600 bg-green-50'
+                  ? 'text-red-700 border-red-200 bg-red-50/80'
+                  : 'text-emerald-900 border-emerald-200 bg-emerald-50/80'
               }`}
             >
               {msg.text}
@@ -238,7 +238,7 @@ export default function AuthModal({ open, onClose, supabase }) {
                 type="button"
                 disabled={!supabase || loading}
                 onClick={oauthGoogle}
-                className="w-full py-4 rounded-full border-2 border-black font-black text-xs uppercase tracking-widest bg-white hover:bg-[#ccff00] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 flex items-center justify-center gap-3"
+                className="btn-outline w-full py-4 rounded-lg text-[13px]"
               >
                 <GoogleIcon />
                 Continue with Google
@@ -246,16 +246,16 @@ export default function AuthModal({ open, onClose, supabase }) {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center" aria-hidden>
-                  <div className="w-full border-t-2 border-black/15" />
+                  <div className="w-full border-t border-zen-ink/10" />
                 </div>
-                <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
-                  <span className="bg-white px-3 text-neutral-500">Or email &amp; password</span>
+                <div className="relative flex justify-center zen-micro-label">
+                  <span className="bg-zen-mist px-3 text-zen-ink/45">Or email &amp; password</span>
                 </div>
               </div>
 
               <form className="space-y-3" onSubmit={passwordSignIn}>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
                   <input
                     data-auth-focus
                     type="email"
@@ -264,25 +264,21 @@ export default function AuthModal({ open, onClose, supabase }) {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@email.com"
                     autoComplete="email"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+                    className="zen-input pl-11"
                   />
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Password"
                     autoComplete="current-password"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+                    className="zen-input pl-11"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={!supabase || loading}
-                  className="w-full py-4 rounded-full border-2 border-black font-black text-xs uppercase tracking-widest bg-black text-white hover:bg-neutral-800 shadow-[4px_4px_0px_0px_rgba(204,255,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-40 flex items-center justify-center gap-2"
-                >
+                <button type="submit" disabled={!supabase || loading} className="btn-primary w-full py-4 rounded-lg text-[13px]">
                   {loading ? <Loader2 className="animate-spin" size={18} /> : null}
                   Sign in
                 </button>
@@ -290,25 +286,25 @@ export default function AuthModal({ open, onClose, supabase }) {
                   type="button"
                   disabled={!supabase || loading}
                   onClick={sendPasswordReset}
-                  className="w-full text-center text-[10px] font-black uppercase tracking-widest text-[#00c2d6] hover:underline"
+                  className="w-full text-center zen-micro-label text-zen-vermilion/90 hover:underline decoration-zen-vermilion/30 underline-offset-4 transition-colors duration-[2000ms]"
                 >
                   Forgot password?
                 </button>
               </form>
 
-              <div className="pt-2 border-t-2 border-dashed border-black/10">
-                <p className="text-[9px] font-bold text-neutral-400 px-1 leading-snug text-center">
+              <div className="pt-2 border-t border-dashed border-zen-ink/10">
+                <p className="text-[9px] font-extralight text-zen-ink/45 px-1 leading-snug text-center">
                   Supabase → Authentication → Providers: enable Google &amp; Email. Redirect URL:{' '}
                   <span className="font-mono break-all">{redirectUrl()}</span>
                 </p>
               </div>
 
-              <p className="text-center text-sm font-bold text-neutral-600 pt-2">
+              <p className="text-center text-sm font-extralight text-zen-ink/60 pt-2">
                 Don&apos;t have an account?{' '}
                 <button
                   type="button"
                   onClick={goSignUp}
-                  className="font-black text-black underline decoration-2 underline-offset-4 hover:text-[#00c2d6]"
+                  className="text-zen-ink underline decoration-zen-ink/25 underline-offset-4 hover:text-zen-vermilion transition-colors duration-[2000ms]"
                 >
                   Sign up!
                 </button>
@@ -327,7 +323,7 @@ export default function AuthModal({ open, onClose, supabase }) {
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="First name"
                   autoComplete="given-name"
-                  className="w-full px-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+                  className="zen-input"
                 />
                 <input
                   type="text"
@@ -336,14 +332,14 @@ export default function AuthModal({ open, onClose, supabase }) {
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Last name"
                   autoComplete="family-name"
-                  className="w-full px-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+                  className="zen-input"
                 />
               </div>
               <button
                 type="button"
                 disabled={!supabase || loading}
                 onClick={oauthGoogle}
-                className="w-full py-4 rounded-full border-2 border-black font-black text-xs uppercase tracking-widest bg-white hover:bg-[#ccff00] transition-colors shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-40 flex items-center justify-center gap-3"
+                className="btn-outline w-full py-4 rounded-lg text-[13px]"
               >
                 <GoogleIcon />
                 Continue with Google
@@ -351,10 +347,10 @@ export default function AuthModal({ open, onClose, supabase }) {
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center" aria-hidden>
-                  <div className="w-full border-t-2 border-black/15" />
+                  <div className="w-full border-t border-zen-ink/10" />
                 </div>
-                <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest">
-                  <span className="bg-white px-3 text-neutral-500">Or create with email</span>
+                <div className="relative flex justify-center zen-micro-label">
+                  <span className="bg-zen-mist px-3 text-zen-ink/45">Or create with email</span>
                 </div>
               </div>
 
@@ -366,7 +362,7 @@ export default function AuthModal({ open, onClose, supabase }) {
                 }}
               >
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
                   <input
                     type="email"
                     required
@@ -374,36 +370,32 @@ export default function AuthModal({ open, onClose, supabase }) {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@email.com"
                     autoComplete="email"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+                    className="zen-input pl-11"
                   />
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-4 h-4 pointer-events-none" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Choose a password"
                     autoComplete="new-password"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+                    className="zen-input pl-11"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={!supabase || loading}
-                  className="w-full py-4 rounded-full border-2 border-black font-black text-xs uppercase tracking-widest bg-[#ccff00] hover:brightness-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-40 flex items-center justify-center gap-2"
-                >
+                <button type="submit" disabled={!supabase || loading} className="btn-art w-full py-4 rounded-lg text-[13px]">
                   {loading ? <Loader2 className="animate-spin" size={18} /> : null}
                   Create account
                 </button>
               </form>
 
-              <p className="text-center text-sm font-bold text-neutral-600 pt-2">
+              <p className="text-center text-sm font-extralight text-zen-ink/60 pt-2">
                 Already have an account?{' '}
                 <button
                   type="button"
                   onClick={goSignIn}
-                  className="font-black text-black underline decoration-2 underline-offset-4 hover:text-[#00c2d6]"
+                  className="text-zen-ink underline decoration-zen-ink/25 underline-offset-4 hover:text-zen-vermilion transition-colors duration-[2000ms]"
                 >
                   Sign in
                 </button>

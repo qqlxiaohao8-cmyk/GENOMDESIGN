@@ -107,43 +107,43 @@ export default function ColorCardLayout({
   const stackPad = compact ? 'py-4 px-2' : 'py-5 md:py-7 px-2';
   const cardW = compact ? 'w-[70%] max-w-[240px]' : 'w-[65%] max-w-sm';
   const radius = compact ? 'rounded-lg' : 'rounded-xl';
-  const pad = compact ? 'px-3 py-2.5' : 'px-4 py-3.5';
-  const minH = compact ? 'min-h-[48px]' : 'min-h-[72px]';
+  const pad = compact ? 'px-3 py-3' : 'px-4 py-4';
+  const minH = compact ? 'min-h-[54px]' : 'min-h-[82px]';
   const hexCls = compact
-    ? 'text-[10px] font-medium tabular-nums tracking-tight leading-none font-bricolage'
-    : 'text-xs md:text-sm font-medium tabular-nums tracking-tight leading-none font-bricolage';
+    ? 'text-xs font-medium tabular-nums tracking-tight leading-none font-bricolage'
+    : 'text-sm md:text-base font-medium tabular-nums tracking-tight leading-none font-bricolage';
   const nameCls = compact
-    ? 'text-sm font-bold leading-tight text-left font-bricolage'
-    : 'text-xl md:text-[26px] font-bold leading-tight text-left font-bricolage';
+    ? 'text-base font-bold leading-tight text-center font-bricolage'
+    : 'text-2xl md:text-[32px] font-bold leading-tight text-center font-bricolage';
 
   const swatchInner = (c) => {
     const hex = typeof c.hex === 'string' ? c.hex : '#888888';
     const fg = pickPaletteAccentTextColor(hex, paletteHexes);
     const copied = copiedHex === hex;
     return (
-      <>
+      <div className="flex w-full min-w-0 flex-col items-center justify-center gap-1 text-center -translate-y-0.5 md:-translate-y-1">
         <span className={hexCls} style={{ color: fg, opacity: 0.92 }}>
           {hex.toUpperCase()}
         </span>
-        <span className="flex min-h-0 min-w-0 flex-1 flex-col items-start justify-center gap-0.5">
+        <span className="flex min-h-0 min-w-0 flex-col items-center justify-center gap-0.5">
           <span className={nameCls} style={{ color: fg }}>
             {c.name}
           </span>
           {copied ? (
-            <span className="text-[9px] font-bold uppercase tracking-wider font-bricolage" style={{ color: fg }}>
+            <span className="text-[10px] font-bold uppercase tracking-wider font-bricolage" style={{ color: fg }}>
               Copied
             </span>
           ) : null}
         </span>
-      </>
+      </div>
     );
   };
 
-  const cardShellCls = `flex w-full min-h-0 flex-col items-stretch text-left ${pad} ${minH} ${radius} shadow-sm`;
+  const cardShellCls = `flex w-full min-h-0 flex-col items-center justify-center ${pad} ${minH} ${radius} shadow-sm`;
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border-2 border-black/10 max-w-lg w-full mx-auto ${outerFrame} ${className}`}
+      className={`relative overflow-hidden rounded-2xl border border-zen-ink/10 max-w-lg w-full mx-auto ${outerFrame} ${className}`}
     >
       {imageSrc ? (
         <img src={imageSrc} alt="" className="absolute inset-0 h-full w-full object-cover pointer-events-none select-none" />

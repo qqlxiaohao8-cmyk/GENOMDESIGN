@@ -73,7 +73,7 @@ export default function GenomHomePagePreview({
       </div>
 
       <div
-        className="overflow-hidden shadow-[4px_4px_0_0_rgba(0,0,0,0.08)]"
+        className="overflow-hidden shadow-none"
         style={{
           backgroundColor: headerBg,
           borderColor: t.border,
@@ -116,7 +116,7 @@ export default function GenomHomePagePreview({
                 />
               </span>
               <span
-                className={`text-lg md:text-xl font-black tracking-tight truncate ${
+                className={`text-lg md:text-xl font-extralight tracking-tight truncate ${
                   previewHints.headingCaps ? 'uppercase' : ''
                 }`}
                 style={{ fontFamily: fontStacks.headingCSS, color: t.textMain }}
@@ -242,7 +242,7 @@ export default function GenomHomePagePreview({
             {aesthetic}
           </p>
           <h1
-            className={`text-4xl sm:text-5xl md:text-7xl font-black leading-[0.95] max-w-[90vw] ${
+            className={`text-4xl sm:text-5xl md:text-7xl font-extralight leading-[0.95] max-w-[90vw] ${
               previewHints.headingCaps ? 'uppercase tracking-tighter' : 'tracking-tighter'
             } ${previewHints.headingSquash ? 'inline-block origin-center scale-y-110' : ''}`}
             style={{ fontFamily: fontStacks.headingCSS, color: t.textMain }}
@@ -326,7 +326,7 @@ export default function GenomHomePagePreview({
                     radiusSmall={geom.radiusSmall}
                   />
                 </span>
-                <p className="text-sm font-black tracking-tight" style={{ color: t.textMain, fontFamily: fontStacks.headingCSS }}>
+                <p className="text-sm font-extralight tracking-tight" style={{ color: t.textMain, fontFamily: fontStacks.headingCSS }}>
                   GENOM
                 </p>
               </div>

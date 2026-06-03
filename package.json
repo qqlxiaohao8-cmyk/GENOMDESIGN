@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build:poetry-colors": "node scripts/build-poetic-color-index.mjs",
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run build:poetry-colors && vite build",
     "preview": "vite preview",
     "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.99.3",
     "lucide-react": "^0.483.0",
+    "pinyin-pro": "^3.28.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

@@ -7,12 +7,21 @@ function extractionSnapshotObject(item) {
   return s && typeof s === 'object' ? s : null;
 }
 
+/** 色海只收录「取色后的 palette」：至少两枚色样，且不含逐日观色单列卡片。 */
+export const COMMUNITY_PALETTE_MIN_SWATCHES = 2;
+
 export function itemColorCardData(item) {
   const snap = extractionSnapshotObject(item);
   if (snap?.colorCard === true && snap.colorCardData?.colors?.length) {
     return snap.colorCardData;
   }
   return null;
+}
+
+export function isCommunityPaletteCardItem(item) {
+  if (!item || item.isDailyPalette) return false;
+  const n = itemColorCardData(item)?.colors?.length ?? 0;
+  return n >= COMMUNITY_PALETTE_MIN_SWATCHES;
 }
 
 /** Build analysis-shaped object for Style preview / detail from a vault/community style row. */

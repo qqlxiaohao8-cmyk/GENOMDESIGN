@@ -1,0 +1,182 @@
+import React, { useState } from 'react';
+import { ArrowLeft, Download, Link, Send, Loader2, Sparkles, Check } from 'lucide-react';
+import { palettePoeticTitleFromHexes } from '../lib/palettePoeticTitle';
+import SekongPaletteSharePreview from '../components/SekongPaletteSharePreview';
+
+/**
+ * 预览与发布页。
+ * flow: { type: 'publish', hexes: string[], imageDataUrl: string }
+ */
+export default function PublishPreviewPage({
+  flow,
+  user,
+  onBack,
+  onPublish,
+  onDownload,
+  onCopyLink,
+}) {
+  const { hexes = [], imageDataUrl } = flow;
+  const [title, setTitle] = useState('');
+  const [generatingTitle, setGeneratingTitle] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState(null);
+  const [publishedId, setPublishedId] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const safeColors = hexes.slice(0, 10);
+
+  const generateTitle = () => {
+    setGeneratingTitle(true);
+    try {
+      const t = palettePoeticTitleFromHexes(hexes);
+      if (t) setTitle(t);
+    } catch { /* ignore */ }
+    setGeneratingTitle(false);
+  };
+
+  const handlePublish = async () => {
+    if (!title.trim()) {
+      setPublishError('请先填写或生成色卡名称。');
+      return;
+    }
+    if (!user) {
+      setPublishError('请先登录再发布。');
+      return;
+    }
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      const res = await onPublish({ title: title.trim(), hexes, imageDataUrl });
+      if (res?.ok) {
+        setPublishedId(res.id);
+      } else {
+        setPublishError(res?.error || '发布失败，请重试。');
+      }
+    } catch (e) {
+      setPublishError(e.message || '发布失败。');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (publishedId) {
+      onCopyLink?.(publishedId);
+    } else {
+      setPublishError('请先发布色卡，再拷贝链接。');
+      return;
+    }
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+      {/* Top bar */}
+      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zen-ink/10">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm font-extralight text-zen-ink/60 hover:text-zen-ink transition-colors"
+        >
+          <ArrowLeft size={16} strokeWidth={2} aria-hidden />
+          上一页
+        </button>
+        <span className="font-zenSerif text-base font-medium tracking-tight text-zen-ink">预览 · 发布</span>
+        <button
+          type="button"
+          onClick={handlePublish}
+          disabled={publishing || !user || !!publishedId}
+          className={`flex items-center gap-1.5 text-sm font-extralight transition-opacity disabled:opacity-40 ${publishedId ? 'text-green-600' : 'text-zen-vermilion hover:opacity-75'}`}
+        >
+          {publishing ? (
+            <Loader2 size={15} strokeWidth={2} className="animate-spin" />
+          ) : publishedId ? (
+            <Check size={15} strokeWidth={2.5} />
+          ) : (
+            <Send size={15} strokeWidth={2} />
+          )}
+          {publishedId ? '已发布' : '发布到色海'}
+        </button>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-sm px-4 py-6 space-y-5">
+          {/* 下载模版预览（与导出 PNG 一致） */}
+          <SekongPaletteSharePreview
+            colors={safeColors}
+            title={title || '色盘'}
+            className="shadow-md"
+          />
+
+          {/* Title input */}
+          <div>
+            <label className="mb-1.5 block text-[11px] font-extralight uppercase tracking-widest text-zen-ink/40">
+              色卡名称
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value.slice(0, 28))}
+                placeholder={user ? '命名你的色卡…' : '登录后命名'}
+                disabled={!user}
+                maxLength={28}
+                className="flex-1 rounded-xl border border-zen-ink/15 bg-zen-mist/20 px-3 py-2.5 text-[13px] font-extralight text-zen-ink placeholder:text-zen-ink/30 focus:border-zen-ink/30 focus:outline-none disabled:opacity-40"
+              />
+              {user && (
+                <button
+                  type="button"
+                  onClick={generateTitle}
+                  disabled={generatingTitle}
+                  className="flex items-center gap-1 rounded-xl border border-zen-ink/15 px-3 py-2.5 text-[11px] font-extralight text-zen-ink/60 hover:bg-zen-ink/[0.04] disabled:opacity-40 transition-colors"
+                  aria-label="AI 生成名称"
+                >
+                  {generatingTitle
+                    ? <Loader2 size={13} strokeWidth={2} className="animate-spin" />
+                    : <Sparkles size={13} strokeWidth={2} />}
+                  <span className="hidden sm:inline">生成</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {publishError && (
+            <p className="rounded-xl bg-red-50 px-3 py-2.5 text-[12px] font-extralight text-red-500">
+              {publishError}
+            </p>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => onDownload?.(safeColors.map((h) => ({ hex: h })), title)}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-zen-ink/15 py-3 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
+            >
+              <Download size={14} strokeWidth={2} aria-hidden />
+              下载图片
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-zen-ink/15 py-3 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
+            >
+              {linkCopied
+                ? <Check size={14} strokeWidth={2.5} className="text-green-600" />
+                : <Link size={14} strokeWidth={2} aria-hidden />}
+              {linkCopied ? '已复制' : '拷贝链接'}
+            </button>
+          </div>
+
+          {!user && (
+            <p className="text-center text-[11px] font-extralight text-zen-ink/40">
+              登录后可命名色卡并发布到色海。
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -31,21 +31,23 @@ export default function SetPasswordModal({ supabase, onSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zen-ink/40 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="recovery-title"
     >
       <form
         onSubmit={submit}
-        className="w-full max-w-md border-2 border-black rounded-[2rem] bg-white shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] p-8 space-y-4"
+        className="w-full max-w-md zen-panel p-8 space-y-4 border border-zen-ink/10 bg-zen-mist"
       >
-        <h2 id="recovery-title" className="text-xl font-black uppercase tracking-tighter">
+        <h2 id="recovery-title" className="font-zenSerif text-xl font-medium tracking-tight text-zen-ink">
           Set new password
         </h2>
-        <p className="text-xs font-bold text-neutral-500">You opened a password reset link. Choose a new password to finish.</p>
+        <p className="text-xs font-extralight text-zen-ink/55">
+          You opened a password reset link. Choose a new password to finish.
+        </p>
         {error && (
-          <p className="text-sm font-bold text-red-600 border-2 border-red-500 bg-red-50 rounded-xl p-3">{error}</p>
+          <p className="text-sm font-extralight text-red-700 border border-red-200 bg-red-50/80 rounded-xl p-3">{error}</p>
         )}
         <input
           type="password"
@@ -54,7 +56,7 @@ export default function SetPasswordModal({ supabase, onSuccess }) {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="New password"
           autoComplete="new-password"
-          className="w-full px-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+          className="zen-input"
         />
         <input
           type="password"
@@ -63,13 +65,9 @@ export default function SetPasswordModal({ supabase, onSuccess }) {
           onChange={(e) => setConfirm(e.target.value)}
           placeholder="Confirm password"
           autoComplete="new-password"
-          className="w-full px-4 py-3 border-2 border-black rounded-full font-bold text-sm focus:outline-none focus:bg-[#ccff00]/20"
+          className="zen-input"
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-4 rounded-full border-2 border-black font-black text-xs uppercase tracking-widest bg-[#ccff00] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-40 flex items-center justify-center gap-2"
-        >
+        <button type="submit" disabled={loading} className="btn-art w-full py-4 rounded-lg text-[13px]">
           {loading ? <Loader2 className="animate-spin" size={18} /> : null}
           Update password
         </button>

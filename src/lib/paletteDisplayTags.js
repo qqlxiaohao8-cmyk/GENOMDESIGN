@@ -1,7 +1,9 @@
 /**
  * Palette display title + tags: title follows swatch names or hue-based labels;
- * tags stay generic and never echo the title.
+ * tags stay generic and never echo the title. Classification uses OKLCH (not HSL).
  */
+
+import { hexToOklch } from './oklch.js';
 
 /** @typedef {{ type: 'keyword', value: string }} KeywordPick */
 /** @typedef {{ type: 'search', value: string }} SearchPick */
@@ -28,53 +30,18 @@ function normalizedHex(hex) {
   return `#${h.toUpperCase()}`;
 }
 
-function hexToRgb(hex) {
-  const n = normalizedHex(hex);
-  if (!n) return null;
-  const h = n.slice(1);
-  return {
-    r: parseInt(h.slice(0, 2), 16) / 255,
-    g: parseInt(h.slice(2, 4), 16) / 255,
-    b: parseInt(h.slice(4, 6), 16) / 255,
-  };
-}
-
-function rgbToHsl(r, g, b) {
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const l = (max + min) / 2;
-  let h = 0;
-  let s = 0;
-  const d = max - min;
-  if (d > 1e-6) {
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r:
-        h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
-        break;
-      case g:
-        h = ((b - r) / d + 2) / 6;
-        break;
-      default:
-        h = ((r - g) / d + 4) / 6;
-        break;
-    }
-  }
-  return { h: h * 360, s, l };
-}
-
-function collectHsls(hexes) {
-  const hsls = [];
+function collectOklch(hexes) {
+  const out = [];
   for (const hx of hexes) {
-    const rgb = hexToRgb(hx);
-    if (!rgb) continue;
-    hsls.push(rgbToHsl(rgb.r, rgb.g, rgb.b));
+    const n = normalizedHex(hx);
+    if (!n) continue;
+    out.push(hexToOklch(n));
   }
-  return hsls;
+  return out;
 }
 
-function meanHueDegrees(hsls) {
-  const hueList = hsls.filter((x) => x.s > 0.08).map((x) => x.h);
+function meanHueDegrees(oklchList) {
+  const hueList = oklchList.filter((x) => x.c > 0.04).map((x) => x.h);
   if (hueList.length === 0) return 0;
   let sx = 0;
   let sy = 0;
@@ -113,13 +80,13 @@ function isPlaceholderSwatchName(n) {
  * @param {string[]} hexes
  */
 export function synthesizePaletteNameFromHexes(hexes) {
-  const hsls = collectHsls(hexes);
-  if (hsls.length === 0) return 'Color palette';
-  const avgH = meanHueDegrees(hsls);
-  const avgS = hsls.reduce((a, x) => a + x.s, 0) / hsls.length;
-  const avgL = hsls.reduce((a, x) => a + x.l, 0) / hsls.length;
+  const ok = collectOklch(hexes);
+  if (ok.length === 0) return 'Color palette';
+  const avgH = meanHueDegrees(ok);
+  const avgC = ok.reduce((a, x) => a + x.c, 0) / ok.length;
+  const avgL = ok.reduce((a, x) => a + x.l, 0) / ok.length;
 
-  if (avgS < 0.14) {
+  if (avgC < 0.045) {
     if (avgL > 0.68) return 'Pearl sequence';
     if (avgL < 0.32) return 'Cinder suite';
     return 'Smoke study';
@@ -176,17 +143,17 @@ export function tagConflictsWithTitle(tagLabel, paletteTitle) {
 }
 
 function inferColorCharacterTags(hexes) {
-  const hsls = collectHsls(hexes);
-  if (hsls.length === 0) return [];
+  const ok = collectOklch(hexes);
+  if (ok.length === 0) return [];
 
-  const avgL = hsls.reduce((a, x) => a + x.l, 0) / hsls.length;
-  const avgS = hsls.reduce((a, x) => a + x.s, 0) / hsls.length;
-  const hueList = hsls.filter((x) => x.s > 0.08).map((x) => x.h);
+  const avgL = ok.reduce((a, x) => a + x.l, 0) / ok.length;
+  const avgC = ok.reduce((a, x) => a + x.c, 0) / ok.length;
+  const hueList = ok.filter((x) => x.c > 0.04).map((x) => x.h);
 
   const lightSpread =
-    hsls.length > 1 ? Math.max(...hsls.map((x) => x.l)) - Math.min(...hsls.map((x) => x.l)) : 0;
+    ok.length > 1 ? Math.max(...ok.map((x) => x.l)) - Math.min(...ok.map((x) => x.l)) : 0;
   const chromaSpread =
-    hsls.length > 1 ? Math.max(...hsls.map((x) => x.s)) - Math.min(...hsls.map((x) => x.s)) : 0;
+    ok.length > 1 ? Math.max(...ok.map((x) => x.c)) - Math.min(...ok.map((x) => x.c)) : 0;
 
   /** @type {DisplayTag[]} */
   const tags = [];
@@ -194,17 +161,17 @@ function inferColorCharacterTags(hexes) {
   if (avgL > 0.7) tags.push({ label: 'Light', pick: { type: 'search', value: 'light' } });
   else if (avgL < 0.34) tags.push({ label: 'Deep', pick: { type: 'search', value: 'dark' } });
 
-  if (avgS < 0.16) tags.push({ label: 'Neutral', pick: { type: 'search', value: 'neutral' } });
-  else if (avgS < 0.32) tags.push({ label: 'Muted', pick: { type: 'search', value: 'muted' } });
-  else if (avgS > 0.42) tags.push({ label: 'Vivid', pick: { type: 'search', value: 'vivid' } });
+  if (avgC < 0.05) tags.push({ label: 'Neutral', pick: { type: 'search', value: 'neutral' } });
+  else if (avgC < 0.095) tags.push({ label: 'Muted', pick: { type: 'search', value: 'muted' } });
+  else if (avgC > 0.14) tags.push({ label: 'Vivid', pick: { type: 'search', value: 'vivid' } });
 
-  if (hueList.length >= 2 && avgS > 0.1) {
+  if (hueList.length >= 2 && avgC > 0.055) {
     const warmN = hueList.filter((deg) => deg <= 80 || deg >= 285).length;
     const coolN = hueList.filter((deg) => deg >= 150 && deg <= 255).length;
     const n = hueList.length;
     if (warmN / n > 0.55) tags.push({ label: 'Warm', pick: { type: 'search', value: 'warm' } });
     else if (coolN / n > 0.55) tags.push({ label: 'Cool', pick: { type: 'search', value: 'cool' } });
-    else if (lightSpread > 0.28 && chromaSpread > 0.18) {
+    else if (lightSpread > 0.2 && chromaSpread > 0.055) {
       tags.push({ label: 'Contrast', pick: { type: 'search', value: 'contrast' } });
     }
   }

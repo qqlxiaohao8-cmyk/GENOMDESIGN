@@ -322,7 +322,7 @@ export default function ExtractedStyleUiPreview({
 
   return (
     <section
-      className="relative border-2 border-black overflow-hidden shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+      className="relative border border-zen-ink/10 overflow-hidden shadow-none"
       style={{ ...shell, borderRadius: geom.radiusCard }}
       aria-label="Live UI preview using extracted colors, type, and geometry"
     >

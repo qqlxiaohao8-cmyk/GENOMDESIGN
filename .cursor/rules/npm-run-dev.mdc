@@ -1,0 +1,14 @@
+---
+description: When the user asks to run the dev server, always start a fresh one
+alwaysApply: true
+---
+
+# npm run dev
+
+When the user says **npm run dev** (or asks to start the dev server):
+
+1. **Do not** only report that a server is already running.
+2. **Kill** any process bound to the project’s dev port (typically **5173** for Vite: `lsof -ti :5173 | xargs kill -9` when safe), then run **`npm run dev`** from the project root in the background (or foreground if they need logs in chat).
+3. Confirm the URL (e.g. `http://localhost:5173/`) after it starts.
+
+This matches the user’s preference for a clean dev server on each request.

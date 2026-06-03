@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import {
   DOMINANT_EXTRACT_ALTERNATES,
@@ -52,7 +52,7 @@ function eventToNormalizedInImage(e, imgEl) {
  *   deepseekBaseUrl?: string,
  *   deepseekModel?: string,
  *   onFinalize: (card: { overview: string, colors: Array<{ name: string, hex: string, rgb: number[], cmyk: number[] }> }) => Promise<void> | void,
- *   onBack: () => void,
+ *   onBack?: () => void,
  * }} props
  */
 export default function PaletteRefinementWorkspace({
@@ -73,9 +73,20 @@ export default function PaletteRefinementWorkspace({
   /** Increments on each full re-extract so we cycle DOMINANT_EXTRACT_ALTERNATES (avoids identical output). */
   const reextractSpinRef = useRef(0);
 
+  const initialSwatchKey = useMemo(
+    () => (initialSwatches || []).map((c) => c?.hex || '').join('|'),
+    [initialSwatches]
+  );
+
   useEffect(() => {
     reextractSpinRef.current = 0;
   }, [imageSrc]);
+
+  useEffect(() => {
+    setSwatches(padSwatches(initialSwatches));
+    setPositions(DEFAULT_NUDGE.map(([x, y]) => ({ x, y })));
+    setSelectedIdx(0);
+  }, [initialSwatchKey]);
 
   const reextractAll = async () => {
     if (!imageSrc || !/^data:image\//.test(imageSrc)) return;
@@ -200,37 +211,39 @@ export default function PaletteRefinementWorkspace({
 
   return (
     <div className="w-full max-w-6xl mx-auto">
-      <p className="text-[10px] font-black uppercase tracking-[0.35em] text-neutral-400 mb-4">
-        Extract · Refine palette
+      <p className="text-[10px] font-extralight uppercase tracking-[0.35em] text-neutral-400 mb-4">
+        精细调色 · Refine palette
       </p>
       <div className="flex flex-wrap items-center gap-3 mb-8">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={busy}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-black rounded-full font-black text-[10px] uppercase tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-40"
-        >
-          Back
-        </button>
-        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-500 max-w-md leading-snug">
+        {onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={busy}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zen-ink/15 rounded-full font-extralight text-[10px] uppercase tracking-widest shadow-none hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-40"
+          >
+            Back
+          </button>
+        ) : null}
+        <p className="text-[10px] font-extralight uppercase tracking-[0.25em] text-neutral-500 max-w-md leading-snug">
           Select a swatch · tap or drag on the photo to resample · re-extract for a fresh pass
         </p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 items-stretch">
-        <aside className="w-full lg:w-[min(100%,300px)] shrink-0 rounded-[2rem] border-2 border-black bg-white p-6 md:p-7 shadow-[6px_6px_0_0_rgba(0,0,0,1)] space-y-8">
+        <aside className="w-full lg:w-[min(100%,300px)] shrink-0 rounded-[2rem] border border-zen-ink/15 bg-white p-6 md:p-7 shadow-none space-y-8">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#00c2d6] mb-3">Palette</p>
+            <p className="text-[10px] font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90 mb-3">Palette</p>
             <div className="flex gap-2 flex-wrap items-center">
               {swatches.map((s, i) => (
                 <button
                   key={i}
                   type="button"
                   onClick={() => setSelectedIdx(i)}
-                  className={`relative h-11 w-11 rounded-xl border-2 border-black shrink-0 transition-all ${
+                  className={`relative h-11 w-11 rounded-xl border border-zen-ink/15 shrink-0 transition-all ${
                     selectedIdx === i
-                      ? 'ring-2 ring-[#ccff00] ring-offset-2 ring-offset-white scale-105 z-10 shadow-[3px_3px_0_0_#000]'
-                      : 'hover:brightness-105 shadow-[2px_2px_0_0_#000]'
+                      ? 'ring-2 ring-zen-vermilion/50 ring-offset-2 ring-offset-white scale-105 z-10 shadow-none'
+                      : 'hover:brightness-105 shadow-none'
                   }`}
                   style={{ backgroundColor: s.hex }}
                   title={s.name}
@@ -252,7 +265,7 @@ export default function PaletteRefinementWorkspace({
               type="button"
               onClick={() => void reextractAll()}
               disabled={busy}
-              className="flex items-center justify-center gap-2 w-full rounded-full border-2 border-black bg-white py-3.5 px-4 text-[10px] font-black uppercase tracking-widest shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 disabled:shadow-none"
+              className="flex items-center justify-center gap-2 w-full rounded-full border border-zen-ink/15 bg-white py-3.5 px-4 text-[10px] font-extralight uppercase tracking-widest shadow-none hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 disabled:shadow-none"
             >
               <RefreshCw size={16} className={busy ? 'animate-spin' : ''} aria-hidden />
               Re-extract all colors
@@ -263,7 +276,7 @@ export default function PaletteRefinementWorkspace({
                 type="button"
                 disabled={busy}
                 onClick={() => void runExport()}
-                className="flex w-full items-center justify-center rounded-full border-2 border-black bg-[#ccff00] py-3.5 px-4 text-[10px] font-black uppercase tracking-widest shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 disabled:shadow-none"
+                className="flex w-full items-center justify-center rounded-full border border-zen-ink/15 bg-zen-ink text-white py-3.5 px-4 text-[10px] font-extralight uppercase tracking-widest shadow-none hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all disabled:opacity-50 disabled:shadow-none"
               >
                 Build color card
               </button>
@@ -274,23 +287,23 @@ export default function PaletteRefinementWorkspace({
           </div>
         </aside>
 
-        <div className="flex-1 min-h-[min(55vh,520px)] rounded-[2rem] border-2 border-black bg-white p-2 md:p-3 flex items-center justify-center relative shadow-[8px_8px_0_0_rgba(0,0,0,1)]">
+        <div className="flex-1 min-h-[min(55vh,520px)] rounded-[2rem] border border-zen-ink/15 bg-white p-2 md:p-3 flex items-center justify-center relative shadow-none">
           {busy ? (
-            <div className="absolute inset-0 z-20 bg-[#ccff00]/85 backdrop-blur-[2px] flex flex-col items-center justify-center gap-3 rounded-[1.35rem]">
-              <Loader2 className="animate-spin text-black" size={40} strokeWidth={2.5} aria-hidden />
-              <p className="text-[10px] font-black uppercase tracking-widest text-black">Working…</p>
+            <div className="absolute inset-0 z-20 bg-zen-mist/95 backdrop-blur-sm flex flex-col items-center justify-center gap-3 rounded-[1.35rem] border border-zen-ink/10">
+              <Loader2 className="animate-spin text-zen-ink" size={40} strokeWidth={2.5} aria-hidden />
+              <p className="text-[10px] font-extralight uppercase tracking-widest text-zen-ink">Working…</p>
             </div>
           ) : null}
           <button
             type="button"
-            className="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full bg-white border-2 border-black text-[10px] font-black text-black shadow-[3px_3px_0_0_#000] hover:bg-[#ccff00] transition-colors"
+            className="absolute bottom-4 right-4 z-10 w-9 h-9 rounded-full bg-zen-paper border border-zen-ink/15 text-[10px] font-extralight text-zen-ink shadow-none hover:bg-zen-ink hover:text-white transition-colors duration-[2000ms]"
             title="Select a swatch, then tap the photo to move its sample point"
           >
             i
           </button>
           {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
           <div
-            className="relative inline-block max-w-full cursor-crosshair touch-manipulation select-none rounded-2xl overflow-hidden border-2 border-black"
+            className="relative inline-block max-w-full cursor-crosshair touch-manipulation select-none rounded-2xl overflow-hidden border border-zen-ink/15"
             onPointerDown={onImageAreaPointerDown}
             role="presentation"
           >
@@ -308,10 +321,10 @@ export default function PaletteRefinementWorkspace({
                   key={i}
                   type="button"
                   data-picker-handle
-                  className={`absolute rounded-full -translate-x-1/2 -translate-y-1/2 touch-none shadow-[2px_2px_0_0_#000] ${
+                  className={`absolute rounded-full -translate-x-1/2 -translate-y-1/2 touch-none shadow-none ${
                     selected
-                      ? 'w-10 h-10 border-[3px] border-white z-10 shadow-[4px_4px_0_0_#000]'
-                      : 'w-8 h-8 border-2 border-black'
+                      ? 'w-10 h-10 border-[3px] border-white z-10 shadow-none'
+                      : 'w-8 h-8 border border-zen-ink/15'
                   }`}
                   style={{
                     left: `${p.x * 100}%`,

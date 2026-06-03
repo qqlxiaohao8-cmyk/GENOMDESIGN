@@ -3,7 +3,7 @@ import { formatDailyPaletteDateKey, DAILY_PALETTE_HISTORY_DAYS } from './dailyPa
 
 const STORAGE_KEY = 'genom-daily-pinterest-v2';
 const PHOTO_SUFFIX =
-  '\n\nFive swatches were sampled from a Pinterest mood-board image for this calendar day.';
+  '\n\n配图来自 Pinterest mood 板；当日色值以逐日观色单色（国风名 + HEX）为准。';
 
 /** How many recent days we extract on first visit (rest fills in idle time). */
 export const PINTEREST_DAILY_PRIORITY_DAYS = 56;
@@ -60,21 +60,21 @@ export function buildMoodSwatchesFromHexes(hexes) {
  * @param {{ imageUrl: string, colors: object[] }} extract
  */
 export function mergeDailyPaletteFeedItemWithPinterest(item, extract) {
-  if (!item?.isDailyPalette || !extract?.imageUrl || !extract?.colors?.length) return item;
-  const colors = extract.colors;
-  const hexes = colors.map((c) => c.hex);
+  if (!item?.isDailyPalette || !extract?.imageUrl) return item;
+  const dailyColors = item.extractionSnapshot?.colorCardData?.colors || [];
   const overview = `${item.prompt || ''}${PHOTO_SUFFIX}`.trim();
+  const palette = dailyColors.length ? dailyColors.map((c) => c.hex) : item.palette;
   return {
     ...item,
     imageUrl: extract.imageUrl,
-    palette: hexes,
+    palette,
     prompt: overview,
     extractionSnapshot: {
       ...item.extractionSnapshot,
       colorCard: true,
       colorCardData: {
         overview,
-        colors,
+        colors: dailyColors,
       },
       prompt: overview,
     },

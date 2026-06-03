@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "meta": {
+    "name": "GENOM Zen · Ink-wash editorial system",
+    "version": "1.0.0",
+    "intent": "High-level creative direction derived from Zen / Shui-mo (ink-wash) editorial UI. Use this file to instruct AI and humans when building or refactoring UI in this repository.",
+    "referenceMood": "Meditative, ethereal, precise, scholarly; premium cultural/lifestyle editorial.",
+    "implementationNote": "This project maps many tokens to Tailwind: zen-mist, zen-paper, zen-ink, zen-vermilion; fonts font-zenSerif (display), font-zenSans (UI)."
+  },
+  "philosophy": {
+    "corePrinciple": "The beauty of the void (Ma): intentional emptiness and restraint so content breathes.",
+    "designFusion": "Traditional Eastern ink-wash and seal vocabulary, expressed with modern high-end editorial layout and thin technical line work.",
+    "voice": "Calm authority; never loud. Contrast comes from weight (bold ink vs whisper-thin type), not from color noise."
+  },
+  "atmosphere": {
+    "keywords": [
+      "negative space",
+      "asymmetry",
+      "ink black on mist white",
+      "vermilion as rare accent",
+      "slow motion",
+      "vertical typography",
+      "architectural annotation lines"
+    ],
+    "avoid": [
+      "Dense dashboards without rest",
+      "Heavy drop shadows and neon",
+      "Centered-everything layouts",
+      "Thick chunky UI chrome",
+      "Fast snappy micro-bounce animations"
+    ]
+  },
+  "color": {
+    "palette": {
+      "background": {
+        "primary": "#FFFFFF",
+        "mist": "#FDFDFD",
+        "warmPaper": "#F9F9F7",
+        "tailwindAliases": ["bg-white", "bg-zen-mist", "bg-zen-paper"]
+      },
+      "ink": {
+        "primary": "#000000",
+        "deep": "#1A1A1A",
+        "secondary": "#333333",
+        "muted": "#666666",
+        "faint": "#999999",
+        "tailwindAliases": "Prefer zen-ink (#1A1A1A) for UI text and borders when pure #000 feels too harsh on long copy."
+      },
+      "accent": {
+        "vermilion": "#BC2026",
+        "usage": "Seals, stamps, rare primary emphasis, and decisive CTAs only — never as large fields or backgrounds.",
+        "tailwindAlias": "zen-vermilion"
+      },
+      "dividers": {
+        "hairline": "rgba(0,0,0,0.06)",
+        "subtle": "rgba(0,0,0,0.1)",
+        "guidance": "Prefer 1px borders at low opacity; architectural leader lines thinner than component borders."
+      }
+    },
+    "semanticRoles": {
+      "canvas": "Near-white; may layer very subtle grain or mist (opacity extremely low).",
+      "primaryText": "Deep ink on light ground.",
+      "secondaryText": "Mid grey; extra-light weight, increased tracking.",
+      "interactiveDefault": "Ink or grey; hover deepens ink slightly, never rainbow.",
+      "focusRing": "Thin ring; may align with vermilion at low opacity for brand consistency."
+    }
+  },
+  "typography": {
+    "families": {
+      "displaySerif": {
+        "role": "Hero titles, section headers, seal-adjacent display, vertical labels.",
+        "character": "High-contrast editorial serif; evokes Song-style dignity or high-fashion serif precision.",
+        "projectDefault": "Playfair Display via font-zenSerif"
+      },
+      "uiSans": {
+        "role": "Navigation, metadata, captions, buttons, form labels.",
+        "character": "Geometric or neo-grotesk calm; supports Latin + CJK cleanly.",
+        "projectDefault": "Noto Sans SC via font-zenSans",
+        "weight": "Prefer extralight or light for chrome; use semibold sparingly for active states only."
+      }
+    },
+    "scaleAndRhythm": {
+      "microLabels": "10px–12px with letter-spacing 0.2em–0.4em (uppercase or all-caps feel acceptable for EN; track Chinese labels modestly).",
+      "body": "14px–16px, relaxed line-height (1.6–1.75), generous paragraph spacing.",
+      "display": "Large asymmetric titles; avoid compressing line-height; allow single lines to dominate the grid.",
+      "verticalText": {
+        "usage": "Decorative section anchors, chapter markers, balance to heavy imagery on opposite side.",
+        "implementationHint": "writing-mode: vertical-rl; combine with font-zenSerif; align to margin edge, not center."
+      }
+    },
+    "rules": [
+      "Pair the thinnest UI weights with the darkest ink moments — weight contrast over size contrast.",
+      "Wide tracking is part of the brand voice for labels and nav, not optional styling.",
+      "Avoid mixing too many type sizes on one screen; usually one hero size + one label size + one body size."
+    ]
+  },
+  "layout": {
+    "grid": {
+      "type": "Modular editorial grid with intentional asymmetry.",
+      "behavior": "Content may hug one edge while a second focal (photo + ink graphic) occupies another quadrant; maintain optical balance, not geometric centering."
+    },
+    "spacing": {
+      "principle": "If spacing feels enough, increase it once more for hero sections.",
+      "sections": "Large vertical gaps between narrative blocks; use Ma (void) as a compositional element.",
+      "inset": "Generous page margins; mobile preserves breathing room — shrink typography before removing whitespace."
+    },
+    "structure": {
+      "header": "Slim fixed or floating bar; circular seal / mark as anchor; minimal items.",
+      "footer": "Horizontal row of text-only links, widely spaced, separated by whitespace not heavy rules.",
+      "heroPairing": "One photographic object plus abstract ink-wash or smoke graphic; allow bleed off-canvas."
+    }
+  },
+  "imageryAndGraphics": {
+    "photography": {
+      "treatment": "High-contrast studio objects; often isolated or fused into white; no busy lifestyle collage.",
+      "integration": "Soft edges acceptable where object meets mist background."
+    },
+    "inkMotifs": {
+      "character": "Organic splashes, gradients mimicking wash, smoke-like diffusion; never clip art sharp.",
+      "placement": "May extend beyond viewport; treat as environmental, not contained cards."
+    },
+    "seals": {
+      "shape": "Square or rounded-square stamp with vermilion ground and light glyph.",
+      "scale": "Small to medium; reads as signature, not logo billboard."
+    }
+  },
+  "motion": {
+    "timing": {
+      "defaultMs": "800–2000",
+      "easing": "ease-out or custom slow; breath-like, not snappy.",
+      "projectConvention": "This codebase often uses duration ~2000ms for shell transitions — align new surfaces to feel similarly unhurried."
+    },
+    "behaviors": [
+      "Opacity and gentle translate on scroll reveal.",
+      "Hover: slight ink deepen, underline grow, or 1px border clarify — no scale pops.",
+      "Focus: visible, thin ring consistent with zen accent."
+    ]
+  },
+  "components": {
+    "navigation": {
+      "primary": "Text-first; small cap / tracked labels; active state = ink weight + optional bottom hairline or vermilion accent.",
+      "verticalRail": "Optional; single-column icons or characters; same ultra-light typographic voice.",
+      "headerIntegration": "Logo/seal cell may share border with sidebar column for a continuous L-shaped frame."
+    },
+    "buttons": {
+      "primary": "Solid ink (black or zen-ink) block; tiny uppercase label with extreme tracking; white text.",
+      "secondaryGhost": "Transparent with hairline border; hover fills whisper grey wash.",
+      "textLink": "Underlined or understroke animation on hover; arrow nudge optional for directional CTAs.",
+      "signatureSeal": "Composite: vermilion square (static glyph) + adjacent neutral label rail; hover shifts label surface only."
+    },
+    "cardsAndPanels": {
+      "surfaces": "Mostly borderless on mist; if bordered, 1px low-opacity only.",
+      "radius": "Prefer subtle (e.g. rounded-sm to rounded-2xl), never playful pills unless narrative demands.",
+      "shadow": "Avoid heavy elevation; prefer flat or single-pixel offset at most."
+    },
+    "forms": {
+      "inputs": "Minimal border; light placeholder in muted ink; focus: hairline + slight background lift.",
+      "labels": "Micro tracked uppercase or light sans above field."
+    },
+    "technicalCallouts": {
+      "description": "Dissection / blueprint lines from object to tiny labels.",
+      "stroke": "0.5–1px ink at low opacity; labels in micro sans; never compete with hero type."
+    },
+    "paginationAndProgress": {
+      "style": "Minimal dots or typographic counters (e.g. 01 / 07); light weight, plenty of surrounding space."
+    },
+    "modalsAndOverlays": {
+      "scrim": "Soft dark with blur optional; content panel on mist white with hairline frame.",
+      "close": "Small circular icon control; stroke icons at 1.5px weight."
+    },
+    "listsAndFeeds": {
+      "density": "Comfortable; prefer one column editorial flow or sparse grid; avoid cramped multi-column chips.",
+      "separators": "Whitespace over rules; rules are hairline if needed."
+    },
+    "tablesAndData": {
+      "guidance": "Use sparingly in this aesthetic; if present, ultra-light rules and generous row height."
+    },
+    "notifications": {
+      "guidance": "Whisper tone; vermilion only for critical emphasis; avoid saturated system colors except errors."
+    }
+  },
+  "designPrinciplesForAI": [
+    "Prioritize Ma (empty space) as a first-class layout ingredient, not leftover margin.",
+    "Maintain a monochrome-plus-vermilion discipline: color rarity signals importance.",
+    "Use asymmetry: anchor weight (image, ink mass) against a quiet margin with vertical type or a single seal.",
+    "Typography hierarchy = weight + tracking + position, not rainbow colors or heavy bold everywhere.",
+    "Borders and lines are architectural: thin, low contrast, precise.",
+    "Motion should feel like ink settling: slow fades and small translations.",
+    "Components should feel editorial and bespoke; avoid generic dashboard widgets without reinterpretation.",
+    "When in doubt, reduce chrome and increase spacing before adding new UI elements."
+  ],
+  "tailwindProjectMapping": {
+    "colors": {
+      "zen.paper": "#F9F9F7",
+      "zen.mist": "#FDFDFD",
+      "zen.ink": "#1A1A1A",
+      "zen.vermilion": "#BC2026"
+    },
+    "fonts": {
+      "zenSerif": "Display / vertical / hero",
+      "zenSans": "UI chrome and body"
+    },
+    "typicalUtilities": [
+      "font-extralight",
+      "tracking-[0.2em]",
+      "tracking-[0.35em]",
+      "border-zen-ink/10",
+      "duration-[2000ms]",
+      "selection:bg-zen-vermilion/15"
+    ]
+  }
+}

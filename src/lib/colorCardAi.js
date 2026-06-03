@@ -1,4 +1,5 @@
 import { enrichSwatch } from './colorValues';
+import { getPoeticColorName } from './poeticColorNaming';
 
 function parseJsonFromModel(text) {
   let t = text.trim();
@@ -67,9 +68,9 @@ export async function fetchColorCardMetadata({ apiKey, baseUrl, model, hexes }) 
 export function fallbackColorCardMetadata(hexes) {
   const list = (hexes || []).slice(0, 5);
   while (list.length < 5) list.push('#888888');
-  const colors = list.map((hex, i) => {
+  const colors = list.map((hex) => {
     const e = enrichSwatch(hex);
-    return { name: `Color ${i + 1}`, hex: e.hex, rgb: e.rgb, cmyk: e.cmyk };
+    return { name: getPoeticColorName(e.hex), hex: e.hex, rgb: e.rgb, cmyk: e.cmyk };
   });
   return {
     overview: 'Palette extracted from your image. Add an API key for AI-generated names and a richer description.',

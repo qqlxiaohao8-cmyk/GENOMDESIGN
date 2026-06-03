@@ -60,7 +60,7 @@ export default function UiKitShowcase({
         <div>
           <h2
             className={`text-2xl sm:text-3xl leading-tight ${
-              previewHints.headingCaps ? 'font-black uppercase tracking-tighter' : 'font-bold tracking-tight'
+              previewHints.headingCaps ? 'font-extralight uppercase tracking-tight' : 'font-extralight tracking-tight'
             } ${previewHints.headingSquash ? 'inline-block origin-left scale-y-110' : ''}`}
             style={{ fontFamily: fontStacks.headingCSS, color: t.textMain }}
           >

@@ -1,15 +1,21 @@
 import { enrichSwatch } from './colorValues';
-import { pickChineseColorNameForDateKey } from './chineseTraditionalColorNames';
+import { pickFunNameForHex } from './randomInspiration';
+import { wrapHueDeg, lchToHexClamped } from './oklch.js';
 
 /** How many past calendar days of GENOM Daily cards appear in Community (inclusive of today). */
 export const DAILY_PALETTE_HISTORY_DAYS = 365;
 
-/** Local calendar date key YYYY-MM-DD */
+/**
+ * Date key YYYY-MM-DD in **GMT+8** (Asia/Shanghai).
+ * Daily color updates at 00:00 CST regardless of the user's local timezone.
+ */
 export function formatDailyPaletteDateKey(d = new Date()) {
   const x = d instanceof Date ? d : new Date(d);
-  const y = x.getFullYear();
-  const m = String(x.getMonth() + 1).padStart(2, '0');
-  const day = String(x.getDate()).padStart(2, '0');
+  const utcMs = x.getTime() + x.getTimezoneOffset() * 60000;
+  const gmt8 = new Date(utcMs + 8 * 3600000);
+  const y = gmt8.getFullYear();
+  const m = String(gmt8.getMonth() + 1).padStart(2, '0');
+  const day = String(gmt8.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
@@ -47,325 +53,6 @@ const SOLAR_TERMS = [
   { id: 'daxue', label: 'Major Snow', zh: '大雪', m: 12, d: 7 },
   { id: 'dongzhi', label: 'Winter Solstice', zh: '冬至', m: 12, d: 22 },
 ];
-
-const THEMES = {
-  new_year: {
-    title: 'Midnight Confetti',
-    overview:
-      'Electric neons and deep ink for a new year countdown — high contrast, optimistic, built for screens that stay on past midnight.',
-    colors: [
-      { hex: '#F8F4E8', name: 'Champagne Mist' },
-      { hex: '#FFD60A', name: 'Ball Drop Gold' },
-      { hex: '#FF006E', name: 'Party Magenta' },
-      { hex: '#0D1B2A', name: 'After Midnight' },
-      { hex: '#00F5D4', name: 'Digital Firework' },
-    ],
-    keywords: ['New Year', 'celebration', 'night'],
-  },
-  valentines: {
-    title: 'Velvet & Ink',
-    overview:
-      'Romantic without cliché: dusty rose, deep wine, and a warm paper neutral — editorial love notes, not candy hearts.',
-    colors: [
-      { hex: '#FFF0F3', name: 'Blush Paper' },
-      { hex: '#E8A0B8', name: 'Dusty Rose' },
-      { hex: '#722F37', name: 'Claret' },
-      { hex: '#2C1810', name: 'Chocolate Ink' },
-      { hex: '#C9A227', name: 'Gilded Accent' },
-    ],
-    keywords: ["Valentine's", 'romance', 'rose'],
-  },
-  womens_day: {
-    title: 'March Bloom',
-    overview:
-      "International Women's Day — confident violets, soft lilac, and a grounding green-black for strength and clarity.",
-    colors: [
-      { hex: '#F3E8FF', name: 'Soft Lilac' },
-      { hex: '#9333EA', name: 'Amethyst Bold' },
-      { hex: '#4C1D95', name: 'Deep Violet' },
-      { hex: '#14532D', name: 'Evergreen Resolve' },
-      { hex: '#FBBF24', name: 'Sunrise Accent' },
-    ],
-    keywords: ["Women's Day", 'March 8', 'equity'],
-  },
-  earth_day: {
-    title: 'Living Planet',
-    overview:
-      'Earth Day — moss, river blue, and cloud white; a palette that reads “biosphere” without stock-photo greenwash.',
-    colors: [
-      { hex: '#ECFDF5', name: 'Mist Forest' },
-      { hex: '#22C55E', name: 'Sprout' },
-      { hex: '#166534', name: 'Canopy' },
-      { hex: '#0EA5E9', name: 'River Run' },
-      { hex: '#422006', name: 'Soil Memory' },
-    ],
-    keywords: ['Earth Day', 'green', 'climate'],
-  },
-  labor_day: {
-    title: 'Solidarity Stripe',
-    overview:
-      "International Workers' Day — industrial red, safety amber, and steel neutrals; honest labor, dignified rest.",
-    colors: [
-      { hex: '#FEF3C7', name: 'Safety Cream' },
-      { hex: '#DC2626', name: 'Union Red' },
-      { hex: '#B45309', name: 'Work Amber' },
-      { hex: '#1E293B', name: 'Steel Blue Black' },
-      { hex: '#E2E8F0', name: 'Concrete Haze' },
-    ],
-    keywords: ['Labor Day', 'May 1', 'workers'],
-  },
-  national_cn: {
-    title: 'Crimson Parade',
-    overview:
-      'National Day energy — flag red, star gold, and solemn slate; celebratory but structured.',
-    colors: [
-      { hex: '#FFF7ED', name: 'Dawn Paper' },
-      { hex: '#DE2910', name: 'Ceremony Red' },
-      { hex: '#FCD34D', name: 'Star Gold' },
-      { hex: '#1C1917', name: 'Obsidian' },
-      { hex: '#78716C', name: 'Granite' },
-    ],
-    keywords: ['National Day', 'October', 'festive'],
-  },
-  halloween: {
-    title: 'Pumpkin Voltage',
-    overview:
-      'Halloween — purple dusk, toxic orange, and cemetery fog; playful horror for interfaces that wink.',
-    colors: [
-      { hex: '#FAF5FF', name: 'Ghost Fog' },
-      { hex: '#7C3AED', name: 'Witch Violet' },
-      { hex: '#EA580C', name: 'Jack-o-Lantern' },
-      { hex: '#14532D', name: 'Rotting Moss' },
-      { hex: '#000000', name: 'Midnight' },
-    ],
-    keywords: ['Halloween', 'autumn', 'spooky'],
-  },
-  thanksgiving: {
-    title: 'Harvest Table',
-    overview:
-      'Thanksgiving — squash gold, cranberry, and linen; warm wood tones for long tables and long stories.',
-    colors: [
-      { hex: '#FEFCE8', name: 'Linen' },
-      { hex: '#CA8A04', name: 'Squash Gold' },
-      { hex: '#9F1239', name: 'Cranberry' },
-      { hex: '#78350F', name: 'Cinnamon Wood' },
-      { hex: '#365314', name: 'Sage Stem' },
-    ],
-    keywords: ['Thanksgiving', 'harvest', 'warm'],
-  },
-  july_fourth: {
-    title: 'Summer Spark',
-    overview:
-      'Independence Day — cobalt, cream, and ember red; open-air fireworks and wide porches.',
-    colors: [
-      { hex: '#F8FAFC', name: 'Summer Haze' },
-      { hex: '#B91C1C', name: 'Rocket Red' },
-      { hex: '#1E3A8A', name: 'Night Sky Blue' },
-      { hex: '#BFDBFE', name: 'Lawn Afternoon' },
-      { hex: '#0F172A', name: 'Late Show' },
-    ],
-    keywords: ['July 4', 'summer', 'fireworks'],
-  },
-  christmas: {
-    title: 'Evergreen Glow',
-    overview:
-      'Winter holiday — pine, berry, and candlelight cream; cozy UI without default “Christmas red” overload.',
-    colors: [
-      { hex: '#FFFBEB', name: 'Candle Cream' },
-      { hex: '#14532D', name: 'Norway Pine' },
-      { hex: '#991B1B', name: 'Winter Berry' },
-      { hex: '#CA8A04', name: 'Brass Ornament' },
-      { hex: '#0C4A6E', name: 'Frost Shadow' },
-    ],
-    keywords: ['Christmas', 'winter', 'holiday'],
-  },
-  juneteenth: {
-    title: 'Freedom Banner',
-    overview:
-      'Juneteenth — Pan-African red, black, and green with a bright gold accent for joy and remembrance.',
-    colors: [
-      { hex: '#FEF9C3', name: 'Dawn Gold' },
-      { hex: '#B91C1C', name: 'Liberation Red' },
-      { hex: '#166534', name: 'Growth Green' },
-      { hex: '#0A0A0A', name: 'Heritage Black' },
-      { hex: '#EAB308', name: 'Jubilee' },
-    ],
-    keywords: ['Juneteenth', 'freedom', 'June'],
-  },
-  lunar_season: {
-    title: 'Lantern Haze',
-    overview:
-      'Lunar new year season — vermillion, lacquer black, and jade paper; luck and renewal without noisy gradients.',
-    colors: [
-      { hex: '#FFF7ED', name: 'Rice Paper' },
-      { hex: '#C2410C', name: 'Vermillion' },
-      { hex: '#B45309', name: 'Lacquer Gold' },
-      { hex: '#14532D', name: 'Jade Knot' },
-      { hex: '#18181B', name: 'Ink Stone' },
-    ],
-    keywords: ['Lunar New Year', 'spring festival', 'red'],
-  },
-};
-
-const SOLAR_THEME = {
-  lichun: {
-    title: 'First Thaw',
-    overview:
-      '立春 — ice recedes, branches sharpen; pale mint and bark brown for the hinge between winter and growth.',
-    colors: [
-      { hex: '#ECFEFF', name: 'Meltwater' },
-      { hex: '#5EEAD4', name: 'Willow Mist' },
-      { hex: '#78716C', name: 'Bare Branch' },
-      { hex: '#365314', name: 'Budding Moss' },
-      { hex: '#1E293B', name: 'Cold Soil' },
-    ],
-  },
-  chunfen: {
-    title: 'Equinox Balance',
-    overview:
-      '春分 — equal day and night; balanced sage, sand, and sky for calm, centered layouts.',
-    colors: [
-      { hex: '#F0FDF4', name: 'Sprout Mist' },
-      { hex: '#86EFAC', name: 'Young Leaf' },
-      { hex: '#FDE68A', name: 'Afternoon Sun' },
-      { hex: '#38BDF8', name: 'Clear Sky' },
-      { hex: '#334155', name: 'Shadow Line' },
-    ],
-  },
-  xiazhi: {
-    title: 'High Sun',
-    overview:
-      '夏至 — longest day; saturated citrus, pool blue, and white heat for peak summer interfaces.',
-    colors: [
-      { hex: '#FFFBEB', name: 'Heat Haze' },
-      { hex: '#FACC15', name: 'Lemon Peak' },
-      { hex: '#F97316', name: 'Sunburn Orange' },
-      { hex: '#0EA5E9', name: 'Pool Blue' },
-      { hex: '#172554', name: 'Late Dusk' },
-    ],
-  },
-  qiufen: {
-    title: 'Harvest Balance',
-    overview:
-      '秋分 — crops and copper light; ochre, wheat, and dusk blue for transitional autumn.',
-    colors: [
-      { hex: '#FFFBEB', name: 'Wheat Field' },
-      { hex: '#D97706', name: 'Ochre' },
-      { hex: '#B45309', name: 'Copper Leaf' },
-      { hex: '#57534E', name: 'Stone Path' },
-      { hex: '#1E3A8A', name: 'Evening Indigo' },
-    ],
-  },
-  dongzhi: {
-    title: 'Solstice Ember',
-    overview:
-      '冬至 — shortest day; ember, charcoal, and frost blue; warmth saved for the center of the layout.',
-    colors: [
-      { hex: '#F8FAFC', name: 'Frost Paper' },
-      { hex: '#94A3B8', name: 'Winter Sky' },
-      { hex: '#EA580C', name: 'Hearth Ember' },
-      { hex: '#1E293B', name: 'Long Night' },
-      { hex: '#0F172A', name: 'Polar Shadow' },
-    ],
-  },
-  default: {
-    title: 'Turn of Season',
-    overview:
-      'Solar rhythm — earth, air, and slow color shift; a grounded palette tuned to the traditional calendar.',
-    colors: [
-      { hex: '#F5F5F4', name: 'Limestone' },
-      { hex: '#A8A29E', name: 'River Stone' },
-      { hex: '#57534E', name: 'Loam' },
-      { hex: '#292524', name: 'Pine Bark' },
-      { hex: '#0C0A09', name: 'Root Black' },
-    ],
-  },
-};
-
-function solarPaletteForTerm(termId) {
-  const map = {
-    lichun: SOLAR_THEME.lichun,
-    yushui: SOLAR_THEME.lichun,
-    jingzhe: SOLAR_THEME.lichun,
-    chunfen: SOLAR_THEME.chunfen,
-    qingming: SOLAR_THEME.chunfen,
-    guyu: SOLAR_THEME.chunfen,
-    lixia: SOLAR_THEME.xiazhi,
-    xiaoman: SOLAR_THEME.xiazhi,
-    mangzhong: SOLAR_THEME.xiazhi,
-    xiazhi: SOLAR_THEME.xiazhi,
-    xiaoshu: SOLAR_THEME.xiazhi,
-    dashu: SOLAR_THEME.xiazhi,
-    liqiu: SOLAR_THEME.qiufen,
-    chushu: SOLAR_THEME.qiufen,
-    bailu: SOLAR_THEME.qiufen,
-    qiufen: SOLAR_THEME.qiufen,
-    hanlu: SOLAR_THEME.dongzhi,
-    shuangjiang: SOLAR_THEME.dongzhi,
-    lidong: SOLAR_THEME.dongzhi,
-    xiaoxue: SOLAR_THEME.dongzhi,
-    daxue: SOLAR_THEME.dongzhi,
-    dongzhi: SOLAR_THEME.dongzhi,
-    xiaohan: SOLAR_THEME.dongzhi,
-    dahan: SOLAR_THEME.dongzhi,
-  };
-  return map[termId] || SOLAR_THEME.default;
-}
-
-const SEASON_FALLBACK = {
-  spring: {
-    title: 'Paper Cherry',
-    overview:
-      'Spring default — blush wind, wet bark, and fresh green for interfaces that feel like opening windows.',
-    colors: [
-      { hex: '#FFF1F2', name: 'Petal Drift' },
-      { hex: '#FDA4AF', name: 'Blossom' },
-      { hex: '#4D7C0F', name: 'New Grass' },
-      { hex: '#44403C', name: 'Wet Bark' },
-      { hex: '#0EA5E9', name: 'April Rain' },
-    ],
-    keywords: ['spring', 'fresh'],
-  },
-  summer: {
-    title: 'Salt & Citrus',
-    overview:
-      'Summer default — high-key yellows, sea teal, and white sand for bright, legible heat.',
-    colors: [
-      { hex: '#FFFBEB', name: 'Sun Bleach' },
-      { hex: '#FDE047', name: 'Lemonade' },
-      { hex: '#14B8A6', name: 'Sea Glass' },
-      { hex: '#0369A1', name: 'Deep Swim' },
-      { hex: '#1E293B', name: 'Beach Shadow' },
-    ],
-    keywords: ['summer', 'bright'],
-  },
-  autumn: {
-    title: 'Copper Rust',
-    overview:
-      'Autumn default — rust, plum, and fog gray for editorial fall without pumpkin spice defaults.',
-    colors: [
-      { hex: '#FEF3C7', name: 'Hay Light' },
-      { hex: '#C2410C', name: 'Rust' },
-      { hex: '#7C2D12', name: 'Burnt Umber' },
-      { hex: '#57534E', name: 'Fog Stone' },
-      { hex: '#312E81', name: 'Plum Dusk' },
-    ],
-    keywords: ['autumn', 'warm'],
-  },
-  winter: {
-    title: 'Polar Quiet',
-    overview:
-      'Winter default — ice blue, wool gray, and a single ember accent for cold clarity.',
-    colors: [
-      { hex: '#F8FAFC', name: 'Snow Blind' },
-      { hex: '#CBD5E1', name: 'Wool' },
-      { hex: '#64748B', name: 'Slate Frost' },
-      { hex: '#0EA5E9', name: 'Glacier' },
-      { hex: '#0F172A', name: 'Polar Night' },
-    ],
-    keywords: ['winter', 'cool'],
-  },
-};
 
 function seasonKey(month) {
   if (month >= 3 && month <= 5) return 'spring';
@@ -450,31 +137,142 @@ const HOLIDAY_QUOTES = {
   },
 };
 
-const SEASON_QUOTES = {
-  spring: {
-    zh: '等闲识得东风面，万紫千红总是春。',
-    zhSource: '朱熹《春日》',
-    en: 'Casually I meet the face of the east wind: ten thousand purples, a thousand reds — all are spring.',
-    enSource: 'Zhu Xi, “Spring Day” (tr.)',
-  },
-  summer: {
-    zh: '接天莲叶无穷碧，映日荷花别样红。',
-    zhSource: '杨万里《晓出净慈寺送林子方》',
-    en: 'Lotus leaves to the horizon, endless jade green; lotus flowers in the sun, red beyond red.',
-    enSource: 'Yang Wanli (tr.)',
-  },
-  autumn: {
-    zh: '自古逢秋悲寂寥，我言秋日胜春朝。',
-    zhSource: '刘禹锡《秋词》',
-    en: 'Since old days, autumn meant sorrow — I say a clear autumn morning beats spring.',
-    enSource: 'Liu Yuxi, “Autumn Song” (tr.)',
-  },
-  winter: {
-    zh: '忽如一夜春风来，千树万树梨花开。',
-    zhSource: '岑参《白雪歌送武判官归京》',
-    en: 'Overnight it seems spring wind came — pear blossoms fill every tree.',
-    enSource: 'Cen Shen, on snow (tr.)',
-  },
+/** “今日一句” pools — one line picked per calendar day on ordinary season days. */
+const SEASON_QUOTE_POOLS = {
+  spring: [
+    {
+      zh: '等闲识得东风面，万紫千红总是春。',
+      zhSource: '朱熹《春日》',
+      en: 'Casually I meet the face of the east wind: ten thousand purples, a thousand reds — all are spring.',
+      enSource: 'Zhu Xi, “Spring Day” (tr.)',
+    },
+    {
+      zh: '千里莺啼绿映红，水村山郭酒旗风。',
+      zhSource: '杜牧《江南春》',
+      en: 'Orioles sing for miles, red blooms and green weave — villages, hills, wine banners in the wind.',
+      enSource: 'Du Mu, “Spring on the South Shore” (tr.)',
+    },
+    {
+      zh: '春色满园关不住，一枝红杏出墙来。',
+      zhSource: '叶绍翁《游园不值》',
+      en: 'Spring fills the garden, yet cannot be contained — one branch of crimson apricot climbs the wall.',
+      enSource: 'Ye Shaoweng (tr.)',
+    },
+    {
+      zh: '竹外桃花三两枝，春江水暖鸭先知。',
+      zhSource: '苏轼《惠崇春江晚景》',
+      en: 'Beyond bamboo, two or three peach branches blush — spring river warms; ducks know first.',
+      enSource: 'Su Shi (tr.)',
+    },
+    {
+      zh: '人面不知何处去，桃花依旧笑春风。',
+      zhSource: '崔护《题都城南庄》',
+      en: 'That face — where has it gone? Peach blossoms still laugh in the spring wind.',
+      enSource: 'Cui Hu (tr.)',
+    },
+    {
+      zh: '乱花渐欲迷人眼，浅草才能没马蹄。',
+      zhSource: '白居易《钱塘湖春行》',
+      en: 'Wild blooms slowly dazzle the eye; shallow grass can barely hide a horse’s hoof.',
+      enSource: 'Bai Juyi, “Spring on West Lake” (tr.)',
+    },
+    {
+      zh: '草长莺飞二月天，拂堤杨柳醉春烟。',
+      zhSource: '高鼎《村居》',
+      en: 'Grass grows, orioles fly — second month sky; willows by the bank drunk on spring mist.',
+      enSource: 'Gao Ding, “Village Life” (tr.)',
+    },
+  ],
+  summer: [
+    {
+      zh: '接天莲叶无穷碧，映日荷花别样红。',
+      zhSource: '杨万里《晓出净慈寺送林子方》',
+      en: 'Lotus leaves to the horizon, endless jade green; lotus flowers in the sun, red beyond red.',
+      enSource: 'Yang Wanli (tr.)',
+    },
+    {
+      zh: '明月别枝惊鹊，清风半夜鸣蝉。',
+      zhSource: '辛弃疾《西江月·夜行黄沙道中》',
+      en: 'Bright moon startles magpies from the branch; clear wind at midnight — cicadas sing.',
+      enSource: 'Xin Qiji (tr.)',
+    },
+    {
+      zh: '水晶帘动微风起，满架蔷薇一院香。',
+      zhSource: '高骈《山亭夏日》',
+      en: 'Crystal curtains stir — a breeze rises; a trellis of roses scents the whole courtyard.',
+      enSource: 'Gao Pian (tr.)',
+    },
+    {
+      zh: '懒摇白羽扇，裸袒青林中。脱巾挂石壁，露顶洒松风。',
+      zhSource: '李白《夏日山中》',
+      en: 'Too lazy to wave my white fan; bare-chested in green woods. Cap off, hung on the cliff — scalp cooled by pine wind.',
+      enSource: 'Li Bai, “Summer in the Mountains” (tr.)',
+    },
+  ],
+  autumn: [
+    {
+      zh: '自古逢秋悲寂寥，我言秋日胜春朝。',
+      zhSource: '刘禹锡《秋词》',
+      en: 'Since old days, autumn meant sorrow — I say a clear autumn morning beats spring.',
+      enSource: 'Liu Yuxi, “Autumn Song” (tr.)',
+    },
+    {
+      zh: '停车坐爱枫林晚，霜叶红于二月花。',
+      zhSource: '杜牧《山行》',
+      en: 'I stop the cart for evening maples — frost-touched leaves redder than February flowers.',
+      enSource: 'Du Mu, “Mountain Road” (tr.)',
+    },
+    {
+      zh: '空山新雨后，天气晚来秋。',
+      zhSource: '王维《山居秋暝》',
+      en: 'After rain in empty hills, evening air carries autumn.',
+      enSource: 'Wang Wei (tr.)',
+    },
+    {
+      zh: '月落乌啼霜满天，江枫渔火对愁眠。',
+      zhSource: '张继《枫桥夜泊》',
+      en: 'Moon sets, crows cry, frost fills the sky — river maples, fishermen’s lamps, sleepless sorrow.',
+      enSource: 'Zhang Ji, “Mooring at Maple Bridge” (tr.)',
+    },
+    {
+      zh: '碧云天，黄叶地，秋色连波，波上寒烟翠。',
+      zhSource: '范仲淹《苏幕遮》',
+      en: 'Azure clouds, yellow leaves on earth — autumn color joins the waves; cold mist, jade on the water.',
+      enSource: 'Fan Zhongyan (tr.)',
+    },
+  ],
+  winter: [
+    {
+      zh: '忽如一夜春风来，千树万树梨花开。',
+      zhSource: '岑参《白雪歌送武判官归京》',
+      en: 'Overnight it seems spring wind came — pear blossoms fill every tree.',
+      enSource: 'Cen Shen, on snow (tr.)',
+    },
+    {
+      zh: '晚来天欲雪，能饮一杯无？',
+      zhSource: '白居易《问刘十九》',
+      en: 'Evening sky promises snow — will you share one cup of wine?',
+      enSource: 'Bai Juyi (tr.)',
+    },
+    {
+      zh: '孤舟蓑笠翁，独钓寒江雪。',
+      zhSource: '柳宗元《江雪》',
+      en: 'A lone boat, straw cloak and hat — one old man fishing in snow on a cold river.',
+      enSource: 'Liu Zongyuan, “River Snow” (tr.)',
+    },
+    {
+      zh: '墙角数枝梅，凌寒独自开。',
+      zhSource: '王安石《梅花》',
+      en: 'A few plum branches at the wall — blooming alone through the cold.',
+      enSource: 'Wang Anshi, “Plum Blossom” (tr.)',
+    },
+    {
+      zh: '柴门闻犬吠，风雪夜归人。',
+      zhSource: '刘长卿《逢雪宿芙蓉山主人》',
+      en: 'At the brushwood gate, dogs bark — someone returns through wind and snow at night.',
+      enSource: 'Liu Changqing (tr.)',
+    },
+  ],
 };
 
 /** Map each solar term id → quote cluster. */
@@ -556,15 +354,59 @@ const SOLAR_QUOTE_GROUPS = {
   },
 };
 
-function quoteForPick(pick) {
+function fnv1a32(str) {
+  let h = 2166136261;
+  const s = String(str);
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/** Deterministic OKLCH swatch per local calendar day (updates at midnight). */
+export function dailyHexFromDateKey(dateKey) {
+  const u = fnv1a32(`genom-zhuri-${dateKey}`);
+  const h = wrapHueDeg(u % 360);
+  const L = 0.38 + ((u >>> 8) & 0xff) / 650;
+  const C = 0.055 + ((u >>> 16) & 0x7f) / 900;
+  return lchToHexClamped(L, C, h);
+}
+
+/** Second stop for gradients / hero cards (companion only — not a separate named 国色). */
+export function gradientPartnerHex(hex) {
+  const norm = String(hex || '')
+    .trim()
+    .toUpperCase();
+  const body = norm.startsWith('#') ? norm.slice(1) : norm;
+  if (!/^[0-9A-F]{6}$/.test(body)) return '#0EA5E9';
+  const u = fnv1a32(`partner|#${body}`);
+  const h = wrapHueDeg((u + 38) % 360);
+  const L = 0.34 + ((u >>> 9) & 0x7f) / 420;
+  const C = 0.05 + ((u >>> 17) & 0x6f) / 520;
+  return lchToHexClamped(L, C, h);
+}
+
+/**
+ * 今日一句：节假日用固定章句；平日/节气从季候池 + 当日色与 dateKey 哈希择句，使色与诗同日绑定。
+ */
+function quoteForDailySwatch(hex, date, pick) {
+  const dateKey = formatDailyPaletteDateKey(date);
+  const seed = `${dateKey}|${hex}`;
   if (pick.type === 'holiday') {
-    return HOLIDAY_QUOTES[pick.key] || SEASON_QUOTES.spring;
+    return HOLIDAY_QUOTES[pick.key] || SEASON_QUOTE_POOLS.spring[0];
   }
   if (pick.type === 'solar') {
     const g = SOLAR_TERM_QUOTE_GROUP[pick.termId] || 'turnOfSeason';
-    return SOLAR_QUOTE_GROUPS[g] || SOLAR_QUOTE_GROUPS.turnOfSeason;
+    const base = SOLAR_QUOTE_GROUPS[g] || SOLAR_QUOTE_GROUPS.turnOfSeason;
+    const turn = SOLAR_QUOTE_GROUPS.turnOfSeason;
+    const pool = turn && turn !== base ? [base, turn] : [base];
+    const idx = fnv1a32(seed + (pick.termId || '')) % pool.length;
+    return pool[idx];
   }
-  return SEASON_QUOTES[pick.key] || SEASON_QUOTES.spring;
+  const pool = SEASON_QUOTE_POOLS[pick.key] || SEASON_QUOTE_POOLS.spring;
+  const idx = fnv1a32(seed) % pool.length;
+  return pool[idx];
 }
 
 function daysBetween(a, b) {
@@ -626,38 +468,18 @@ function pickThemeKey(date) {
 export function getDailyPalette(date = new Date()) {
   const dateKey = formatDailyPaletteDateKey(date);
   const pick = pickThemeKey(date);
-  const quote = quoteForPick(pick);
+  const hex = dailyHexFromDateKey(dateKey);
+  const name = pickFunNameForHex(hex);
+  const quote = quoteForDailySwatch(hex, date, pick);
+  const title = name;
+  const overview = `「${name}」— 今日逐日观色 · ${hex}`;
 
-  let title;
-  let overview;
-  let rawColors;
-  let keywords;
+  const keywords = ['GENOM Daily', '逐日观色', name, hex, dateKey];
+  if (pick.type === 'holiday') keywords.push('节日');
+  if (pick.type === 'solar') keywords.push(pick.zh, pick.termLabel);
 
-  if (pick.type === 'holiday') {
-    const pack = THEMES[pick.key];
-    title = pack.title;
-    overview = pack.overview;
-    rawColors = pack.colors;
-    keywords = ['GENOM Daily', ...pack.keywords];
-  } else if (pick.type === 'solar') {
-    const sp = solarPaletteForTerm(pick.termId);
-    title = `${sp.title} · ${pick.zh}`;
-    overview = `${sp.overview} (${pick.termLabel}).`;
-    rawColors = sp.colors;
-    keywords = ['GENOM Daily', '24 solar terms', pick.zh, pick.termLabel];
-  } else {
-    const pack = SEASON_FALLBACK[pick.key];
-    /* 无节假日、非节气邻近日：以中国色名为调色板标题，色带仍随季节 */
-    title = pickChineseColorNameForDateKey(dateKey);
-    overview = `「${title}」— ${pack.overview}`;
-    rawColors = pack.colors;
-    keywords = ['GENOM Daily', '中国色', title, ...pack.keywords];
-  }
-
-  const colors = rawColors.map((c) => {
-    const e = enrichSwatch(c.hex);
-    return { ...e, name: c.name };
-  });
+  const e = enrichSwatch(hex);
+  const colors = [{ ...e, name }];
 
   return {
     dateKey,
@@ -672,9 +494,13 @@ export function getDailyPalette(date = new Date()) {
 
 /** SVG gradient data URL for vault/card previews */
 export function dailyPaletteCoverDataUrl(hexes) {
-  const list = (hexes || []).slice(0, 5);
-  while (list.length < 5) list.push('#888888');
-  const [a, b, c, d, e] = list;
+  const raw = (hexes || []).filter(Boolean);
+  const primary = raw[0] || '#888888';
+  const b = raw[1] || gradientPartnerHex(primary);
+  const c = raw[2] || primary;
+  const d = raw[3] || b;
+  const e = raw[4] || primary;
+  const a = primary;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="880" height="1200" viewBox="0 0 880 1200"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${a}"/><stop offset="25%" stop-color="${b}"/><stop offset="50%" stop-color="${c}"/><stop offset="75%" stop-color="${d}"/><stop offset="100%" stop-color="${e}"/></linearGradient></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }

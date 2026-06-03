@@ -240,14 +240,14 @@ export default function StylePreviewPage({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-full border-2 border-black hover:bg-[#ccff00] transition-colors shrink-0"
+            className="p-2 rounded-full border border-zen-ink/15 hover:bg-zen-vermilion/10 transition-colors shrink-0"
             aria-label="Close style preview"
           >
             <X size={20} />
           </button>
           <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-[#00c2d6]">Style preview</p>
-            <h1 id="style-preview-page-title" className="text-xl md:text-2xl font-black uppercase tracking-tighter truncate">
+            <p className="text-[10px] font-extralight uppercase tracking-[0.25em] text-zen-vermilion/90">Style preview</p>
+            <h1 id="style-preview-page-title" className="text-xl md:text-2xl font-extralight uppercase tracking-tighter truncate">
               {analysis?.aesthetic || 'Extracted style'}
             </h1>
           </div>
@@ -256,7 +256,7 @@ export default function StylePreviewPage({
           <button
             type="button"
             onClick={copyExport}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-black font-black text-[10px] uppercase tracking-widest bg-white hover:bg-neutral-50 shadow-[3px_3px_0_0_#000]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-zen-ink/15 font-extralight text-[10px] uppercase tracking-widest bg-white hover:bg-neutral-50 shadow-none"
           >
             {exportCopied ? <CheckCircle2 size={14} className="text-green-600" /> : <Copy size={14} />}
             {exportCopied ? 'Copied JSON' : 'Copy export JSON'}
@@ -264,7 +264,7 @@ export default function StylePreviewPage({
           <button
             type="button"
             onClick={downloadExport}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-black font-black text-[10px] uppercase tracking-widest bg-[#ccff00] hover:brightness-95 shadow-[3px_3px_0_0_#000]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-zen-ink/15 font-extralight text-[10px] uppercase tracking-widest bg-zen-ink text-white hover:opacity-90 shadow-none"
           >
             <Download size={14} />
             Download JSON
@@ -272,7 +272,7 @@ export default function StylePreviewPage({
           <button
             type="button"
             onClick={copyCssVars}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-black font-black text-[10px] uppercase tracking-widest bg-white hover:bg-neutral-100 shadow-[3px_3px_0_0_#000]"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-zen-ink/15 font-extralight text-[10px] uppercase tracking-widest bg-white hover:bg-neutral-100 shadow-none"
           >
             {cssCopied ? <CheckCircle2 size={14} className="text-green-600" /> : <Copy size={14} />}
             {cssCopied ? 'Copied CSS' : 'Copy CSS vars'}
@@ -281,7 +281,7 @@ export default function StylePreviewPage({
             <button
               type="button"
               onClick={onCopyPrompt}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border-2 border-black font-black text-[10px] uppercase tracking-widest bg-white hover:bg-[#ccff00]/30"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-zen-ink/15 font-extralight text-[10px] uppercase tracking-widest bg-white hover:bg-zen-vermilion/10/30"
             >
               {copyStatus === copyPromptKey ? <CheckCircle2 size={14} className="text-green-600" /> : <Copy size={14} />}
               {copyStatus === copyPromptKey ? 'Copied prompt' : 'Copy replication prompt'}
@@ -293,7 +293,7 @@ export default function StylePreviewPage({
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 space-y-12">
           <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Overview</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Overview</h2>
             <p className="text-base md:text-lg font-bold leading-relaxed text-neutral-800 whitespace-pre-wrap">
               {analysis?.designLogic || '—'}
             </p>
@@ -302,7 +302,7 @@ export default function StylePreviewPage({
           {styleTagList.length > 0 ? (
             <section className="space-y-4">
               <div>
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Tags</h2>
+                <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Tags</h2>
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-1">
                   Style & vibe — not layout or component names
                 </p>
@@ -311,7 +311,7 @@ export default function StylePreviewPage({
                 {styleTagList.map((k, i) => (
                   <span
                     key={`${String(k)}-${i}`}
-                    className="px-3 py-1.5 bg-black text-white text-[10px] font-black uppercase rounded-full"
+                    className="px-3 py-1.5 bg-black text-white text-[10px] font-extralight uppercase rounded-full"
                   >
                     #{String(k).replace(/^#/, '')}
                   </span>
@@ -321,34 +321,34 @@ export default function StylePreviewPage({
           ) : null}
 
           <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Iconography</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Iconography</h2>
             <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">
               Stroke weight, scale, and style hints for icons in the live kit (merged with defaults if omitted).
             </p>
-            <pre className="text-[11px] font-mono bg-neutral-50 text-neutral-900 p-4 rounded-xl overflow-x-auto border-2 border-black whitespace-pre-wrap">
+            <pre className="text-[11px] font-mono bg-neutral-50 text-neutral-900 p-4 rounded-xl overflow-x-auto border border-zen-ink/15 whitespace-pre-wrap">
               {JSON.stringify(mergeIconography(analysis), null, 2)}
             </pre>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Interactions &amp; motion</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Interactions &amp; motion</h2>
             <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">
               Focus, hover, press, and timing — mapped to Tailwind-style classes in the component gallery.
             </p>
-            <pre className="text-[11px] font-mono bg-neutral-50 text-neutral-900 p-4 rounded-xl overflow-x-auto border-2 border-black whitespace-pre-wrap">
+            <pre className="text-[11px] font-mono bg-neutral-50 text-neutral-900 p-4 rounded-xl overflow-x-auto border border-zen-ink/15 whitespace-pre-wrap">
               {JSON.stringify(mergeInteractionSpec(analysis), null, 2)}
             </pre>
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Interactive UI kit</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Interactive UI kit</h2>
             <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">
               Full-page GENOM mockup (header, toolbar, hero, footer) plus a curated component gallery — all driven by this
               extraction. Use main preview color above to shift the primary hue.
             </p>
-            <div className="rounded-2xl border-2 border-black bg-neutral-50 p-4 space-y-3">
+            <div className="rounded-2xl border border-zen-ink/15 bg-neutral-50 p-4 space-y-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Main preview color</p>
+                <p className="text-[10px] font-extralight uppercase tracking-widest text-neutral-500">Main preview color</p>
                 <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
                   Pick which step of the merged palette drives primary, soft fills, and the kit ramp below. Reset restores
                   the extraction default.
@@ -373,14 +373,14 @@ export default function StylePreviewPage({
                         className="w-10 h-10 border border-black/20 shadow-sm"
                         style={{ backgroundColor: hex, borderRadius: geom.radiusSmall }}
                       />
-                      <span className="text-[9px] font-black tabular-nums text-neutral-500">{PREVIEW_SCALE_LABELS[i] ?? i}</span>
+                      <span className="text-[9px] font-extralight tabular-nums text-neutral-500">{PREVIEW_SCALE_LABELS[i] ?? i}</span>
                     </button>
                   );
                 })}
                 <button
                   type="button"
                   onClick={() => setMainSwatchIndex(null)}
-                  className="ml-1 px-3 py-2 text-[10px] font-black uppercase tracking-widest border-2 border-black rounded-full bg-white hover:bg-[#ccff00]/40 transition-colors"
+                  className="ml-1 px-3 py-2 text-[10px] font-extralight uppercase tracking-widest border border-zen-ink/15 rounded-full bg-white hover:bg-zen-vermilion/10/40 transition-colors"
                 >
                   Reset
                 </button>
@@ -394,7 +394,7 @@ export default function StylePreviewPage({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Typography</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Typography</h2>
             <p className="text-sm font-medium text-neutral-600">{analysis?.typography || '—'}</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
@@ -404,8 +404,8 @@ export default function StylePreviewPage({
               ].map(({ key, label, stack }) => {
                 const note = analysis?.fonts?.[key];
                 return (
-                  <div key={key} className="border-2 border-black rounded-2xl p-4 bg-neutral-50">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">{label}</p>
+                  <div key={key} className="border border-zen-ink/15 rounded-2xl p-4 bg-neutral-50">
+                    <p className="text-[10px] font-extralight uppercase tracking-widest text-neutral-400 mb-2">{label}</p>
                     <p
                       className="text-xs font-bold text-neutral-800 mb-3 leading-snug"
                       style={{
@@ -427,7 +427,7 @@ export default function StylePreviewPage({
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Palette</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Palette</h2>
             <div className="flex flex-wrap gap-3">
               {(analysis?.palette || []).map((c, i) => {
                 const hex = paletteHex(c);
@@ -435,14 +435,14 @@ export default function StylePreviewPage({
                 return (
                   <div
                     key={`${hex}-${i}`}
-                    className="flex items-center gap-2 pl-2 pr-3 py-2 rounded-xl border-2 border-black bg-white"
+                    className="flex items-center gap-2 pl-2 pr-3 py-2 rounded-xl border border-zen-ink/15 bg-white"
                   >
                     <span
                       className="w-9 h-9 shrink-0 border border-black/20"
                       style={{ backgroundColor: hex, borderRadius: geom.radiusSmall }}
                       aria-hidden
                     />
-                    <span className="font-mono text-xs font-black">{hex}</span>
+                    <span className="font-mono text-xs font-extralight">{hex}</span>
                   </div>
                 );
               })}
@@ -450,7 +450,7 @@ export default function StylePreviewPage({
           </section>
 
           <section className="space-y-4 pb-16">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#00c2d6]">Code</h2>
+            <h2 className="text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion/90">Code</h2>
             <p className="text-sm font-bold text-neutral-700">{geom.label}</p>
             <p className="text-sm text-neutral-600 leading-relaxed">{geom.description}</p>
             {geom.notes ? <p className="text-xs font-medium text-neutral-500 italic">{geom.notes}</p> : null}
@@ -458,25 +458,25 @@ export default function StylePreviewPage({
               <button
                 type="button"
                 onClick={copyTailwindSnippet}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border-2 border-black font-black text-[10px] uppercase tracking-widest bg-white hover:bg-neutral-50 shadow-[3px_3px_0_0_#000]"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-zen-ink/15 font-extralight text-[10px] uppercase tracking-widest bg-white hover:bg-neutral-50 shadow-none"
               >
                 {twCopied ? <CheckCircle2 size={14} className="text-green-600" /> : <Copy size={14} />}
                 {twCopied ? 'Copied' : 'Copy Tailwind hints'}
               </button>
             </div>
-            <pre className="text-[11px] font-mono bg-neutral-100 text-neutral-900 p-4 rounded-xl overflow-x-auto border-2 border-black whitespace-pre">
+            <pre className="text-[11px] font-mono bg-neutral-100 text-neutral-900 p-4 rounded-xl overflow-x-auto border border-zen-ink/15 whitespace-pre">
               {tailwindSnippet}
             </pre>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">Geometry tokens</p>
-                <pre className="text-[11px] font-mono bg-neutral-900 text-neutral-100 p-4 rounded-xl overflow-x-auto border-2 border-black">
+                <p className="text-[10px] font-extralight uppercase tracking-widest text-neutral-400 mb-2">Geometry tokens</p>
+                <pre className="text-[11px] font-mono bg-neutral-900 text-neutral-100 p-4 rounded-xl overflow-x-auto border border-zen-ink/15">
                   {JSON.stringify(exportPayload.uiGeometry, null, 2)}
                 </pre>
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-2">CSS variables</p>
-                <pre className="text-[11px] font-mono bg-neutral-100 text-neutral-900 p-4 rounded-xl overflow-x-auto border-2 border-black whitespace-pre">
+                <p className="text-[10px] font-extralight uppercase tracking-widest text-neutral-400 mb-2">CSS variables</p>
+                <pre className="text-[11px] font-mono bg-neutral-100 text-neutral-900 p-4 rounded-xl overflow-x-auto border border-zen-ink/15 whitespace-pre">
                   {cssBlock}
                 </pre>
               </div>

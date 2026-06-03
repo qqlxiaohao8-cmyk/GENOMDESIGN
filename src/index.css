@@ -2,6 +2,398 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  @keyframes ch-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes ch-slide-up {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes ch-slide-from-top {
+    from {
+      transform: translateY(-16px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  .animate-in {
+    animation-duration: 600ms;
+    animation-fill-mode: both;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .fade-in {
+    animation-name: ch-fade-in;
+  }
+  .slide-in-from-bottom-4 {
+    animation-name: ch-slide-up;
+  }
+  .slide-in-from-bottom-8 {
+    animation-name: ch-slide-up;
+  }
+  .slide-in-from-bottom-12 {
+    animation-name: ch-slide-up;
+  }
+
+  @keyframes color-card-mist-gather {
+    0% {
+      opacity: 0;
+      transform: translateY(12%) scale(1.05);
+      filter: blur(26px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+  @keyframes color-card-mist-scatter {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-8%) scale(1.1);
+      filter: blur(32px);
+    }
+  }
+  .animate-color-card-mist-gather {
+    animation: color-card-mist-gather 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .animate-color-card-mist-scatter {
+    animation: color-card-mist-scatter 0.52s ease-in forwards;
+  }
+  .slide-in-from-top-4 {
+    animation-name: ch-slide-from-top;
+  }
+
+  @keyframes hunt-like-pop {
+    0% {
+      transform: scale(1);
+    }
+    35% {
+      transform: scale(1.14);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .animate-hunt-like {
+    animation: hunt-like-pop 0.48s cubic-bezier(0.34, 1.45, 0.64, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-hunt-like {
+      animation: none;
+    }
+  }
+
+  @keyframes landing-logo-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-7px); }
+  }
+  .landing-logo-float {
+    animation: landing-logo-float 6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .landing-logo-float {
+      animation: none;
+    }
+  }
+
+  .landing-page-shell {
+    transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .landing-page-shell.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .landing-page-shell.is-leaving .landing-logo-float {
+    animation: none;
+  }
+  .landing-page-shell.is-leaving .landing-logo-leave-wrap {
+    transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.7s ease-out;
+    transform: scale(1.03);
+    opacity: 0.72;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .landing-page-shell {
+      transition-duration: 0.15s;
+    }
+    .landing-page-shell.is-leaving .landing-logo-leave-wrap {
+      transition-duration: 0.15s;
+      transform: none;
+    }
+  }
+
+  @keyframes landing-float {
+    0%, 100% { transform: translateY(0) rotate(-0.3deg); }
+    50% { transform: translateY(-10px) rotate(0.3deg); }
+  }
+  .animate-float {
+    animation: landing-float 5s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-float {
+      animation: none;
+    }
+  }
+}
+
+@layer base {
+  html {
+    @apply scroll-smooth overflow-x-hidden;
+  }
+  body {
+    @apply m-0 min-h-screen bg-zen-mist text-zen-ink font-zenSans font-extralight antialiased;
+    letter-spacing: 0.04em;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   山水按钮系统  •  Shanshui Button System
+   btn-primary  / btn-secondary / btn-outline / btn-art
+   ───────────────────────────────────────────────────────────────── */
+
+@keyframes btn-cloud-drift {
+  0%   { transform: translateX(-100%) skewX(-4deg); }
+  100% { transform: translateX(100%)  skewX(-4deg); }
+}
+@keyframes btn-gold-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212,175,55,0), 0 4px 12px rgba(0,0,0,0.28); }
+  50%       { box-shadow: 0 0 10px 2px rgba(212,175,55,0.35), 0 6px 18px rgba(0,0,0,0.36); }
+}
+
+.btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d4af37;
+  background: linear-gradient(145deg, #8b1e1e, #c94b3c);
+  color: #f8f3e7;
+  font-family: "Noto Serif SC", "Source Han Serif SC", serif;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.12);
+  transition: background 0.32s ease, box-shadow 0.32s ease, transform 0.22s ease;
+  overflow: hidden;
+  cursor: pointer;
+}
+.btn-primary:hover {
+  background: linear-gradient(145deg, #a83232, #e05a4f);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.38), 0 0 8px 1px rgba(212,175,55,0.22), inset 0 1px 0 rgba(255,255,255,0.14);
+  transform: translateY(-2px);
+}
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+.btn-primary:disabled { opacity: 0.45; pointer-events: none; }
+
+.btn-secondary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid #c9a646;
+  background: linear-gradient(145deg, #3e6b5a, #6f9c8d);
+  color: #f0ede5;
+  font-weight: 300;
+  letter-spacing: 0.16em;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: background 0.32s ease, box-shadow 0.32s ease, transform 0.22s ease;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background: linear-gradient(145deg, #4c7f6d, #85b3a3);
+  box-shadow: 0 5px 14px rgba(0,0,0,0.28), 0 0 6px 1px rgba(201,166,70,0.2), inset 0 1px 0 rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+.btn-secondary:active { transform: translateY(0); }
+.btn-secondary:focus-visible { outline: 2px solid #c9a646; outline-offset: 2px; }
+.btn-secondary:disabled { opacity: 0.45; pointer-events: none; }
+
+.btn-outline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d4af37;
+  background: transparent;
+  color: #d4af37;
+  font-weight: 300;
+  letter-spacing: 0.18em;
+  transition: background 0.28s ease, box-shadow 0.28s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+.btn-outline:hover {
+  background: rgba(212,175,55,0.1);
+  box-shadow: 0 0 8px 1px rgba(212,175,55,0.25);
+  transform: translateY(-1px);
+}
+.btn-outline:active { transform: translateY(0); }
+.btn-outline:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+.btn-outline:disabled { opacity: 0.45; pointer-events: none; }
+
+.btn-art {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d4af37;
+  background: linear-gradient(145deg, #7a1c1c, #b33a2f);
+  color: #fff;
+  font-weight: 300;
+  letter-spacing: 0.22em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: box-shadow 0.35s ease, transform 0.22s ease;
+  overflow: hidden;
+  cursor: pointer;
+}
+.btn-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, #96221f, #c9442e);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+/* cloud shimmer streak */
+.btn-art::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -110%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.18) 45%,
+    rgba(255,255,255,0.26) 50%,
+    rgba(255,255,255,0.18) 55%,
+    rgba(255,255,255,0) 100%
+  );
+  transform: skewX(-12deg);
+  transition: left 0s;
+}
+.btn-art:hover::before { opacity: 1; }
+.btn-art:hover::after {
+  animation: btn-cloud-drift 0.62s ease forwards;
+}
+.btn-art:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,0.38), 0 0 10px 2px rgba(212,175,55,0.28), inset 0 1px 0 rgba(255,255,255,0.14);
+  transform: translateY(-2px);
+}
+.btn-art:active { transform: translateY(0); }
+.btn-art:focus-visible { outline: 2px solid #d4af37; outline-offset: 2px; }
+.btn-art:disabled { opacity: 0.45; pointer-events: none; }
+.btn-art > * { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary, .btn-secondary, .btn-outline, .btn-art {
+    transition: none;
+    animation: none;
+    transform: none !important;
+  }
+  .btn-art::after { animation: none !important; }
+}
+
+/* design.json — Zen minimalist tokens as Tailwind @layer components */
+@layer components {
+  .zen-eyebrow {
+    @apply text-[10px] font-extralight uppercase tracking-[0.35em] text-zen-ink/45;
+  }
+  .zen-panel {
+    @apply rounded-2xl border border-zen-ink/10 bg-zen-paper shadow-none;
+  }
+  .zen-modal-surface {
+    @apply relative w-full max-w-md overflow-hidden rounded-2xl border border-zen-ink/10 bg-zen-mist shadow-none max-h-[90vh] overflow-y-auto;
+  }
+  .zen-input {
+    @apply w-full rounded-full border border-zen-ink/15 bg-white px-4 py-3 text-sm font-extralight text-zen-ink placeholder:text-zen-ink/35 transition-colors duration-[2000ms] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40 focus:border-zen-ink/25 focus:bg-white;
+  }
+  .zen-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-zen-ink/20 bg-zen-ink px-5 py-3 text-[10px] font-extralight uppercase tracking-[0.2em] text-white transition-opacity duration-[2000ms] ease-out hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/50 disabled:pointer-events-none disabled:opacity-40;
+  }
+  .zen-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-zen-ink/15 bg-zen-paper px-5 py-3 text-[10px] font-extralight uppercase tracking-[0.2em] text-zen-ink transition-colors duration-[2000ms] hover:bg-zen-ink/[0.06] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/50 disabled:opacity-40;
+  }
+  .zen-btn-vermilion {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-zen-vermilion/30 bg-zen-vermilion px-5 py-3 text-[10px] font-extralight uppercase tracking-[0.2em] text-white transition-opacity duration-[2000ms] hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/50 disabled:pointer-events-none disabled:opacity-40;
+  }
+  .zen-micro-label {
+    @apply text-[10px] font-extralight uppercase tracking-[0.2em] text-zen-ink/45;
+  }
+  .zen-section-title {
+    @apply text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion;
+  }
+}
+
+/* Ink-wash mist — corner diffusion, stillness */
+.zen-mist-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: #fdfdfd;
+}
+.zen-mist-c {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 52% 48% at 0% 0%, rgba(26, 26, 26, 0.05) 0%, transparent 58%),
+    radial-gradient(ellipse 58% 52% at 100% 100%, rgba(140, 140, 140, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 42% 42% at 100% 0%, rgba(26, 26, 26, 0.035) 0%, transparent 52%),
+    radial-gradient(ellipse 38% 38% at 0% 100%, rgba(170, 170, 170, 0.07) 0%, transparent 54%);
+}
+
+/* Softer mist over #FBFBFC shell (ColorHunt-style base) */
+.zen-mist-layer--subtle .zen-mist-c {
+  opacity: 0.45;
+}
+.zen-vertical-nav {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.zen-shell-fade {
+  animation: zen-stillness-in 2s ease-out forwards;
+}
+@keyframes zen-stillness-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Community tag rail — thin scrollbar, mobile-friendly */
 .community-tag-scroll {
   scrollbar-width: none;
@@ -311,6 +703,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .zen-shell-fade {
+    animation: none !important;
+    opacity: 1;
+  }
+
   .genom-neon-bg,
   .genom-float-word,
   .genom-glow-text,
