@@ -31,7 +31,7 @@ export default function SetPasswordModal({ supabase, onSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-zen-ink/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[260] flex items-center justify-center p-4 bg-zen-ink/40 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="recovery-title"
@@ -40,7 +40,7 @@ export default function SetPasswordModal({ supabase, onSuccess }) {
         onSubmit={submit}
         className="w-full max-w-md zen-panel p-8 space-y-4 border border-zen-ink/10 bg-zen-mist"
       >
-        <h2 id="recovery-title" className="font-zenSerif text-xl font-medium tracking-tight text-zen-ink">
+        <h2 id="recovery-title" className="type-h2">
           Set new password
         </h2>
         <p className="text-xs font-extralight text-zen-ink/55">

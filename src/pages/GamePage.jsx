@@ -1,5 +1,7 @@
 import React from 'react';
-import { Gamepad2 } from 'lucide-react';
+import { ArrowRight, ThumbsUp } from 'lucide-react';
+import DailyColorChallengeCard from '../components/DailyColorChallengeCard';
+import PageHeader from '../components/layout/PageHeader';
 
 const PLACEHOLDER_PALETTES = [
   ['#F2E8D5', '#C9A87C', '#8B5E3C', '#4A2C17', '#2A1508'],
@@ -22,30 +24,47 @@ function PlaceholderCard({ colors }) {
   );
 }
 
-export default function GamePage() {
+/**
+ * @param {{ onStartChallenge?: (dailyData: object) => void, onOpenDailyPool?: () => void }} props
+ */
+export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
   return (
     <div className="flex flex-1 flex-col overflow-y-auto">
       <div className="px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-6 md:px-6 md:pb-8">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-mist">
-              <Gamepad2 size={20} strokeWidth={1.5} className="text-zen-ink/50" />
+        <PageHeader
+          className="mb-4"
+          title="游戏"
+          description="色彩训练与每日挑战"
+        />
+
+        <DailyColorChallengeCard onStart={onStartChallenge} />
+
+        <button
+          type="button"
+          onClick={() => onOpenDailyPool?.()}
+          className="mb-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-vermilion/10 text-zen-vermilion">
+              <ThumbsUp size={18} strokeWidth={2} aria-hidden />
             </div>
             <div>
-              <h1 className="font-zenSerif text-2xl font-medium tracking-tight text-zen-ink">游戏</h1>
-              <p className="text-[11px] font-extralight text-zen-ink/40 tracking-wide">色彩小游戏即将上线</p>
+              <p className="type-h4">今日投稿 · 投票</p>
+              <p className="type-note">
+                浏览挑战色卡，每日 5 票 · 前三入选色海
+              </p>
             </div>
           </div>
-        </div>
+          <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
+        </button>
 
-        {/* Coming soon message */}
         <div className="mb-8 rounded-2xl border border-dashed border-zen-ink/15 p-6 text-center">
-          <p className="text-sm font-extralight text-zen-ink/40 leading-relaxed">
-            色彩训练游戏正在开发中。<br />届时你可以通过游戏提升对色彩的感知与搭配能力。
+          <p className="type-body text-zen-ink/40">
+            更多色彩训练游戏正在开发中。<br />
+            届时你可以通过游戏提升对色彩的感知与搭配能力。
           </p>
         </div>
 
-        {/* Placeholder double-column grid */}
         <div className="grid grid-cols-2 gap-3">
           {PLACEHOLDER_PALETTES.map((colors, i) => (
             <PlaceholderCard key={i} colors={colors} />

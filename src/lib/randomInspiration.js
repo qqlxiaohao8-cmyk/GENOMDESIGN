@@ -654,6 +654,14 @@ export function quickFallbackPalette(count = 5) {
 }
 
 export function randomPaletteHarmony(count, options = {}) {
+  return randomPaletteHarmonyWithMeta(count, options).colors;
+}
+
+/**
+ * Like randomPaletteHarmony but also returns engine `meta` for tag generation.
+ * @returns {{ colors: Array<{hex:string,label:string}>, meta: object|null }}
+ */
+export function randomPaletteHarmonyWithMeta(count, options = {}) {
   const n =
     count != null && Number.isFinite(count)
       ? Math.max(2, Math.min(10, Math.round(count)))
@@ -665,23 +673,33 @@ export function randomPaletteHarmony(count, options = {}) {
       : options.styleId || null;
 
   try {
-    const { colors } = generateAestheticPalette({
+    const result = generateAestheticPalette({
       count: n,
       styleId: aestheticStyleId,
       harmonyId: options.harmonyId || null,
       lockedColors: options.lockedColors || null,
-      minBeauty: options.minBeauty ?? 68,
-      maxAttempts: options.maxAttempts ?? 24,
+      minBeauty: options.minBeauty ?? 70,
+      maxAttempts: options.maxAttempts ?? 28,
       skipHistory: options.skipHistory ?? false,
     });
-    if (Array.isArray(colors) && colors.length >= 2) return colors;
+    if (Array.isArray(result.colors) && result.colors.length >= 2) {
+      return { colors: result.colors, meta: result.meta ?? null };
+    }
   } catch (e) {
-    console.warn('randomPaletteHarmony failed, using fallback', e);
+    console.warn('randomPaletteHarmonyWithMeta failed, using fallback', e);
   }
-  return quickFallbackPalette(n ?? 5);
+  return { colors: quickFallbackPalette(n ?? 5), meta: null };
 }
 
-export { generateAestheticPalette, AESTHETIC_STYLES, pickPaletteCount, clearPaletteHistory, getDomainStats };
+export {
+  generateAestheticPalette,
+  AESTHETIC_STYLES,
+  pickPaletteCount,
+  clearPaletteHistory,
+  getDomainStats,
+} from './colorAestheticEngine.js';
+
+export { generatePaletteSchema } from './colorEngine.js';
 
 export function randomSingleInspiration() {
   const hex = sampleHexForStyle(pickRandomMoodStyle().id);

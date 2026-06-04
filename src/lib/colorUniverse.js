@@ -3,7 +3,7 @@
  */
 import { wrapHueDeg, hexToOklch } from './oklch.js';
 
-const HISTORY_KEY = 'genom-palette-universe-history-v1';
+const HISTORY_KEY = 'genom-palette-universe-history-v2';
 const HISTORY_MAX = 50;
 const STATS_WINDOW = 100;
 
@@ -49,7 +49,8 @@ export const HUE_DOMAINS = [
   { id: 'red', label: 'Red', labelZh: '红', hueRanges: [[350, 360], [0, 18]] },
   { id: 'orange', label: 'Orange', labelZh: '橙', hueRanges: [[18, 48]] },
   { id: 'yellow', label: 'Yellow', labelZh: '黄', hueRanges: [[48, 72]] },
-  { id: 'green', label: 'Green', labelZh: '绿', hueRanges: [[72, 155]] },
+  { id: 'lime', label: 'Lime', labelZh: '黄绿', hueRanges: [[60, 88]] },
+  { id: 'green', label: 'Green', labelZh: '绿', hueRanges: [[88, 155]] },
   { id: 'cyan', label: 'Cyan', labelZh: '青', hueRanges: [[155, 195]] },
   { id: 'blue', label: 'Blue', labelZh: '蓝', hueRanges: [[195, 248]] },
   { id: 'indigo', label: 'Indigo', labelZh: '靛', hueRanges: [[248, 275]] },
@@ -149,6 +150,16 @@ function buildStyleCatalog() {
     ['design', '雾感'], ['design', '侘寂'], ['design', '咖啡'], ['design', '岩石'],
     ['design', '金属'], ['design', '植物'], ['design', '极简'], ['design', '梦幻'],
     ['design', '日落'], ['design', '黎明'], ['design', '海洋'], ['design', '森林'],
+    ['season', '春日樱花'], ['season', '夏日海岸'], ['season', '秋叶枫红'], ['season', '冬雪清晨'],
+    ['season', '梅雨时节'], ['season', '金秋丰收'], ['season', '初雪寂静'], ['season', '仲夏蝉鸣'],
+    ['fantasy', '极光梦境'], ['fantasy', '星海深空'], ['fantasy', '童话粉城'], ['fantasy', '神话金殿'],
+    ['fantasy', '魔法森林'], ['fantasy', '水晶洞穴'], ['fantasy', '精灵月光'], ['fantasy', '暗黑奇境'],
+    ['architecture', '粗野主义'], ['architecture', '侘寂北欧'], ['architecture', '装饰艺术'], ['architecture', '地中海白墙'],
+    ['architecture', '北欧木屋'], ['architecture', '工业仓库'], ['architecture', '包豪斯灰'], ['architecture', '殖民地红砖'],
+    ['fashion', '街头霓虹'], ['fashion', '高定象牙'], ['fashion', '热带度假'], ['fashion', '单色锋芒'],
+    ['fashion', '鼠尾草麻布'], ['fashion', '复古丹宁'], ['fashion', '都市皮革'], ['fashion', '薄荷莫迪'],
+    ['food', '香料集市'], ['food', '抹茶仪式'], ['food', '酒窖陈年'], ['food', '藏红花盛宴'],
+    ['food', '浆果蜜酱'], ['food', '海盐焦糖'], ['food', '烟熏咖啡'], ['food', '柠檬塔'],
   ];
   return rows.map(([category, labelZh], i) => ({
     id: `${category}-${i}`,
@@ -169,12 +180,13 @@ export function classifyHexDomain(hex) {
   if (o.c < 0.08 && o.h >= 22 && o.h <= 55 && o.l < 0.55) return 'brown';
   if (o.c < 0.05 && ((o.h >= 42 && o.h <= 58) || (o.h >= 195 && o.h <= 215))) return 'metallic';
   for (const d of HUE_DOMAINS) {
-    if (['brown', 'gray', 'black', 'white', 'metallic'].includes(d.id)) continue;
+    if (['brown', 'gray', 'black', 'white', 'metallic', 'lime'].includes(d.id)) continue;
     for (const [a, b] of d.hueRanges) {
       if (o.h >= a && o.h <= b) return d.id;
     }
     if (d.hueRanges.some(([a, b]) => a > b && (o.h >= a || o.h <= b))) return d.id;
   }
+  if (o.h >= 60 && o.h < 88) return 'lime';
   return 'blue';
 }
 
@@ -199,6 +211,10 @@ function readHistory() {
   } catch {
     return [];
   }
+}
+
+export function readPaletteHistory() {
+  return readHistory();
 }
 
 function writeHistory(list) {
@@ -314,8 +330,9 @@ function classifyHexDomainFromSpec(h, l, c) {
   if (l < 0.2 && c < 0.025) return 'black';
   if (l > 0.85 && c < 0.028) return 'white';
   if (c < 0.028) return 'gray';
+  if (h >= 60 && h < 88) return 'lime';
   for (const d of HUE_DOMAINS) {
-    if (['brown', 'gray', 'black', 'white', 'metallic'].includes(d.id)) continue;
+    if (['brown', 'gray', 'black', 'white', 'metallic', 'lime'].includes(d.id)) continue;
     for (const [a, b] of d.hueRanges) {
       if (h >= a && h <= b) return d.id;
     }
@@ -348,6 +365,10 @@ export function paletteFingerprint(meta) {
     styleId: meta.styleId,
     saturationTier: meta.saturationTier,
     lightnessMode: meta.lightnessMode,
+    theme: meta.theme ?? null,
+    harmonyMode: meta.harmonyMode ?? null,
+    brightnessMode: meta.brightnessMode ?? null,
+    saturationMode: meta.saturationMode ?? null,
     ts: Date.now(),
   };
 }
@@ -356,10 +377,14 @@ export function paletteFingerprint(meta) {
 export function paletteSimilarity(a, b) {
   if (!a || !b) return 0;
   const hueSim = 1 - hueDelta(a.primaryHue, b.primaryHue) / 180;
-  let score = hueSim * 0.35;
-  if (a.styleId === b.styleId) score += 0.2;
-  if (a.saturationTier === b.saturationTier) score += 0.2;
-  if (a.lightnessMode === b.lightnessMode) score += 0.15;
+  let score = hueSim * 0.3;
+  if (a.theme && b.theme && a.theme === b.theme) score += 0.2;
+  else if (a.styleId === b.styleId) score += 0.15;
+  if (a.harmonyMode && b.harmonyMode && a.harmonyMode === b.harmonyMode) score += 0.15;
+  if (a.saturationMode && b.saturationMode && a.saturationMode === b.saturationMode) score += 0.15;
+  else if (a.saturationTier === b.saturationTier) score += 0.1;
+  if (a.brightnessMode && b.brightnessMode && a.brightnessMode === b.brightnessMode) score += 0.1;
+  else if (a.lightnessMode === b.lightnessMode) score += 0.08;
   if (a.primaryDomain === b.primaryDomain) score += 0.1;
   return clamp(score, 0, 1);
 }

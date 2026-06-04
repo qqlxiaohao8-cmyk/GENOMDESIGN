@@ -4,6 +4,7 @@ import { getPoeticColorName } from '../lib/poeticColorNaming';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
 import { PROFILE_FONTS } from '../lib/profileFonts';
+import PageHeader from '../components/layout/PageHeader';
 
 const normalizeHex = normalizeProfileHex;
 
@@ -24,7 +25,7 @@ function ProfileHeroCard({ user, username, accentHex, onEdit }) {
         aria-label="点击登录"
       >
         <div className="flex h-full min-h-[9rem] items-end p-4">
-          <p className="text-sm font-extralight text-zen-ink/30">点击登录</p>
+          <p className="type-body text-zen-ink/30">点击登录</p>
         </div>
       </div>
     );
@@ -45,10 +46,10 @@ function ProfileHeroCard({ user, username, accentHex, onEdit }) {
         <Pencil size={14} strokeWidth={2} style={{ color: textColor }} aria-hidden />
       </button>
       <div className="flex h-full min-h-[9rem] flex-col justify-end p-4">
-        <p className="text-[11px] font-extralight tracking-widest" style={{ color: `${textColor}80` }}>
+        <p className="type-caption tracking-widest" style={{ color: `${textColor}80` }}>
           {hex} · {colorName}
         </p>
-        <p className="font-zenSerif text-lg font-medium tracking-tight" style={{ color: textColor }}>
+        <p className="type-h3" style={{ color: textColor }}>
           {username || user.email?.split('@')[0] || '用户'}
         </p>
       </div>
@@ -82,11 +83,11 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="w-full max-w-sm rounded-t-3xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] shadow-2xl md:rounded-3xl">
-        <h3 className="mb-5 font-zenSerif text-lg font-medium tracking-tight">编辑资料</h3>
+        <h3 className="type-h3 mb-5">编辑资料</h3>
 
         {/* Username */}
         <div className="mb-5">
-          <label className="mb-1.5 block text-[11px] font-extralight uppercase tracking-widest text-zen-ink/50">
+          <label className="type-overline mb-1.5 block text-zen-ink/50">
             用户名
           </label>
           <input
@@ -96,13 +97,13 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
             onChange={(e) => setName(e.target.value)}
             maxLength={20}
             placeholder="输入你的名称…"
-            className="w-full rounded-xl border border-zen-ink/15 bg-zen-mist/30 px-4 py-3 text-sm font-extralight focus:border-zen-ink/30 focus:outline-none"
+            className="type-body w-full rounded-xl border border-zen-ink/15 bg-zen-mist/30 px-4 py-3 focus:border-zen-ink/30 focus:outline-none"
           />
         </div>
 
         {/* Accent color */}
         <div className="mb-6">
-          <label className="mb-2 block text-[11px] font-extralight uppercase tracking-widest text-zen-ink/50">
+          <label className="type-overline mb-2 block text-zen-ink/50">
             专属颜色
           </label>
           <div className="mb-3 flex flex-wrap gap-2">
@@ -240,7 +241,12 @@ export default function ProfilePage({ user, supabase, onOpenAuth, onSignOut }) {
 
   return (
     <div className="flex flex-1 flex-col overflow-y-auto">
-      <div className="px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-5 md:px-6 md:pb-8 md:pt-7">
+      <div className="px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-8 md:pt-6">
+        <PageHeader
+          className="mb-5"
+          title="我"
+          description="你的色彩身份与账号设置"
+        />
         {/* Hero card */}
         <div className="mb-5">
           <ProfileHeroCard

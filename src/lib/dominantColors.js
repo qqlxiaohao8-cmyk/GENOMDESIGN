@@ -235,6 +235,80 @@ export function sampleHexAtNormalizedPoint(dataUrl, nx, ny) {
   });
 }
 
+/** 新增色块：与已有色在 OKLab 上至少拉开此距离（平方） */
+const DIVERSE_ADD_MIN_DIST_SQ = 0.00035;
+
+function normalizeHexUpper(hex) {
+  const h = String(hex || '').trim().replace(/^#/, '');
+  if (!/^[0-9A-Fa-f]{6}$/.test(h)) return null;
+  return `#${h.toUpperCase()}`;
+}
+
+function minDistSqToPalette(hex, existingHexes) {
+  const list = (existingHexes || [])
+    .map(normalizeHexUpper)
+    .filter(Boolean);
+  if (!list.length) return Infinity;
+  let minD = Infinity;
+  for (const e of list) {
+    minD = Math.min(minD, colorDistSq(hex, e));
+  }
+  return minD;
+}
+
+/**
+ * 从画面选取与已有色卡差异最大的一个颜色（保证析色时每次「+」都增加多样性）
+ * @param {string} dataUrl
+ * @param {string[]} existingHexes 当前色卡中的 hex
+ * @returns {Promise<{ hex: string, nx: number, ny: number }>}
+ */
+export async function pickDiverseSampleFromDataUrl(dataUrl, existingHexes = []) {
+  const img = await loadImageElement(dataUrl);
+  const existing = (existingHexes || []).map(normalizeHexUpper).filter(Boolean);
+  const nw = img.naturalWidth || img.width;
+  const nh = img.naturalHeight || img.height;
+  const maxSide = 96;
+  const scale = maxSide / Math.max(nw, nh, 1);
+  const w = Math.max(1, Math.round(nw * scale));
+  const h = Math.max(1, Math.round(nh * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, w, h);
+  const { data } = ctx.getImageData(0, 0, w, h);
+
+  /** @type {{ hex: string, nx: number, ny: number, score: number } | null} */
+  let bestAbove = null;
+  /** @type {{ hex: string, nx: number, ny: number, score: number } | null} */
+  let bestAny = null;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (data[i + 3] < 128) continue;
+      const hex = rgbToHex(data[i], data[i + 1], data[i + 2]);
+      const score = minDistSqToPalette(hex, existing);
+      const nx = w > 1 ? x / (w - 1) : 0.5;
+      const ny = h > 1 ? y / (h - 1) : 0.5;
+      const cand = { hex, nx, ny, score };
+
+      if (score >= DIVERSE_ADD_MIN_DIST_SQ) {
+        if (!bestAbove || score > bestAbove.score) bestAbove = cand;
+      }
+      if (!bestAny || score > bestAny.score) bestAny = cand;
+    }
+  }
+
+  const pick = bestAbove || bestAny;
+  if (pick) {
+    return { hex: pick.hex, nx: pick.nx, ny: pick.ny };
+  }
+
+  const fallback = await sampleHexAtNormalizedPoint(dataUrl, 0.5, 0.5);
+  return { hex: fallback, nx: 0.5, ny: 0.5 };
+}
+
 function luminanceRgb(r, g, b) {
   return 0.299 * r + 0.587 * g + 0.114 * b;
 }

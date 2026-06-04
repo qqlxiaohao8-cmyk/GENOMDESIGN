@@ -7,6 +7,14 @@ import {
   isCommunityPaletteCardItem,
   COMMUNITY_PALETTE_MIN_SWATCHES,
 } from '../components/StyleUiPreviewCard';
+import { isDisplayableSeaTag } from '../lib/colorSeaTags';
+import {
+  challengeDateKey,
+  fetchMySubmissionForChallengeDate,
+  insertDailyPaletteSubmission,
+  runPendingDailyTallies,
+} from '../lib/dailyOneColorApi';
+import { DAILY_WINNER_TAG } from '../lib/dailyOneColorConstants';
 
 const COMMUNITY_TAG_CLICKS_KEY = 'genom-community-tag-clicks';
 
@@ -27,18 +35,34 @@ function mapStyleRow(row) {
   };
 }
 
-function buildColorCardSnapshot(card, displayTitle) {
+function buildColorCardSnapshot(card, displayTitle, extraKeywords = [], snapshotOpts = {}) {
   const title =
     displayTitle?.trim() ||
     card.colors[0]?.name ||
     'Color card';
-  return {
+  const snap = {
     colorCard: true,
     colorCardData: { overview: card.overview, colors: card.colors },
     aesthetic: title.slice(0, 120),
-    keywords: ['color-extract', 'palette'],
+    keywords: ['color-extract', 'palette', ...(Array.isArray(extraKeywords) ? extraKeywords : [])],
     prompt: card.overview,
   };
+  if (snapshotOpts.sourceStyleId) {
+    snap.sourceStyleId = snapshotOpts.sourceStyleId;
+    snap.favoritedFrom = snapshotOpts.sourceStyleId;
+  }
+  return snap;
+}
+
+function vaultItemForSourceStyle(vaultItems, sourceStyleId) {
+  if (!sourceStyleId) return null;
+  return (
+    vaultItems.find((item) => {
+      const snap = item.extractionSnapshot;
+      const sid = snap?.sourceStyleId ?? snap?.favoritedFrom;
+      return sid === sourceStyleId;
+    }) ?? null
+  );
 }
 
 export function displayUserName(user) {
@@ -66,6 +90,7 @@ export default function useColorApp() {
   const [exploreFeed, setExploreFeed] = useState([]);
   const [likedStyleIds, setLikedStyleIds] = useState(() => new Set());
   const [communityLikeBusyId, setCommunityLikeBusyId] = useState(null);
+  const [vaultFavoriteBusyId, setVaultFavoriteBusyId] = useState(null);
 
   // Flow stack for full-screen creation flows
   const [flowStack, setFlowStack] = useState([]);
@@ -141,6 +166,16 @@ export default function useColorApp() {
   }, [refreshStyles]);
 
   useEffect(() => {
+    if (!supabase) return undefined;
+    let cancelled = false;
+    (async () => {
+      await runPendingDailyTallies(supabase);
+      if (!cancelled) await refreshStyles();
+    })();
+    return () => { cancelled = true; };
+  }, [supabase, refreshStyles]);
+
+  useEffect(() => {
     refreshMyStyleLikes();
   }, [refreshMyStyleLikes]);
 
@@ -151,9 +186,22 @@ export default function useColorApp() {
   );
 
   const vaultColorPaletteItems = useMemo(
-    () => personalLibrary.filter((item) => Boolean(itemColorCardData(item)?.colors?.length)),
+    () =>
+      personalLibrary.filter((item) => {
+        if (item.extractionSnapshot?.hiddenFromVault) return false;
+        return Boolean(itemColorCardData(item)?.colors?.length);
+      }),
     [personalLibrary]
   );
+
+  const favoritedExploreStyleIds = useMemo(() => {
+    const ids = new Set();
+    vaultColorPaletteItems.forEach((item) => {
+      const sid = item.extractionSnapshot?.sourceStyleId ?? item.extractionSnapshot?.favoritedFrom;
+      if (sid) ids.add(sid);
+    });
+    return ids;
+  }, [vaultColorPaletteItems]);
 
   // ── Toggle like ───────────────────────────────────────────────────────
   const toggleCommunityLike = useCallback(
@@ -220,7 +268,9 @@ export default function useColorApp() {
         }
       }
       const hexes = card.colors.map((c) => c.hex);
-      const snapshot = buildColorCardSnapshot(card, displayTitle);
+      const snapshot = buildColorCardSnapshot(card, displayTitle, opts?.extraKeywords, {
+        sourceStyleId: opts?.sourceStyleId || null,
+      });
       let extraction_snapshot;
       try { extraction_snapshot = JSON.parse(JSON.stringify(snapshot)); } catch { extraction_snapshot = null; }
       const row = {
@@ -250,10 +300,14 @@ export default function useColorApp() {
     [user, refreshStyles]
   );
 
-  // ── Delete from vault ─────────────────────────────────────────────────
+  // ── Delete private vault row (never use for public 色海 entries) ───────
   const deleteVaultItem = useCallback(
     async (itemId) => {
       if (!user || !supabase || !itemId) return { error: new Error('无法删除。') };
+      const item = personalLibrary.find((i) => i.id === itemId);
+      if (item?.isPublic) {
+        return { error: new Error('已发布色卡请使用「取消收藏」从收藏页移除。') };
+      }
       const { error } = await supabase
         .from('styles')
         .delete()
@@ -262,12 +316,170 @@ export default function useColorApp() {
       if (!error) await refreshStyles();
       return { error: error || null };
     },
-    [user, refreshStyles]
+    [user, personalLibrary, refreshStyles]
+  );
+
+  /**
+   * 收藏页「取消收藏」：仅从用户收藏列表移除，不删除色海公开记录。
+   * - 私人副本（含从色海收藏的副本）：删除该行
+   * - 已发布到色海的色卡：仅标记 hiddenFromVault，保留 is_public
+   */
+  const removeFromVault = useCallback(
+    async (itemId) => {
+      if (!user || !supabase || !itemId) return { error: new Error('无法移除。') };
+      const item = personalLibrary.find((i) => i.id === itemId);
+      if (!item) return { error: new Error('未找到色卡。') };
+
+      if (item.isPublic) {
+        const base =
+          item.extractionSnapshot && typeof item.extractionSnapshot === 'object'
+            ? item.extractionSnapshot
+            : {};
+        const extraction_snapshot = { ...base, hiddenFromVault: true };
+        const { error } = await supabase
+          .from('styles')
+          .update({ extraction_snapshot })
+          .eq('id', itemId)
+          .eq('user_id', user.id);
+        if (error && /extraction_snapshot|column/i.test(error.message || '')) {
+          return { error: new Error(error.message || '移除失败。') };
+        }
+        if (!error) await refreshStyles();
+        return { error: error || null };
+      }
+
+      return deleteVaultItem(itemId);
+    },
+    [user, supabase, personalLibrary, deleteVaultItem, refreshStyles]
+  );
+
+  // ── 色海 → 私人收藏库 ─────────────────────────────────────────────────
+  const toggleVaultFavoriteFromExplore = useCallback(
+    async (item) => {
+      if (!user || !supabase || !item?.id || vaultFavoriteBusyId) return;
+      const cd = itemColorCardData(item);
+      if (!cd?.colors?.length) return;
+
+      setVaultFavoriteBusyId(item.id);
+      const existing = vaultItemForSourceStyle(vaultColorPaletteItems, item.id);
+      try {
+        if (existing) {
+          await deleteVaultItem(existing.id);
+        } else {
+          const imageSrc =
+            item.imageUrl ||
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+          const card = {
+            overview: item.aesthetic || item.designLogic || '',
+            colors: cd.colors,
+          };
+          await persistColorCardVaultRow(imageSrc, card, {
+            paletteDisplayTitle: item.aesthetic,
+            sourceStyleId: item.id,
+            extraKeywords: item.keywords,
+          });
+        }
+      } finally {
+        setVaultFavoriteBusyId(null);
+      }
+    },
+    [user, supabase, vaultFavoriteBusyId, vaultColorPaletteItems, deleteVaultItem, persistColorCardVaultRow]
+  );
+
+  // ── 投稿到每日一色（不公开到色海，进入当日投票池）────────────────────────
+  const publishDailyPaletteCard = useCallback(
+    async ({ title, hexes, imageDataUrl, tags = [], dailyAnchorHex }) => {
+      if (!user || !supabase) return { ok: false, error: '请先登录再投稿。' };
+      if (!Array.isArray(hexes) || hexes.length < 2) {
+        return { ok: false, error: '缺少色卡数据。' };
+      }
+      const challengeDate = challengeDateKey();
+      const { row: existing } = await fetchMySubmissionForChallengeDate(
+        supabase,
+        challengeDate,
+        user.id,
+      );
+      if (existing) return { ok: false, error: '今日已投稿，明日可再挑战。' };
+
+      let imageSrc = imageDataUrl;
+      try {
+        if (!imageSrc || !/^data:image\//.test(imageSrc)) {
+          const blob = await renderSekongPalettePngBlob({
+            title: title || '色卡',
+            colors: hexes.map((h) => ({ hex: h })),
+          });
+          imageSrc = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = reject;
+            r.readAsDataURL(blob);
+          });
+        }
+      } catch (e) {
+        return { ok: false, error: e.message || '生成色卡图失败。' };
+      }
+
+      const card = {
+        overview: title || '',
+        colors: hexes.map((h) => ({ hex: h })),
+      };
+      const extraKeywords = [
+        ...(Array.isArray(tags) ? tags : []),
+        '每日一色投稿',
+      ];
+      const { id: styleId, error: saveErr } = await persistColorCardVaultRow(imageSrc, card, {
+        paletteDisplayTitle: title,
+        extraKeywords,
+      });
+      if (saveErr || !styleId) return { ok: false, error: saveErr?.message || '保存失败。' };
+
+      const snapshot = {
+        ...buildColorCardSnapshot(card, title, extraKeywords),
+        dailyChallenge: true,
+        challengeDate,
+        dailyAnchorHex: dailyAnchorHex || hexes[0] || null,
+      };
+      let extraction_snapshot;
+      try { extraction_snapshot = JSON.parse(JSON.stringify(snapshot)); } catch { extraction_snapshot = null; }
+      if (extraction_snapshot) {
+        await supabase
+          .from('styles')
+          .update({ extraction_snapshot })
+          .eq('id', styleId)
+          .eq('user_id', user.id);
+      }
+
+      const { data: styleRow } = await supabase
+        .from('styles')
+        .select('image_url')
+        .eq('id', styleId)
+        .maybeSingle();
+
+      const { id: submissionId, error: subErr } = await insertDailyPaletteSubmission(supabase, {
+        challengeDate,
+        userId: user.id,
+        styleId,
+        title: title.trim(),
+        palette: hexes,
+        imageUrl: styleRow?.image_url || imageSrc,
+        tags: extraKeywords,
+        dailyAnchorHex: dailyAnchorHex || hexes[0] || null,
+      });
+      if (subErr) {
+        const msg = subErr.message || '';
+        if (/unique|one_per_user/i.test(msg)) {
+          return { ok: false, error: '今日已投稿，明日可再挑战。' };
+        }
+        return { ok: false, error: msg || '投稿失败。' };
+      }
+      return { ok: true, id: submissionId, styleId };
+    },
+    [user, supabase, persistColorCardVaultRow],
   );
 
   // ── Publish to 色海 ───────────────────────────────────────────────────
   const publishColorCard = useCallback(
-    async ({ title, hexes, imageDataUrl, sourceType = 'own_shot' }) => {
+    async ({ title, hexes, imageDataUrl, sourceType = 'own_shot', tags = [] }) => {
       if (!user || !supabase) return { ok: false, error: '请先登录再发布。' };
       if (!Array.isArray(hexes) || hexes.length < 2 || !imageDataUrl) {
         return { ok: false, error: '缺少色卡数据或图片。' };
@@ -278,6 +490,7 @@ export default function useColorApp() {
       };
       const { id, error: saveErr } = await persistColorCardVaultRow(imageDataUrl, card, {
         paletteDisplayTitle: title,
+        extraKeywords: Array.isArray(tags) ? tags : [],
       });
       if (saveErr || !id) return { ok: false, error: saveErr?.message || '保存失败。' };
 
@@ -377,7 +590,7 @@ export default function useColorApp() {
       const seen = new Set();
       (item.keywords || []).forEach((k) => {
         const s = String(k).trim();
-        if (!s || seen.has(s)) return;
+        if (!s || seen.has(s) || !isDisplayableSeaTag(s)) return;
         seen.add(s);
         const cur = stats.get(s) || { count: 0, likesSum: 0 };
         cur.count += 1;
@@ -399,7 +612,15 @@ export default function useColorApp() {
       if (sb.likesSum !== sa.likesSum) return sb.likesSum - sa.likesSum;
       return sb.count - sa.count;
     });
-    return ['All', ...ranked.map(([tag]) => tag)];
+    const tags = ranked.map(([tag]) => tag);
+    const hasWinnerTag = tags.includes(DAILY_WINNER_TAG)
+      || colorPaletteExploreFeed.some((item) =>
+        (item.keywords || []).includes(DAILY_WINNER_TAG),
+      );
+    if (hasWinnerTag && !tags.includes(DAILY_WINNER_TAG)) {
+      tags.unshift(DAILY_WINNER_TAG);
+    }
+    return ['All', ...tags];
   }, [colorPaletteExploreFeed, tagClickEpoch]);
 
   return {
@@ -409,14 +630,17 @@ export default function useColorApp() {
     signOut,
     // Data
     personalLibrary, exploreFeed, colorPaletteExploreFeed, vaultColorPaletteItems,
-    likedStyleIds, communityLikeBusyId,
+    likedStyleIds, communityLikeBusyId, favoritedExploreStyleIds, vaultFavoriteBusyId,
     refreshStyles,
     communityTagList, bumpTagClick,
     // Actions
     toggleCommunityLike,
+    toggleVaultFavoriteFromExplore,
     persistColorCardVaultRow,
     deleteVaultItem,
+    removeFromVault,
     publishColorCard,
+    publishDailyPaletteCard,
     downloadColorCardPng,
     copyShareLink,
     // Flow

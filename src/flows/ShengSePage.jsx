@@ -4,7 +4,8 @@ import {
   Lock, Unlock, Plus, Minus, RefreshCw, Bookmark,
   Pipette, X, Loader2,
 } from 'lucide-react';
-import { randomPaletteHarmony, quickFallbackPalette, normalizeHex, KONGSHENG_HARMONY_TYPES } from '../lib/randomInspiration';
+import { randomPaletteHarmony, randomPaletteHarmonyWithMeta, quickFallbackPalette, normalizeHex } from '../lib/randomInspiration';
+import { generatePaletteTags } from '../lib/paletteTags';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 
@@ -25,15 +26,19 @@ function parseFlowHexes(raw) {
 
 const LOADING_PLACEHOLDER = ['#E8E6E1', '#D4D0C8', '#C9C5BC', '#BEB9B0', '#B3ADA4'];
 
+/** Returns { hexes, meta } */
+function generatePaletteWithMeta(count, harmonyId, lockedColors) {
+  const { colors, meta } = randomPaletteHarmonyWithMeta(count, {
+    harmonyId: harmonyId || null,
+    lockedColors: lockedColors?.length ? lockedColors : null,
+    maxAttempts: 20,
+    minBeauty: 65,
+  });
+  return { hexes: paletteToHexes(colors), meta };
+}
+
 function generatePalette(count, harmonyId, lockedColors) {
-  return paletteToHexes(
-    randomPaletteHarmony(count, {
-      harmonyId: harmonyId || null,
-      lockedColors: lockedColors?.length ? lockedColors : null,
-      maxAttempts: 20,
-      minBeauty: 65,
-    }),
-  );
+  return generatePaletteWithMeta(count, harmonyId, lockedColors).hexes;
 }
 
 // ─── HSL ↔ HEX helpers ───────────────────────────────────────────────────────
@@ -119,7 +124,7 @@ function HslColorPicker({ hex, onChange, onClose }) {
     >
       <div className="w-full max-w-xs rounded-t-3xl bg-white p-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-2xl md:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
-          <h4 className="font-zenSerif text-base font-medium">挑选颜色</h4>
+          <h4 className="type-h4">挑选颜色</h4>
           <button type="button" onClick={onClose} className="text-zen-ink/40 hover:text-zen-ink transition-colors">
             <X size={18} strokeWidth={2} aria-hidden />
           </button>
@@ -196,7 +201,7 @@ function SliderRow({ label, unit, value, min, max, track, thumbColor, onChange }
   return (
     <div className="mb-3">
       <div className="mb-1 flex justify-between">
-        <span className="text-[10px] font-extralight uppercase tracking-widest text-zen-ink/40">{label}</span>
+        <span className="type-overline">{label}</span>
         <span className="text-[10px] font-extralight tabular-nums text-zen-ink/60">{value}{unit}</span>
       </div>
       <div className="relative h-4 rounded-full" style={{ background: track }}>
@@ -211,37 +216,6 @@ function SliderRow({ label, unit, value, min, max, track, thumbColor, onChange }
           style={{ left: `calc(${pct}% - 10px)`, backgroundColor: thumbColor }}
         />
       </div>
-    </div>
-  );
-}
-
-// ─── Harmony chip row ─────────────────────────────────────────────────────────
-
-const HARMONY_CHIPS = [
-  { id: null, labelZh: '混合' },
-  ...KONGSHENG_HARMONY_TYPES.map((t) => ({ id: t.id, labelZh: t.labelZh })),
-];
-
-function HarmonyChipRow({ activeId, onChange }) {
-  return (
-    <div className="shrink-0 flex items-center gap-1.5 overflow-x-auto px-3 py-2 border-t border-zen-ink/[0.06] bg-white/70">
-      {HARMONY_CHIPS.map(({ id, labelZh }) => {
-        const active = id === activeId;
-        return (
-          <button
-            key={id ?? 'mix'}
-            type="button"
-            onClick={() => onChange(id)}
-            className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-extralight tracking-wide transition-all duration-200 ${
-              active
-                ? 'bg-zen-ink text-zen-paper'
-                : 'bg-zen-ink/[0.07] text-zen-ink/55 hover:bg-zen-ink/15 hover:text-zen-ink'
-            }`}
-          >
-            {labelZh}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -270,14 +244,19 @@ function ColorStripeRow({ hex, name, locked, onToggleLock, onPick, onAdd, onRemo
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && setMenuOpen(true)}
-      aria-label={`颜色: ${name}`}
+      aria-label={`颜色: ${name} ${normalizeHex(hex)}`}
     >
-      <span
-        className="ml-4 text-[11px] font-extralight tracking-wide opacity-75 pointer-events-none"
+      <div
+        className="pointer-events-none ml-4 flex min-w-0 flex-col gap-0.5"
         style={{ color: textColor }}
       >
-        {name}
-      </span>
+        <span className="font-zenSerif text-lg font-medium tracking-[0.12em] md:text-xl">
+          {name}
+        </span>
+        <span className="font-mono text-[11px] font-extralight tabular-nums tracking-wider opacity-85">
+          {normalizeHex(hex)}
+        </span>
+      </div>
 
       {/* Lock button */}
       <button
@@ -323,11 +302,11 @@ function CtxItem({ icon, label, onClick, dim }) {
 
 // ─── Helper: generate a single new color harmonized with existing palette ─────
 
-function generateHarmonizedColor(existingHexes, activeHarmonyId) {
+function generateHarmonizedColor(existingHexes) {
   try {
     const locked = existingHexes.map((h) => ({ hex: h }));
     const count = Math.min(MAX_COLORS, existingHexes.length + 1);
-    const candidates = generatePalette(count, activeHarmonyId, locked);
+    const candidates = generatePalette(count, null, locked);
     const fresh = candidates.find((h) => !existingHexes.includes(h));
     return fresh || candidates[candidates.length - 1] || '#888888';
   } catch {
@@ -353,7 +332,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     Array(hasSeed ? seedHexes.length : LOADING_PLACEHOLDER.length).fill(false),
   );
   const [paletteBusy, setPaletteBusy] = useState(!hasSeed);
-  const [activeHarmonyId, setActiveHarmonyId] = useState(null);
+  const [paletteMeta, setPaletteMeta] = useState(null);
   const [pickerIdx, setPickerIdx] = useState(null);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveToast, setSaveToast] = useState(null);
@@ -363,11 +342,12 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     let cancelled = false;
     const run = () => {
       try {
-        const next = generatePalette(5, null, null);
+        const { hexes: next, meta } = generatePaletteWithMeta(5, null, null);
         if (cancelled) return;
         startTransition(() => {
           setHexes(next);
           setLocked(Array(next.length).fill(false));
+          setPaletteMeta(meta);
           setPaletteBusy(false);
         });
       } catch {
@@ -422,12 +402,9 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     setLocked(Array(next.length).fill(false));
   }, []);
 
-  // Regenerate — respects locks + active harmony type
-  // Uses a ref snapshot of locked to avoid stale closure in the useState updater
+  // Regenerate — respects locked swatches
   const lockedRef = useRef(locked);
   useEffect(() => { lockedRef.current = locked; }, [locked]);
-  const activeHarmonyRef = useRef(activeHarmonyId);
-  useEffect(() => { activeHarmonyRef.current = activeHarmonyId; }, [activeHarmonyId]);
 
   const doRegenerate = useCallback(() => {
     if (paletteBusy) return;
@@ -439,11 +416,12 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           const lockedColors = prevHexes
             .map((h, i) => (prevLocked[i] ? { hex: h } : null))
             .filter(Boolean);
-          const newHexes = generatePalette(
+          const { hexes: newHexes, meta } = generatePaletteWithMeta(
             prevHexes.length,
-            activeHarmonyRef.current,
+            null,
             lockedColors,
           );
+          setPaletteMeta(meta);
           const merged = prevHexes.map((h, i) => (prevLocked[i] ? h : newHexes[i] ?? newHexes[0]));
           pushHistory(merged);
           return merged;
@@ -478,7 +456,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   // Add a harmony-aware color after `afterIdx`
   const addColor = (afterIdx) => {
     if (hexes.length >= MAX_COLORS) return;
-    const newHex = generateHarmonizedColor(hexes, activeHarmonyId);
+    const newHex = generateHarmonizedColor(hexes);
     setHexes((prev) => {
       const next = [...prev];
       next.splice(afterIdx + 1, 0, newHex);
@@ -524,27 +502,27 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-extralight text-zen-ink/60 hover:text-zen-ink transition-colors"
+          className="type-flow-action hover:text-zen-ink transition-colors"
         >
           <ArrowLeft size={16} strokeWidth={2} aria-hidden />
           上一页
         </button>
-        <span className="font-zenSerif text-base font-medium tracking-tight text-zen-ink">生色</span>
+        <h1 className="type-flow-title">生色</h1>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleSave}
             disabled={saveBusy}
-            className="flex items-center gap-1 text-sm font-extralight text-zen-ink/50 hover:text-zen-ink transition-colors disabled:opacity-40"
+            className="type-flow-action text-zen-ink/50 hover:text-zen-ink transition-colors disabled:opacity-40"
             aria-label="收藏色卡"
           >
             <Bookmark size={16} strokeWidth={2} aria-hidden />
           </button>
           <button
             type="button"
-            onClick={() => onNext?.(hexes)}
+            onClick={() => onNext?.(hexes, generatePaletteTags(hexes, paletteMeta))}
             disabled={paletteBusy}
-            className="flex items-center gap-1.5 text-sm font-extralight text-zen-vermilion hover:opacity-75 transition-opacity disabled:opacity-40"
+            className="type-flow-action text-zen-vermilion hover:opacity-75 transition-opacity disabled:opacity-40"
           >
             下一页
             <ArrowRight size={16} strokeWidth={2} aria-hidden />
@@ -577,9 +555,6 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           />
         ))}
       </div>
-
-      {/* Harmony type chip row */}
-      <HarmonyChipRow activeId={activeHarmonyId} onChange={setActiveHarmonyId} />
 
       {/* Bottom regenerate bar */}
       <div className="shrink-0 border-t border-zen-ink/10 bg-white">

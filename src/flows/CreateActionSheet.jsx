@@ -47,7 +47,7 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
     >
       <div className="w-full max-w-sm rounded-t-3xl bg-white p-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-2xl md:rounded-3xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-zenSerif text-base font-medium tracking-tight">创作</h3>
+          <h3 className="type-h3">创作</h3>
           <button
             type="button"
             onClick={onClose}
@@ -69,7 +69,7 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
               <Sparkles size={20} strokeWidth={2} aria-hidden />
             </div>
             <div>
-              <p className="font-zenSerif text-[15px] font-medium tracking-tight text-zen-ink">生色</p>
+              <p className="type-h4">生色</p>
               <p className="mt-0.5 text-[10px] font-extralight text-zen-ink/50 leading-tight">
                 AI 生成色盘
               </p>
@@ -86,7 +86,7 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
               <Camera size={20} strokeWidth={2} aria-hidden />
             </div>
             <div>
-              <p className="font-zenSerif text-[15px] font-medium tracking-tight text-zen-ink">析色</p>
+              <p className="type-h4">析色</p>
               <p className="mt-0.5 text-[10px] font-extralight text-zen-ink/50 leading-tight">
                 从图片提取色盘
               </p>

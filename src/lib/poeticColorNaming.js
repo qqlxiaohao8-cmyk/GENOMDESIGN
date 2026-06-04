@@ -73,6 +73,29 @@ export function getPoeticColorName(hex) {
   return nearestPoeticEntry(hex).name2;
 }
 
+/** @param {string} [poet] @param {string} [source] */
+export function formatPoeticQuoteSource(poet, source) {
+  const p = String(poet || '').trim();
+  const s = String(source || '').trim();
+  if (p && s) return `${p}《${s}》`;
+  return p || s || '';
+}
+
+/**
+ * 与 hex 绑定的诗句与出处（OKLCH 最近邻诗色条目）
+ * @param {string} hex
+ * @returns {{ zh: string, zhSource: string, en: string, enSource: string }}
+ */
+export function getPoeticQuoteForHex(hex) {
+  const { poem, poet, source } = getPoeticColorEntry(hex);
+  return {
+    zh: poem,
+    zhSource: formatPoeticQuoteSource(poet, source),
+    en: '',
+    enSource: '',
+  };
+}
+
 function pickPreferredTwoChar(item) {
   const raw = item?.name2 ?? item?.name ?? item?.label;
   if (raw == null) return null;

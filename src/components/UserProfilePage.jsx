@@ -23,10 +23,10 @@ export default function UserProfilePage({
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-zen-ink/15 bg-zen-mist">
             <UserPlus size={32} strokeWidth={1.5} className="text-zen-ink/40" />
           </div>
-          <h2 className="font-zenSerif text-xl font-medium tracking-tight text-zen-ink mb-2">
+          <h2 className="type-h2 mb-2">
             登录以解锁更多
           </h2>
-          <p className="text-sm font-extralight leading-relaxed text-zen-ink/55 mb-8">
+          <p className="type-body mb-8 text-zen-ink/55">
             登录后可保存色卡至「藏」、参与逐日观色挑战、发布作品到社区。
           </p>
           <button
@@ -55,14 +55,14 @@ export default function UserProfilePage({
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-zen-ink/30 font-zenSerif text-2xl font-medium">
+                <div className="type-h1 flex h-full w-full items-center justify-center text-zen-ink/30">
                   {name.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <h2 className="truncate font-zenSerif text-lg font-medium text-zen-ink">{name}</h2>
-              <p className="truncate text-xs font-extralight text-zen-ink/50">{email}</p>
+              <h2 className="type-h3 truncate">{name}</h2>
+              <p className="type-caption truncate">{email}</p>
             </div>
           </div>
         </section>
@@ -85,17 +85,17 @@ export default function UserProfilePage({
             <div className="flex-1 p-5">
               <div className="flex items-center gap-2 mb-2">
                 <CalendarSync size={16} strokeWidth={2} className="text-zen-vermilion/80" />
-                <span className="text-[9px] font-extralight uppercase tracking-[0.2em] text-zen-vermilion/80">
+                <span className="type-overline text-zen-vermilion/80">
                   逐日观色
                 </span>
               </div>
-              <p className="font-zenSerif text-base font-medium tracking-tight text-zen-ink mb-1">
+              <p className="type-h4 mb-1">
                 {colorName}
               </p>
-              <p className="font-mono text-xs font-extralight tabular-nums text-zen-ink/60">
+              <p className="type-caption font-mono tabular-nums">
                 {hex.toUpperCase()} · {daily.dateKey}
               </p>
-              <p className="mt-2 text-[10px] font-extralight text-zen-ink/40 group-hover:text-zen-ink/55 transition-colors">
+              <p className="type-note mt-2 group-hover:text-zen-ink/55 transition-colors">
                 点击查看今日色彩详情 →
               </p>
             </div>
@@ -106,13 +106,13 @@ export default function UserProfilePage({
         <section className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-zen-ink/10 bg-zen-paper p-5 text-center">
             <Library size={20} strokeWidth={1.5} className="mx-auto mb-2 text-zen-ink/40" />
-            <p className="font-zenSerif text-2xl font-medium tabular-nums text-zen-ink">{vaultCount}</p>
-            <p className="text-[10px] font-extralight uppercase tracking-[0.15em] text-zen-ink/45 mt-1">已藏色卡</p>
+            <p className="type-stat">{vaultCount}</p>
+            <p className="type-overline mt-1 tracking-[0.15em]">已藏色卡</p>
           </div>
           <div className="rounded-2xl border border-zen-ink/10 bg-zen-paper p-5 text-center">
             <Trophy size={20} strokeWidth={1.5} className="mx-auto mb-2 text-zen-vermilion/70" />
-            <p className="font-zenSerif text-2xl font-medium tabular-nums text-zen-ink">{huntWinDates.length}</p>
-            <p className="text-[10px] font-extralight uppercase tracking-[0.15em] text-zen-ink/45 mt-1">挑战优胜</p>
+            <p className="type-stat">{huntWinDates.length}</p>
+            <p className="type-overline mt-1 tracking-[0.15em]">挑战优胜</p>
           </div>
         </section>
 

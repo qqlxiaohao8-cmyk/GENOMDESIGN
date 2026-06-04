@@ -69,6 +69,7 @@ function fingerprintHexList(hexes) {
 }
 
 /**
+ * 稳定题名（同色卡 hex 组合始终相同）
  * @param {string[]} hexes
  * @returns {string}
  */
@@ -76,4 +77,22 @@ export function palettePoeticTitleFromHexes(hexes) {
   if (!Array.isArray(hexes) || !hexes.length) return '五色成章';
   const idx = fingerprintHexList(hexes) % PALETTE_TITLES.length;
   return PALETTE_TITLES[idx];
+}
+
+/**
+ * 随机题名，可排除当前/最近名称以便多次「生成」得到不同结果
+ * @param {string[]} hexes
+ * @param {string[]} [excludeTitles]
+ * @returns {string}
+ */
+export function randomPalettePoeticTitleFromHexes(hexes, excludeTitles = []) {
+  const exclude = new Set(
+    (Array.isArray(excludeTitles) ? excludeTitles : [])
+      .map((s) => String(s).trim())
+      .filter(Boolean),
+  );
+  let pool = PALETTE_TITLES.filter((t) => !exclude.has(t));
+  if (pool.length === 0) pool = [...PALETTE_TITLES];
+  const idx = Math.floor(Math.random() * pool.length);
+  return pool[idx];
 }

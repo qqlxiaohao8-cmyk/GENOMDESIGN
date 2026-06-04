@@ -1,4 +1,4 @@
-import { pickReadableTextOnHex } from './colorValues';
+import { pickPaletteAccentTextColor, pickReadableTextOnHex } from './colorValues';
 import { getPoeticColorName, uniquePoeticNamesForSwatches } from './poeticColorNaming';
 import sekongLogoUrl from '../../下载色空.png';
 
@@ -39,17 +39,18 @@ function prepareColors(colors) {
 
 const FONT_STACK = '"Songti SC", "STSong", "SimSun", "NSimSun", serif';
 
-function drawVerticalName(ctx, text, cx, topY, fontSize, fillStyle) {
-  const t = String(text || '').trim() || '—';
-  const chars = Array.from(t).slice(0, 4);
+function drawVerticalName(ctx, text, cx, swatchH, fontSize, fillStyle) {
+  const t = String(text || '').trim().replace(/\s/g, '').slice(0, 2) || '—';
+  const chars = Array.from(t);
   if (!chars.length) return;
   ctx.save();
   ctx.fillStyle = fillStyle;
   ctx.font = `500 ${fontSize}px ${FONT_STACK}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  const lineGap = fontSize * 1.15;
-  let y = topY;
+  const lineGap = fontSize * 1.12;
+  const blockH = chars.length * lineGap - (lineGap - fontSize) * 0.12;
+  let y = (swatchH - blockH) / 2;
   for (const ch of chars) {
     ctx.fillText(ch, cx, y);
     y += lineGap;
@@ -58,10 +59,10 @@ function drawVerticalName(ctx, text, cx, topY, fontSize, fillStyle) {
 }
 
 /**
- * 色卡下载模版：上方等宽竖条（数量随用户 2–10 色变化），下方白底 + 色空 logo + 色卡名称。
- * 布局比例固定，仅竖条数量与宽度变化。
+ * 色卡下载模版：上方等宽竖条（竖排二字名居中），下方白底 + 色空 logo。
+ * 布局比例固定，仅竖条数量与宽度变化。title 保留参数兼容调用方，不绘入模版页脚。
  */
-export async function renderSekongPalettePngBlob({ title, colors }) {
+export async function renderSekongPalettePngBlob({ title: _title, colors }) {
   if (typeof document !== 'undefined' && document.fonts?.ready) {
     await document.fonts.ready;
     try {
@@ -74,6 +75,7 @@ export async function renderSekongPalettePngBlob({ title, colors }) {
 
   const list = prepareColors(colors);
   const n = list.length;
+  const hexList = list.map((c) => c.hex);
 
   const W = 1080;
   const swatchH = 480;
@@ -96,40 +98,25 @@ export async function renderSekongPalettePngBlob({ title, colors }) {
     ctx.fillStyle = c.hex;
     ctx.fillRect(x, 0, swatchW, swatchH);
 
-    const fg = pickReadableTextOnHex(c.hex);
-    const fontSize = Math.round(Math.min(32, Math.max(18, swatchW * 0.22)));
-    const labelTop = Math.round(swatchH * 0.06);
-    drawVerticalName(ctx, c.name, x + swatchW / 2, labelTop, fontSize, fg);
+    const fg = pickPaletteAccentTextColor(c.hex, hexList) || pickReadableTextOnHex(c.hex);
+    const fontSize = Math.round(Math.min(36, Math.max(20, swatchW * 0.26)));
+    drawVerticalName(ctx, c.name, x + swatchW / 2, swatchH, fontSize, fg);
   });
 
-  // 页脚：白底 + logo + 色卡名
   const footerY = swatchH;
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, footerY, W, footerH);
 
   const logoImg = await loadImageForExport(sekongLogoUrl);
-  const footerPadX = 36;
-  const logoMaxH = footerH * 0.78;
+  const footerPadX = 40;
+  const footerPadBottom = 20;
+  const logoMaxH = footerH * 0.72;
   const logoScale = logoMaxH / logoImg.naturalHeight;
   const logoW = logoImg.naturalWidth * logoScale;
   const logoH = logoImg.naturalHeight * logoScale;
-  const logoY = footerY + (footerH - logoH) / 2;
-  ctx.drawImage(logoImg, footerPadX, logoY, logoW, logoH);
-
-  const titleText = String(title || '色盘').trim().slice(0, 40) || '色盘';
-  const titleX = footerPadX + logoW + 28;
-  const titleMaxW = W - titleX - footerPadX;
-  ctx.fillStyle = '#1a1a1a';
-  ctx.font = `600 28px ${FONT_STACK}`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  const titleY = footerY + footerH / 2;
-
-  let displayTitle = titleText;
-  while (displayTitle.length > 1 && ctx.measureText(displayTitle).width > titleMaxW) {
-    displayTitle = `${displayTitle.slice(0, -1)}…`;
-  }
-  ctx.fillText(displayTitle, titleX, titleY);
+  const logoX = footerPadX;
+  const logoY = footerY + footerH - footerPadBottom - logoH;
+  ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG export failed.'))), 'image/png', 0.95);

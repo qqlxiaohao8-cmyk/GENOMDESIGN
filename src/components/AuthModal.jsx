@@ -188,7 +188,7 @@ export default function AuthModal({ open, onClose, supabase }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zen-ink/40 backdrop-blur-sm"
+      className="fixed inset-0 z-[260] flex items-center justify-center p-4 bg-zen-ink/40 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="auth-modal-title"
@@ -205,7 +205,7 @@ export default function AuthModal({ open, onClose, supabase }) {
         </button>
 
         <div className="p-8 pt-12">
-          <h2 id="auth-modal-title" className="font-zenSerif text-2xl font-medium tracking-tight text-zen-ink mb-1">
+          <h2 id="auth-modal-title" className="type-h1 mb-1">
             {panel === 'signup' ? 'Create account' : 'Sign in'}
           </h2>
           <p className="text-xs font-extralight text-zen-ink/50 uppercase tracking-[0.2em] mb-6">

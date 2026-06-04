@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ArrowLeft, Download, Link, Send, Loader2, Sparkles, Check } from 'lucide-react';
-import { palettePoeticTitleFromHexes } from '../lib/palettePoeticTitle';
+import { randomPalettePoeticTitleFromHexes } from '../lib/palettePoeticTitle';
 import SekongPaletteSharePreview from '../components/SekongPaletteSharePreview';
 
 /**
@@ -14,39 +14,61 @@ export default function PublishPreviewPage({
   onPublish,
   onDownload,
   onCopyLink,
+  onOpenAuth,
+  /** 'colorSea' | 'dailyOneColor' */
+  publishTarget = 'colorSea',
 }) {
-  const { hexes = [], imageDataUrl } = flow;
+  const { hexes = [], imageDataUrl, tags: flowTags = [] } = flow;
+  const isDailySubmit = publishTarget === 'dailyOneColor';
+  const paletteTags = Array.isArray(flowTags) ? flowTags : [];
   const [title, setTitle] = useState('');
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState(null);
   const [publishedId, setPublishedId] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const recentTitlesRef = useRef([]);
+  const titleInputRef = useRef(null);
 
   const safeColors = hexes.slice(0, 10);
 
+  const promptLogin = () => {
+    titleInputRef.current?.blur();
+    onOpenAuth?.();
+    return false;
+  };
+
+  const requireAuth = () => (user ? true : promptLogin());
+
   const generateTitle = () => {
+    if (!requireAuth()) return;
     setGeneratingTitle(true);
     try {
-      const t = palettePoeticTitleFromHexes(hexes);
-      if (t) setTitle(t);
+      const exclude = [
+        ...new Set([
+          title.trim(),
+          ...recentTitlesRef.current,
+        ].filter(Boolean)),
+      ];
+      const t = randomPalettePoeticTitleFromHexes(hexes, exclude);
+      if (t) {
+        setTitle(t);
+        recentTitlesRef.current = [...recentTitlesRef.current, t].slice(-15);
+      }
     } catch { /* ignore */ }
     setGeneratingTitle(false);
   };
 
   const handlePublish = async () => {
+    if (!requireAuth()) return;
     if (!title.trim()) {
       setPublishError('请先填写或生成色卡名称。');
-      return;
-    }
-    if (!user) {
-      setPublishError('请先登录再发布。');
       return;
     }
     setPublishing(true);
     setPublishError(null);
     try {
-      const res = await onPublish({ title: title.trim(), hexes, imageDataUrl });
+      const res = await onPublish({ title: title.trim(), hexes, imageDataUrl, tags: paletteTags });
       if (res?.ok) {
         setPublishedId(res.id);
       } else {
@@ -63,7 +85,7 @@ export default function PublishPreviewPage({
     if (publishedId) {
       onCopyLink?.(publishedId);
     } else {
-      setPublishError('请先发布色卡，再拷贝链接。');
+      setPublishError(isDailySubmit ? '每日一色投稿暂无公开链接。' : '请先发布色卡，再拷贝链接。');
       return;
     }
     setLinkCopied(true);
@@ -77,17 +99,19 @@ export default function PublishPreviewPage({
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-extralight text-zen-ink/60 hover:text-zen-ink transition-colors"
+          className="type-flow-action hover:text-zen-ink transition-colors"
         >
           <ArrowLeft size={16} strokeWidth={2} aria-hidden />
           上一页
         </button>
-        <span className="font-zenSerif text-base font-medium tracking-tight text-zen-ink">预览 · 发布</span>
+        <h1 className="type-flow-title">
+          {isDailySubmit ? '预览 · 投稿' : '预览 · 发布'}
+        </h1>
         <button
           type="button"
           onClick={handlePublish}
-          disabled={publishing || !user || !!publishedId}
-          className={`flex items-center gap-1.5 text-sm font-extralight transition-opacity disabled:opacity-40 ${publishedId ? 'text-green-600' : 'text-zen-vermilion hover:opacity-75'}`}
+          disabled={publishing || !!publishedId}
+          className={`type-flow-action flex items-center gap-1.5 transition-opacity disabled:opacity-40 ${publishedId ? 'text-green-600' : 'text-zen-vermilion hover:opacity-75'}`}
         >
           {publishing ? (
             <Loader2 size={15} strokeWidth={2} className="animate-spin" />
@@ -96,54 +120,83 @@ export default function PublishPreviewPage({
           ) : (
             <Send size={15} strokeWidth={2} />
           )}
-          {publishedId ? '已发布' : '发布到色海'}
+          {publishedId
+            ? (isDailySubmit ? '已投稿' : '已发布')
+            : (isDailySubmit ? '投稿到每日一色' : '发布到色海')}
         </button>
       </div>
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-sm px-4 py-6 space-y-5">
-          {/* 下载模版预览（与导出 PNG 一致） */}
+        <div className="mx-auto w-full max-w-2xl px-4 py-6 space-y-5 md:px-6">
+          {/* 下载模版预览（与导出 PNG 一致，桌面/移动端放大） */}
           <SekongPaletteSharePreview
             colors={safeColors}
-            title={title || '色盘'}
-            className="shadow-md"
+            className="w-full shadow-md"
           />
 
           {/* Title input */}
           <div>
-            <label className="mb-1.5 block text-[11px] font-extralight uppercase tracking-widest text-zen-ink/40">
+            <label className="type-overline mb-1.5 block">
               色卡名称
             </label>
             <div className="flex gap-2">
               <input
+                ref={titleInputRef}
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value.slice(0, 28))}
-                placeholder={user ? '命名你的色卡…' : '登录后命名'}
-                disabled={!user}
+                readOnly={!user}
+                onChange={(e) => {
+                  if (!user) return;
+                  setTitle(e.target.value.slice(0, 28));
+                }}
+                onFocus={() => {
+                  if (!user) promptLogin();
+                }}
+                onClick={() => {
+                  if (!user) promptLogin();
+                }}
+                placeholder={user ? '命名你的色卡…' : '点击登录后命名'}
                 maxLength={28}
-                className="flex-1 rounded-xl border border-zen-ink/15 bg-zen-mist/20 px-3 py-2.5 text-[13px] font-extralight text-zen-ink placeholder:text-zen-ink/30 focus:border-zen-ink/30 focus:outline-none disabled:opacity-40"
+                className={`type-body-sm flex-1 rounded-xl border border-zen-ink/15 bg-zen-mist/20 px-3 py-2.5 text-zen-ink placeholder:text-zen-ink/30 focus:border-zen-ink/30 focus:outline-none ${!user ? 'cursor-pointer' : ''}`}
               />
-              {user && (
-                <button
-                  type="button"
-                  onClick={generateTitle}
-                  disabled={generatingTitle}
-                  className="flex items-center gap-1 rounded-xl border border-zen-ink/15 px-3 py-2.5 text-[11px] font-extralight text-zen-ink/60 hover:bg-zen-ink/[0.04] disabled:opacity-40 transition-colors"
-                  aria-label="AI 生成名称"
-                >
-                  {generatingTitle
-                    ? <Loader2 size={13} strokeWidth={2} className="animate-spin" />
-                    : <Sparkles size={13} strokeWidth={2} />}
-                  <span className="hidden sm:inline">生成</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={generateTitle}
+                disabled={generatingTitle}
+                className="flex items-center gap-1 rounded-xl border border-zen-ink/15 px-3 py-2.5 text-[11px] font-extralight text-zen-ink/60 hover:bg-zen-ink/[0.04] disabled:opacity-40 transition-colors"
+                aria-label="生成名称，可多次点击换名"
+                title={user ? '可多次生成，直到满意' : '登录后生成名称'}
+              >
+                {generatingTitle
+                  ? <Loader2 size={13} strokeWidth={2} className="animate-spin" />
+                  : <Sparkles size={13} strokeWidth={2} />}
+                <span className="hidden sm:inline">生成</span>
+              </button>
             </div>
           </div>
 
+          {/* Palette tags */}
+          {paletteTags.length > 0 && (
+            <div>
+              <p className="type-overline mb-2">
+                色卡标签
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {paletteTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-zen-ink/15 px-2.5 py-1 text-[11px] font-extralight text-zen-ink/60"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {publishError && (
-            <p className="rounded-xl bg-red-50 px-3 py-2.5 text-[12px] font-extralight text-red-500">
+            <p className="type-body-sm rounded-xl bg-red-50 px-3 py-2.5 text-red-500">
               {publishError}
             </p>
           )}
@@ -171,8 +224,10 @@ export default function PublishPreviewPage({
           </div>
 
           {!user && (
-            <p className="text-center text-[11px] font-extralight text-zen-ink/40">
-              登录后可命名色卡并发布到色海。
+            <p className="type-note text-center">
+              {isDailySubmit
+                ? '登录后可命名并投稿到每日一色投票池。'
+                : '登录后可命名色卡并发布到色海。'}
             </p>
           )}
         </div>

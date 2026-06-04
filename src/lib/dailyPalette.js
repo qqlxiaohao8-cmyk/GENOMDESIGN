@@ -1,5 +1,5 @@
 import { enrichSwatch } from './colorValues';
-import { pickFunNameForHex } from './randomInspiration';
+import { getPoeticColorName, getPoeticQuoteForHex } from './poeticColorNaming';
 import { wrapHueDeg, lchToHexClamped } from './oklch.js';
 
 /** How many past calendar days of GENOM Daily cards appear in Community (inclusive of today). */
@@ -469,10 +469,10 @@ export function getDailyPalette(date = new Date()) {
   const dateKey = formatDailyPaletteDateKey(date);
   const pick = pickThemeKey(date);
   const hex = dailyHexFromDateKey(dateKey);
-  const name = pickFunNameForHex(hex);
-  const quote = quoteForDailySwatch(hex, date, pick);
+  const name = getPoeticColorName(hex);
+  const quote = getPoeticQuoteForHex(hex);
   const title = name;
-  const overview = `「${name}」— 今日逐日观色 · ${hex}`;
+  const overview = `「${name}」· ${quote.zh} — 今日逐日观色 · ${hex}`;
 
   const keywords = ['GENOM Daily', '逐日观色', name, hex, dateKey];
   if (pick.type === 'holiday') keywords.push('节日');
@@ -490,6 +490,30 @@ export function getDailyPalette(date = new Date()) {
     keywords,
     quote,
   };
+}
+
+/**
+ * 今日一色挑战用：颜色名、hex、诗句、日期键
+ * @param {Date} [date]
+ */
+export function getTodayColor(date = new Date()) {
+  const p = getDailyPalette(date);
+  const swatch = p.colors[0];
+  const quote = p.quote;
+  return {
+    hex: swatch.hex,
+    name: swatch.name,
+    quote,
+    poem: quote?.zh ?? '',
+    poet: quote?.zhSource ?? '',
+    dateKey: p.dateKey,
+  };
+}
+
+/** 从 GMT+8 dateKey 构造用于 getDailyPalette 的 Date */
+export function dateFromDailyPaletteKey(dateKey) {
+  const [yy, mm, dd] = String(dateKey).split('-').map((n) => parseInt(n, 10));
+  return new Date(Date.UTC(yy, mm - 1, dd, 4, 0, 0));
 }
 
 /** SVG gradient data URL for vault/card previews */

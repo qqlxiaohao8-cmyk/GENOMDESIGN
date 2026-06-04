@@ -325,10 +325,66 @@
   .btn-art::after { animation: none !important; }
 }
 
+/* ── 全站排版层级（一级标题 → 备注）──────────────────────────────────── */
+@layer components {
+  /** 一级：页面主标题 */
+  .type-h1 {
+    @apply font-zenSerif text-2xl font-medium tracking-tight text-zen-ink md:text-[1.75rem];
+  }
+  /** 二级：区块 / 模块标题 */
+  .type-h2 {
+    @apply font-zenSerif text-xl font-medium tracking-tight text-zen-ink;
+  }
+  /** 三级：子区块、空态标题 */
+  .type-h3 {
+    @apply font-zenSerif text-lg font-medium tracking-tight text-zen-ink;
+  }
+  /** 四级：弹层 / 全屏流顶部标题、卡片内主标题 */
+  .type-h4 {
+    @apply font-zenSerif text-base font-medium tracking-tight text-zen-ink;
+  }
+  /** 正文 */
+  .type-body {
+    @apply text-sm font-extralight leading-relaxed text-zen-ink;
+  }
+  /** 略小正文（表单、列表说明） */
+  .type-body-sm {
+    @apply text-[13px] font-extralight leading-relaxed text-zen-ink;
+  }
+  /** 辅助说明（11px） */
+  .type-caption {
+    @apply text-[11px] font-extralight tracking-wide text-zen-ink/50;
+  }
+  /** 备注 / 提示（11px，略淡） */
+  .type-note {
+    @apply text-[11px] font-extralight leading-relaxed text-zen-ink/45;
+  }
+  /** 顶栏眉题（每日一色、排序等） */
+  .type-overline {
+    @apply text-[10px] font-extralight uppercase tracking-widest text-zen-ink/40;
+  }
+  /** 全屏流程顶栏标题（析色 / 生色 / 预览） */
+  .type-flow-title {
+    @apply font-zenSerif text-base font-medium tracking-tight text-zen-ink;
+  }
+  /** 顶栏返回 / 下一步 */
+  .type-flow-action {
+    @apply text-sm font-extralight text-zen-ink/60;
+  }
+  /** 强调数字（票数、统计） */
+  .type-stat {
+    @apply font-zenSerif text-2xl font-medium tabular-nums text-zen-ink;
+  }
+  /** 极小 UI（滑条端点、色块数量） */
+  .type-micro {
+    @apply text-[9px] font-extralight text-zen-ink/30;
+  }
+}
+
 /* design.json — Zen minimalist tokens as Tailwind @layer components */
 @layer components {
   .zen-eyebrow {
-    @apply text-[10px] font-extralight uppercase tracking-[0.35em] text-zen-ink/45;
+    @apply type-overline tracking-[0.35em] text-zen-ink/45;
   }
   .zen-panel {
     @apply rounded-2xl border border-zen-ink/10 bg-zen-paper shadow-none;
@@ -337,7 +393,7 @@
     @apply relative w-full max-w-md overflow-hidden rounded-2xl border border-zen-ink/10 bg-zen-mist shadow-none max-h-[90vh] overflow-y-auto;
   }
   .zen-input {
-    @apply w-full rounded-full border border-zen-ink/15 bg-white px-4 py-3 text-sm font-extralight text-zen-ink placeholder:text-zen-ink/35 transition-colors duration-[2000ms] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40 focus:border-zen-ink/25 focus:bg-white;
+    @apply type-body-sm w-full rounded-full border border-zen-ink/15 bg-white px-4 py-3 text-zen-ink placeholder:text-zen-ink/35 transition-colors duration-[2000ms] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40 focus:border-zen-ink/25 focus:bg-white;
   }
   .zen-btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-zen-ink/20 bg-zen-ink px-5 py-3 text-[10px] font-extralight uppercase tracking-[0.2em] text-white transition-opacity duration-[2000ms] ease-out hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/50 disabled:pointer-events-none disabled:opacity-40;
@@ -349,7 +405,7 @@
     @apply inline-flex items-center justify-center gap-2 rounded-full border border-zen-vermilion/30 bg-zen-vermilion px-5 py-3 text-[10px] font-extralight uppercase tracking-[0.2em] text-white transition-opacity duration-[2000ms] hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/50 disabled:pointer-events-none disabled:opacity-40;
   }
   .zen-micro-label {
-    @apply text-[10px] font-extralight uppercase tracking-[0.2em] text-zen-ink/45;
+    @apply type-overline tracking-[0.2em] text-zen-ink/45;
   }
   .zen-section-title {
     @apply text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion;

@@ -10,6 +10,7 @@ import { itemColorCardData } from './components/StyleUiPreviewCard';
 import FavoritesPage from './pages/FavoritesPage';
 import ColorSeaPage from './pages/ColorSeaPage';
 import GamePage from './pages/GamePage';
+import DailyOneColorPage from './pages/DailyOneColorPage';
 import ProfilePage from './pages/ProfilePage';
 import ProfileOnboardingPage from './pages/ProfileOnboardingPage';
 import { needsProfileOnboarding } from './lib/profileOnboarding';
@@ -19,6 +20,8 @@ import CreateActionSheet from './flows/CreateActionSheet';
 import ExtractEditorPage from './flows/ExtractEditorPage';
 import ShengSePage from './flows/ShengSePage';
 import PublishPreviewPage from './flows/PublishPreviewPage';
+import PaletteAnalysisPage from './flows/PaletteAnalysisPage';
+import DailyChallengePage from './flows/DailyChallengePage';
 import LandingPage from './components/LandingPage';
 
 import { normalizeHex } from './lib/randomInspiration';
@@ -36,10 +39,10 @@ export default function App() {
   const app = useColorApp();
   const {
     user, session, authReady, recoveryMode, setRecoveryMode, signOut, supabase,
-    colorPaletteExploreFeed, vaultColorPaletteItems, likedStyleIds, communityLikeBusyId,
+    colorPaletteExploreFeed, vaultColorPaletteItems, favoritedExploreStyleIds, vaultFavoriteBusyId,
     communityTagList, bumpTagClick,
-    toggleCommunityLike, persistColorCardVaultRow, deleteVaultItem,
-    publishColorCard, downloadColorCardPng, copyShareLink,
+    toggleVaultFavoriteFromExplore, persistColorCardVaultRow, deleteVaultItem, removeFromVault,
+    publishColorCard, publishDailyPaletteCard, downloadColorCardPng, copyShareLink,
     flowStack, pushFlow, popFlow, clearFlows,
   } = app;
 
@@ -99,6 +102,10 @@ export default function App() {
 
   // ── Tab change helper ─────────────────────────────────────────────────
   const handleTabChange = (key) => {
+    if (key === 'favorites' && !user) {
+      setAuthModalOpen(true);
+      return;
+    }
     setActiveTab(key);
     requestAnimationFrame(() => mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   };
@@ -111,6 +118,11 @@ export default function App() {
 
   const openExtract = (imageDataUrl) => {
     pushFlow({ type: 'extract', imageDataUrl, source: 'fab' });
+  };
+
+  const openPaletteAnalysis = (vaultItem) => {
+    if (!vaultItem?.id) return;
+    pushFlow({ type: 'paletteAnalysis', itemId: vaultItem.id });
   };
 
   const currentFlow = flowStack[flowStack.length - 1] ?? null;
@@ -136,9 +148,9 @@ export default function App() {
         <ShengSePage
           flow={currentFlow}
           onBack={popFlow}
-          onNext={(hexes) => {
+          onNext={(hexes, tags) => {
             const imageDataUrl = currentFlow.imageDataUrl || PLACEHOLDER_IMAGE;
-            pushFlow({ type: 'publish', hexes, imageDataUrl, source: currentFlow.source });
+            pushFlow({ type: 'publish', hexes, tags: tags || [], imageDataUrl, source: currentFlow.source });
           }}
           onSaveToFavorites={async (hexes) => {
             if (!user) { setAuthModalOpen(true); return; }
@@ -149,18 +161,64 @@ export default function App() {
       );
     }
 
+    if (currentFlow.type === 'dailyChallenge') {
+      return (
+        <DailyChallengePage
+          flow={currentFlow}
+          onBack={popFlow}
+          onNext={(hexes, tags) => {
+            pushFlow({
+              type: 'publish',
+              hexes,
+              tags: tags || [],
+              imageDataUrl: PLACEHOLDER_IMAGE,
+              source: 'dailyChallenge',
+              dailyData: currentFlow.dailyData,
+            });
+          }}
+        />
+      );
+    }
+
+    if (currentFlow.type === 'paletteAnalysis') {
+      const item = vaultColorPaletteItems.find((i) => i.id === currentFlow.itemId);
+      if (!item) {
+        popFlow();
+        return null;
+      }
+      return (
+        <PaletteAnalysisPage
+          item={item}
+          exploreFeed={colorPaletteExploreFeed}
+          onBack={popFlow}
+          onUnfavorite={() => removeFromVault(item.id)}
+        />
+      );
+    }
+
     if (currentFlow.type === 'publish') {
+      const isDailySubmit = currentFlow.source === 'dailyChallenge';
       return (
         <PublishPreviewPage
           flow={currentFlow}
           user={user}
+          publishTarget={isDailySubmit ? 'dailyOneColor' : 'colorSea'}
           onBack={popFlow}
-          onPublish={async ({ title, hexes, imageDataUrl }) => {
+          onOpenAuth={() => setAuthModalOpen(true)}
+          onPublish={async ({ title, hexes, imageDataUrl, tags }) => {
             if (!user) { setAuthModalOpen(true); return { ok: false, error: '请先登录。' }; }
-            const res = await publishColorCard({ title, hexes, imageDataUrl });
+            const res = isDailySubmit
+              ? await publishDailyPaletteCard({
+                  title,
+                  hexes,
+                  imageDataUrl,
+                  tags,
+                  dailyAnchorHex: currentFlow.dailyData?.hex,
+                })
+              : await publishColorCard({ title, hexes, imageDataUrl, tags });
             if (res.ok) {
               clearFlows();
-              handleTabChange('colorSea');
+              handleTabChange(isDailySubmit ? 'dailyOneColor' : 'colorSea');
             }
             return res;
           }}
@@ -183,9 +241,10 @@ export default function App() {
             authReady={authReady}
             vaultColorPaletteItems={vaultColorPaletteItems}
             onOpenAuth={() => setAuthModalOpen(true)}
-            onDeleteItem={(id) => deleteVaultItem(id)}
+            onDeleteItem={(id) => removeFromVault(id)}
             onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
+            onAnalyzePalette={openPaletteAnalysis}
           />
         );
       case 'colorSea':
@@ -193,18 +252,37 @@ export default function App() {
           <ColorSeaPage
             user={user}
             colorPaletteExploreFeed={colorPaletteExploreFeed}
-            likedStyleIds={likedStyleIds}
-            communityLikeBusyId={communityLikeBusyId}
+            favoritedExploreStyleIds={favoritedExploreStyleIds}
+            vaultFavoriteBusyId={vaultFavoriteBusyId}
             communityTagList={communityTagList}
-            onToggleLike={(id) => toggleCommunityLike(id)}
+            onTagClick={bumpTagClick}
+            onToggleFavorite={(item) => toggleVaultFavoriteFromExplore(item)}
             onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onCopyLink={(id) => copyShareLink(id)}
             onOpenAuth={() => setAuthModalOpen(true)}
           />
         );
+      case 'dailyOneColor':
+        return (
+          <DailyOneColorPage
+            user={user}
+            supabase={supabase}
+            onOpenAuth={() => setAuthModalOpen(true)}
+            onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
+            onDownload={(colors, title) => downloadColorCardPng(colors, title)}
+            onBackToGame={() => handleTabChange('game')}
+          />
+        );
       case 'game':
-        return <GamePage />;
+        return (
+          <GamePage
+            onStartChallenge={(dailyData) => {
+              pushFlow({ type: 'dailyChallenge', dailyData, source: 'game' });
+            }}
+            onOpenDailyPool={() => handleTabChange('dailyOneColor')}
+          />
+        );
       case 'profile':
         return (
           <ProfilePage
@@ -232,6 +310,17 @@ export default function App() {
           setProfileSetupDone(true);
           handleTabChange('profile');
         }}
+      />
+    )}
+    <AuthModal
+      open={authModalOpen}
+      onClose={() => setAuthModalOpen(false)}
+      supabase={supabase}
+    />
+    {recoveryMode && supabase && (
+      <SetPasswordModal
+        supabase={supabase}
+        onClose={() => setRecoveryMode(false)}
       />
     )}
     <div
@@ -288,18 +377,6 @@ export default function App() {
         />
       )}
 
-      {/* ── Auth modals ── */}
-      <AuthModal
-        open={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        supabase={supabase}
-      />
-      {recoveryMode && supabase && (
-        <SetPasswordModal
-          supabase={supabase}
-          onClose={() => setRecoveryMode(false)}
-        />
-      )}
     </div>
     </>
   );

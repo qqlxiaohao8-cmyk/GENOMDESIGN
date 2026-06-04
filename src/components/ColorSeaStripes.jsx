@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
-import { pickReadableTextOnHex } from '../lib/colorValues';
+import React, { useMemo, useState } from 'react';
+import { pickPaletteAccentTextColor } from '../lib/colorValues';
+import { getPoeticColorName } from '../lib/poeticColorNaming';
 
-const FLEX_EASE = 'cubic-bezier(0.33, 1, 0.68, 1)';
-const FLEX_MS = 320;
+function normalizeHex(hex) {
+  const s = String(hex || '').trim().replace(/^#/, '');
+  if (!/^[0-9a-fA-F]{6}$/.test(s)) return '#888888';
+  return `#${s.toUpperCase()}`;
+}
+
+function stripeLabel(c) {
+  const raw = (c?.name && String(c.name).trim()) || getPoeticColorName(c?.hex);
+  return String(raw).replace(/\s/g, '').slice(0, 2);
+}
+
+/** 色海 / 收藏 feed 统一色条高度（列宽变化时高度不变） */
+export const PALETTE_FEED_STRIPE_HEIGHT_CLASS =
+  'h-[5.5rem] min-h-[5.5rem] max-h-[5.5rem]';
 
 /**
- * 色海专用五列色带：无表面色名；悬停时该列略展宽、中央显示 HEX（无 #）；点击复制 HEX。
+ * 色海色卡条：无描边、等宽竖条；桌面悬停单列显示竖排二字名（字色取自色卡内其他色）。
  */
 export default function ColorSeaStripes({
   colors,
@@ -16,59 +29,65 @@ export default function ColorSeaStripes({
 }) {
   const [hovered, setHovered] = useState(null);
 
-  const list = Array.isArray(colors) ? colors.slice(0, 5) : [];
-  while (list.length < 5) {
-    list.push({ hex: '#888888', name: '—' });
-  }
+  const list = useMemo(() => {
+    const row = Array.isArray(colors) ? colors.slice(0, 10) : [];
+    if (row.length >= 2) return row;
+    return [{ hex: '#D4C5B0', name: '素灰' }, { hex: '#8A7560', name: '褐石' }];
+  }, [colors]);
 
+  const hexList = useMemo(() => list.map((c) => normalizeHex(c.hex)), [list]);
   const scopePrefix = hexCopyScope ? `${hexCopyScope}:` : '';
 
   return (
     <div
-      className={`flex w-full min-h-[140px] max-h-[min(38vw,260px)] sm:max-h-[280px] aspect-[5/3] overflow-hidden rounded-xl border border-black/[0.06] ${className}`}
+      className={`flex w-full overflow-hidden rounded-2xl ${PALETTE_FEED_STRIPE_HEIGHT_CLASS} ${className}`}
       onMouseLeave={() => setHovered(null)}
     >
       {list.map((c, i) => {
-        const hex = typeof c.hex === 'string' ? c.hex : '#888888';
+        const hex = normalizeHex(c.hex);
         const copyKey = `${scopePrefix}${hex}-${i}`;
-        const labelColor = pickReadableTextOnHex(hex);
-        const hexPlain = String(hex).replace(/^#/, '').toUpperCase();
-        const isHover = hovered === i;
-        const grow = hovered == null ? 1 : isHover ? 3.55 : 0.88;
+        const name = stripeLabel(c);
+        const textColor = pickPaletteAccentTextColor(hex, hexList);
+        const showName = hovered === i;
+
+        const Tag = onCopyHex ? 'button' : 'div';
 
         return (
-          <button
+          <Tag
             key={copyKey}
-            type="button"
+            {...(onCopyHex
+              ? {
+                  type: 'button',
+                  onClick: (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCopyHex(hex, copyKey);
+                  },
+                }
+              : {})}
             onMouseEnter={() => setHovered(i)}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onCopyHex?.(hex, copyKey);
-            }}
-            title={String(hex).toUpperCase()}
-            className={`relative min-h-0 min-w-0 border-0 p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/25 focus-visible:z-10 ${
-              hovered == null ? 'cursor-pointer transition-[filter] duration-200 hover:brightness-[0.97]' : 'cursor-pointer'
-            } ${isHover ? 'z-[2] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]' : ''}`}
-            style={{
-              backgroundColor: hex,
-              flexGrow: grow,
-              flexShrink: 1,
-              flexBasis: 0,
-              transition: `flex-grow ${FLEX_MS}ms ${FLEX_EASE}, flex-shrink ${FLEX_MS}ms ${FLEX_EASE}, filter 200ms ease`,
-            }}
-            aria-label={`复制 ${hex.toUpperCase()}`}
+            className="relative min-h-0 min-w-0 flex-1 border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 focus-visible:z-10"
+            style={{ backgroundColor: hex }}
+            aria-label={onCopyHex ? `复制 ${hex}` : undefined}
           >
-            {isHover ? (
+            <span
+              className={`pointer-events-none absolute inset-x-0 top-[18%] bottom-[28%] hidden md:flex items-center justify-center transition-opacity duration-200 ease-out ${
+                showName ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ color: textColor }}
+              aria-hidden={!showName}
+            >
               <span
-                className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center px-1 text-[11px] font-mono font-semibold tabular-nums tracking-wide sm:text-xs"
-                style={{ color: labelColor }}
+                className="font-zenSans text-[clamp(13px,2.8vw,17px)] font-medium leading-none tracking-[0.14em]"
+                style={{ writingMode: 'vertical-rl', textOrientation: 'upright' }}
               >
-                {hexPlain}
+                {name}
               </span>
+            </span>
+            {onCopyHex ? (
+              <span className="sr-only">{copiedHexKey === copyKey ? '已复制' : ''}</span>
             ) : null}
-            <span className="sr-only">{copiedHexKey === copyKey ? '已复制' : ''}</span>
-          </button>
+          </Tag>
         );
       })}
     </div>

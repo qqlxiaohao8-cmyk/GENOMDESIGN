@@ -7,6 +7,7 @@ import {
   sampleHexAtNormalizedPoint,
   findNormalizedPointsForHexes,
   sampleSweepPaletteFromDataUrl,
+  pickDiverseSampleFromDataUrl,
 } from '../lib/dominantColors';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 
@@ -216,14 +217,8 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
 
   const addColor = async () => {
     if (hexes.length >= 10 || !imageDataUrl) return;
-    const t = sliderValue / 100;
-    const n = hexes.length + 1;
-    const along = n > 1 ? hexes.length / (n - 1) : 0.5;
-    const spread = (along - 0.5) * 0.9;
-    const nx = clamp(0.12 + t * 0.76 + spread * 0.38, 0.05, 0.95);
-    const ny = clamp(0.12 + t * 0.76 - spread * 0.38, 0.05, 0.95);
     try {
-      const hex = await sampleHexAtNormalizedPoint(imageDataUrl, nx, ny);
+      const { hex, nx, ny } = await pickDiverseSampleFromDataUrl(imageDataUrl, hexes);
       setHexes((prev) => [...prev, hex]);
       setSamplePoints((prev) => [...prev, { nx, ny }]);
       setSelectedIdx(hexes.length);
@@ -246,7 +241,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
     return (
       <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper">
         <Loader2 size={32} strokeWidth={1.5} className="animate-spin text-zen-ink/40 mb-3" />
-        <p className="text-sm font-extralight text-zen-ink/50">正在析色…</p>
+        <p className="type-body text-zen-ink/50">正在析色…</p>
       </div>
     );
   }
@@ -254,8 +249,8 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
   if (error) {
     return (
       <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper p-6">
-        <p className="mb-4 text-center text-sm font-extralight text-zen-ink/60">{error}</p>
-        <button type="button" onClick={onBack} className="rounded-full border border-zen-ink/15 px-6 py-2.5 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors">
+        <p className="type-body mb-4 text-center text-zen-ink/60">{error}</p>
+        <button type="button" onClick={onBack} className="type-body-sm rounded-full border border-zen-ink/15 px-6 py-2.5 text-zen-ink hover:bg-zen-ink/[0.04] transition-colors">
           返回
         </button>
       </div>
@@ -272,16 +267,16 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm font-extralight text-zen-ink/60 hover:text-zen-ink transition-colors"
+          className="type-flow-action hover:text-zen-ink transition-colors"
         >
           <ArrowLeft size={16} strokeWidth={2} aria-hidden />
           返回
         </button>
-        <span className="font-zenSerif text-base font-medium tracking-tight text-zen-ink">析色</span>
+        <h1 className="type-flow-title">析色</h1>
         <button
           type="button"
           onClick={() => onContinue(hexes)}
-          className="flex items-center gap-1.5 text-sm font-extralight text-zen-vermilion hover:opacity-75 transition-opacity"
+          className="type-flow-action text-zen-vermilion hover:opacity-75 transition-opacity"
         >
           继续
           <ArrowRight size={16} strokeWidth={2} aria-hidden />
@@ -365,7 +360,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
             </div>
           </div>
           {activeName && (
-            <p className="mt-2 text-center text-[11px] font-extralight tracking-wide text-zen-ink/45">
+            <p className="type-caption mt-2 text-center">
               {activeName}
             </p>
           )}
@@ -382,7 +377,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
             >
               <Minus size={13} strokeWidth={2} aria-hidden />
             </button>
-            <span className="text-[11px] font-extralight text-zen-ink/40">{hexes.length} 色</span>
+            <span className="type-caption">{hexes.length} 色</span>
             <button
               type="button"
               onClick={addColor}
@@ -395,7 +390,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
           </div>
 
           <div className="ml-4 flex min-w-0 flex-1 items-center gap-2">
-            <span className="shrink-0 text-[9px] font-extralight text-zen-ink/30">←</span>
+            <span className="type-micro shrink-0">←</span>
             <input
               type="range"
               min={0}
@@ -405,10 +400,10 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
               className="min-w-0 flex-1 accent-zen-ink"
               aria-label="扫描图像色彩"
             />
-            <span className="shrink-0 text-[9px] font-extralight text-zen-ink/30">→</span>
+            <span className="type-micro shrink-0">→</span>
           </div>
         </div>
-        <p className="pb-3 text-center text-[9px] font-extralight tracking-wide text-zen-ink/25">
+        <p className="type-note pb-3 text-center text-zen-ink/25">
           点击色块切换 · 拖动或点击图片上的圆圈取色 · 滑动扫描另一组色彩
         </p>
       </div>

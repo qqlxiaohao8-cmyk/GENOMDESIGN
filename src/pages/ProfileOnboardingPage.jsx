@@ -63,16 +63,16 @@ export default function ProfileOnboardingPage({ user, supabase, onComplete }) {
     <div className="fixed inset-0 z-[250] flex flex-col overflow-y-auto bg-zen-paper">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] pt-[max(2.5rem,env(safe-area-inset-top,0px))]">
         <header className="mb-8 text-center">
-          <p className="text-[11px] font-extralight uppercase tracking-[0.35em] text-zen-ink/35">
+          <p className="type-overline tracking-[0.35em] text-zen-ink/35">
             欢迎来到色空
           </p>
           <h1
-            className={`mt-3 font-medium tracking-tight text-zen-ink ${activeFont.tailwindClass}`}
+            className={`type-h1 mt-3 ${activeFont.tailwindClass}`}
             style={{ fontFamily: activeFont.cssFamily }}
           >
             设置你的色彩身份
           </h1>
-          <p className="mt-2 text-[13px] font-extralight leading-relaxed text-zen-ink/50">
+          <p className="type-body-sm mt-2 text-zen-ink/50">
             选择代表色与字体，它们会出现在你的个人页与全站阅读体验中。
           </p>
         </header>

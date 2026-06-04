@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react';
-import { formatDailyPaletteDateKey } from '../lib/dailyPalette';
+import { dateFromDailyPaletteKey, formatDailyPaletteDateKey } from '../lib/dailyPalette';
 
-/** Bumps when the local calendar date changes (next midnight + visibility sync). */
+/** Bumps at GMT+8 (Asia/Shanghai) midnight — 与逐日观色 / 每日一色一致 */
 export function useCalendarDateKey() {
   const [dateKey, setDateKey] = useState(() => formatDailyPaletteDateKey());
 
   useEffect(() => {
     const tick = () => setDateKey(formatDailyPaletteDateKey());
 
-    const msToNextLocalMidnight = () => {
-      const n = new Date();
-      const next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 0, 0);
-      return Math.max(1, next.getTime() - n.getTime());
+    const msToNextGmt8Midnight = () => {
+      const key = formatDailyPaletteDateKey();
+      const dayStart = dateFromDailyPaletteKey(key);
+      const next = dayStart.getTime() + 86_400_000;
+      return Math.max(1, next - Date.now());
     };
 
     let intervalId;
     const timeoutId = window.setTimeout(() => {
       tick();
       intervalId = window.setInterval(tick, 86_400_000);
-    }, msToNextLocalMidnight());
+    }, msToNextGmt8Midnight());
 
     const onVis = () => {
       if (document.visibilityState === 'visible') tick();
