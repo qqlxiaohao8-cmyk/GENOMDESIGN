@@ -1,6 +1,7 @@
 import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import ExtractedStyleUiPreview from './ExtractedStyleUiPreview';
 import ColorCardLayout from './ColorCardLayout';
+import { enrichColorsWithChineseNames } from '../lib/paletteChineseDisplay';
 
 function extractionSnapshotObject(item) {
   const s = item?.extractionSnapshot;
@@ -13,7 +14,11 @@ export const COMMUNITY_PALETTE_MIN_SWATCHES = 2;
 export function itemColorCardData(item) {
   const snap = extractionSnapshotObject(item);
   if (snap?.colorCard === true && snap.colorCardData?.colors?.length) {
-    return snap.colorCardData;
+    const cd = snap.colorCardData;
+    return {
+      ...cd,
+      colors: enrichColorsWithChineseNames(cd.colors),
+    };
   }
   return null;
 }

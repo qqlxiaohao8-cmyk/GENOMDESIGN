@@ -4,6 +4,12 @@
  */
 
 import { hexToOklch } from './oklch.js';
+import { palettePoeticTitleFromHexes } from './palettePoeticTitle';
+import {
+  isChineseDominantText,
+  resolveChinesePaletteTitle,
+  enrichColorsWithChineseNames,
+} from './paletteChineseDisplay';
 
 /** @typedef {{ type: 'keyword', value: string }} KeywordPick */
 /** @typedef {{ type: 'search', value: string }} SearchPick */
@@ -80,24 +86,7 @@ function isPlaceholderSwatchName(n) {
  * @param {string[]} hexes
  */
 export function synthesizePaletteNameFromHexes(hexes) {
-  const ok = collectOklch(hexes);
-  if (ok.length === 0) return 'Color palette';
-  const avgH = meanHueDegrees(ok);
-  const avgC = ok.reduce((a, x) => a + x.c, 0) / ok.length;
-  const avgL = ok.reduce((a, x) => a + x.l, 0) / ok.length;
-
-  if (avgC < 0.045) {
-    if (avgL > 0.68) return 'Pearl sequence';
-    if (avgL < 0.32) return 'Cinder suite';
-    return 'Smoke study';
-  }
-  if (avgH >= 330 || avgH < 28) return avgL > 0.55 ? 'Bloom ledger' : 'Merlot trace';
-  if (avgH < 55) return 'Amber field';
-  if (avgH < 95) return 'Citron grove';
-  if (avgH < 150) return 'Moss archive';
-  if (avgH < 200) return 'Harbor study';
-  if (avgH < 260) return 'Iris corridor';
-  return 'Violet drift';
+  return palettePoeticTitleFromHexes(hexes);
 }
 
 /**
@@ -106,14 +95,17 @@ export function synthesizePaletteNameFromHexes(hexes) {
  * @param {Array<{ hex?: string, name?: string }>} colorRows padded to 5
  */
 export function resolvePaletteDisplayTitle(title, colorRows) {
+  const rows = enrichColorsWithChineseNames(colorRows);
   const t = String(title || '').trim();
-  if (!isGenericPaletteName(t)) return t || 'Color palette';
-  const names = (colorRows || [])
-    .map((c) => (c && typeof c === 'object' ? String(c.name || '').trim() : ''))
+  if (!isGenericPaletteName(t) && (isChineseDominantText(t) || t)) {
+    return resolveChinesePaletteTitle(t, rows);
+  }
+  const names = rows
+    .map((c) => String(c.name || '').trim())
     .filter((n) => n && !isPlaceholderSwatchName(n));
   if (names.length >= 2) return `${names[0]} · ${names[1]}`;
-  if (names.length === 1) return `${names[0]} group`;
-  const hexes = (colorRows || []).map((c) => c?.hex).filter(Boolean);
+  if (names.length === 1) return `${names[0]}色组`;
+  const hexes = rows.map((c) => c?.hex).filter(Boolean);
   return synthesizePaletteNameFromHexes(hexes);
 }
 

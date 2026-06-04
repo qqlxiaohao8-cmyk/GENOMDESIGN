@@ -1,6 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Bookmark, BookmarkX, Sparkles, Download, Link, MoreHorizontal, ThumbsUp, BarChart3 } from 'lucide-react';
 import ColorSeaStripes, { PALETTE_FEED_STRIPE_HEIGHT_CLASS } from './ColorSeaStripes';
+import {
+  enrichColorsWithChineseNames,
+  resolveChinesePaletteTitle,
+} from '../lib/paletteChineseDisplay';
 
 export function formatLikeCount(n) {
   const x = Number(n) || 0;
@@ -36,9 +40,12 @@ export default function PaletteFeedCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
-  const safeColors = Array.isArray(colors) && colors.length >= 2
-    ? colors.slice(0, 10)
-    : [{ hex: '#D4C5B0' }, { hex: '#8A7560' }];
+  const displayColors = useMemo(() => {
+    const row = Array.isArray(colors) && colors.length >= 2
+      ? colors.slice(0, 10)
+      : [{ hex: '#D4C5B0' }, { hex: '#8A7560' }];
+    return enrichColorsWithChineseNames(row);
+  }, [colors]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -51,7 +58,10 @@ export default function PaletteFeedCard({
 
   const isFavorites = mode === 'favorites';
   const isDailyVote = mode === 'dailyVote';
-  const displayTitle = (title && String(title).trim()) || '未命名色卡';
+  const displayTitle = useMemo(
+    () => resolveChinesePaletteTitle(title, displayColors) || '未命名色卡',
+    [title, displayColors],
+  );
 
   const menuPanel = menuOpen ? (
     <div className="absolute bottom-full right-0 z-50 mb-1 min-w-[9rem] rounded-xl bg-white py-1 shadow-lg">
@@ -101,7 +111,7 @@ export default function PaletteFeedCard({
   return (
     <div className="flex flex-col overflow-hidden rounded-2xl bg-white">
       <ColorSeaStripes
-        colors={safeColors}
+        colors={displayColors}
         className={`!rounded-none rounded-t-2xl ${PALETTE_FEED_STRIPE_HEIGHT_CLASS}`}
       />
 

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { pickPaletteAccentTextColor } from '../lib/colorValues';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
+import { isChineseDominantText } from '../lib/paletteChineseDisplay';
 
 function normalizeHex(hex) {
   const s = String(hex || '').trim().replace(/^#/, '');
@@ -9,8 +10,9 @@ function normalizeHex(hex) {
 }
 
 function stripeLabel(c) {
-  const raw = (c?.name && String(c.name).trim()) || getPoeticColorName(c?.hex);
-  return String(raw).replace(/\s/g, '').slice(0, 2);
+  const raw = String(c?.name || '').trim();
+  const name = isChineseDominantText(raw) ? raw : getPoeticColorName(c?.hex);
+  return String(name).replace(/\s/g, '').slice(0, 2);
 }
 
 /** 色海 / 收藏 feed 统一色条高度（列宽变化时高度不变） */

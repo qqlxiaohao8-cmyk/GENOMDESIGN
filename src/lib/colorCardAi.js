@@ -21,7 +21,7 @@ export async function fetchColorCardMetadata({ apiKey, baseUrl, model, hexes }) 
   const list = (hexes || []).slice(0, 5).map((h) => String(h).toUpperCase());
   while (list.length < 5) list.push('#808080');
 
-  const systemPrompt = `You name colors for a design extraction app. Reply with JSON only: {"overview": string (1-2 sentences describing the palette mood and how colors relate to a typical scene in this kind of image), "colors": array of exactly 5 objects {"name": string (2-4 words, creative paint/color name grounded in each hex’s hue and lightness — avoid placeholders like "Color 1"), "hex": "#RRGGBB"} — hex values MUST match the user list in order, uppercase. Names should read like real pigment or ink labels (e.g. "Driftwood Ash", "Signal Coral"), not generic numbering.`;
+  const systemPrompt = `You name colors for a Chinese design app (色空). Reply with JSON only: {"overview": string (1-2 句中文，描述色卡意境与色相关系), "colors": array of exactly 5 objects {"name": string (2-4 个汉字，中国传统色名或诗意颜料名，贴合该 hex 色相与明度，禁止 "Color 1" 等占位), "hex": "#RRGGBB"} — hex values MUST match the user list in order, uppercase. 示例名：赭石、天青、胭脂、竹青、月白。`;
 
   const userMessage = `These 5 hex colors were extracted from a photo (dominant → supporting):\n${list.join('\n')}`;
 
@@ -55,12 +55,12 @@ export async function fetchColorCardMetadata({ apiKey, baseUrl, model, hexes }) 
     const name =
       row && typeof row.name === 'string' && row.name.trim()
         ? row.name.trim()
-        : `Accent ${i + 1}`;
+        : getPoeticColorName(hex);
     const e = enrichSwatch(row?.hex || hex);
     return { name, hex: e.hex, rgb: e.rgb, cmyk: e.cmyk };
   });
   return {
-    overview: overview || 'A balanced extract of dominant hues from your image.',
+    overview: overview || '从画面中提炼的一组和谐配色。',
     colors,
   };
 }
@@ -73,7 +73,7 @@ export function fallbackColorCardMetadata(hexes) {
     return { name: getPoeticColorName(e.hex), hex: e.hex, rgb: e.rgb, cmyk: e.cmyk };
   });
   return {
-    overview: 'Palette extracted from your image. Add an API key for AI-generated names and a richer description.',
+    overview: '从画面中提炼的一组和谐配色。',
     colors,
   };
 }
