@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState, startTransition } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight,
   Lock, Unlock, Plus, Minus, RefreshCw, Bookmark,
@@ -27,14 +27,19 @@ function parseFlowHexes(raw) {
 const LOADING_PLACEHOLDER = ['#E8E6E1', '#D4D0C8', '#C9C5BC', '#BEB9B0', '#B3ADA4'];
 
 /** Returns { hexes, meta } */
-function generatePaletteWithMeta(count, harmonyId, lockedColors) {
+function generatePaletteWithMeta(count, harmonyId, lockedColors, { fast = false } = {}) {
   const { colors, meta } = randomPaletteHarmonyWithMeta(count, {
     harmonyId: harmonyId || null,
     lockedColors: lockedColors?.length ? lockedColors : null,
-    maxAttempts: 20,
-    minBeauty: 65,
+    maxAttempts: fast ? 8 : 14,
+    minBeauty: fast ? 60 : 65,
+    skipHistory: fast,
   });
   return { hexes: paletteToHexes(colors), meta };
+}
+
+function isPlaceholderHex(hex) {
+  return LOADING_PLACEHOLDER.includes(normalizeHex(hex));
 }
 
 function generatePalette(count, harmonyId, lockedColors) {
@@ -342,7 +347,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     let cancelled = false;
     const run = () => {
       try {
-        const { hexes: next, meta } = generatePaletteWithMeta(5, null, null);
+        const { hexes: next, meta } = generatePaletteWithMeta(5, null, null, { fast: true });
         if (cancelled) return;
         startTransition(() => {
           setHexes(next);
@@ -481,6 +486,11 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     if (pickerIdx === idx) setPickerIdx(null);
   };
 
+  const canGoNext = useMemo(
+    () => hexes.length >= MIN_COLORS && !hexes.every(isPlaceholderHex),
+    [hexes],
+  );
+
   const handleSave = async () => {
     if (saveBusy) return;
     setSaveBusy(true);
@@ -521,8 +531,9 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           <button
             type="button"
             onClick={() => onNext?.(hexes, generatePaletteTags(hexes, paletteMeta))}
-            disabled={paletteBusy}
+            disabled={!canGoNext}
             className="type-flow-action text-zen-vermilion hover:opacity-75 transition-opacity disabled:opacity-40"
+            title={canGoNext ? '进入预览发布' : '生色加载中…'}
           >
             下一页
             <ArrowRight size={16} strokeWidth={2} aria-hidden />

@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { supabase, supabaseConfigured } from '../lib/supabaseClient';
+import { authClient } from '../lib/authClient';
+import { apiFetch, syncProfile } from '../lib/apiClient';
+import { mapAuthUser, passwordResetTokenFromUrl } from '../lib/authUser';
 import { compressImageDataUrl, uploadStyleImageFromDataUrl } from '../lib/styleImageUpload';
 import { renderSekongPalettePngBlob } from '../lib/renderSekongPalettePng';
 import {
@@ -12,7 +14,6 @@ import {
   challengeDateKey,
   fetchMySubmissionForChallengeDate,
   insertDailyPaletteSubmission,
-  runPendingDailyTallies,
 } from '../lib/dailyOneColorApi';
 import { DAILY_WINNER_TAG } from '../lib/dailyOneColorConstants';
 
@@ -65,25 +66,10 @@ function vaultItemForSourceStyle(vaultItems, sourceStyleId) {
   );
 }
 
-export function displayUserName(user) {
-  if (!user) return '';
-  const m = user.user_metadata || {};
-  if (m.username) return m.username;
-  const combined = [m.first_name, m.last_name]
-    .map((s) => (typeof s === 'string' ? s.trim() : ''))
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-  if (combined) return combined;
-  if (m.full_name) return m.full_name.trim();
-  if (m.name) return m.name.trim();
-  if (user.email) return user.email.split('@')[0];
-  return '';
-}
+export { displayUserName } from '../lib/authUser';
 
 export default function useColorApp() {
-  const [session, setSession] = useState(null);
-  const [authReady, setAuthReady] = useState(!supabaseConfigured);
+  const { data: authSession, isPending: authPending } = authClient.useSession();
   const [recoveryMode, setRecoveryMode] = useState(false);
 
   const [personalLibrary, setPersonalLibrary] = useState([]);
@@ -95,85 +81,57 @@ export default function useColorApp() {
   // Flow stack for full-screen creation flows
   const [flowStack, setFlowStack] = useState([]);
 
-  const user = session?.user ?? null;
+  const session = authSession ?? null;
+  const user = useMemo(() => mapAuthUser(authSession?.user), [authSession?.user]);
+  const authReady = !authPending;
 
   // ── Auth ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!supabase) {
-      setAuthReady(true);
-      return;
-    }
-    let cancelled = false;
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (!cancelled) {
-        setSession(s);
-        setAuthReady(true);
-      }
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-      setSession(s);
-      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
-    });
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
+    if (passwordResetTokenFromUrl()) setRecoveryMode(true);
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    syncProfile().catch(() => {});
+  }, [user?.id]);
 
   // ── Data fetching ─────────────────────────────────────────────────────
   const refreshStyles = useCallback(async () => {
-    if (!supabase) {
-      setPersonalLibrary([]);
+    try {
+      const pubRes = await apiFetch('/styles?scope=explore');
+      setExploreFeed((pubRes.data || []).map(mapStyleRow));
+    } catch {
       setExploreFeed([]);
-      return;
     }
-    const pubRes = await supabase
-      .from('styles')
-      .select('*')
-      .eq('is_public', true)
-      .order('created_at', { ascending: false });
-    if (!pubRes.error && pubRes.data) setExploreFeed(pubRes.data.map(mapStyleRow));
-    else setExploreFeed([]);
 
     if (!user?.id) {
       setPersonalLibrary([]);
       return;
     }
-    const libRes = await supabase
-      .from('styles')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    if (!libRes.error && libRes.data) setPersonalLibrary(libRes.data.map(mapStyleRow));
-    else setPersonalLibrary([]);
+    try {
+      const libRes = await apiFetch('/styles?scope=vault');
+      setPersonalLibrary((libRes.data || []).map(mapStyleRow));
+    } catch {
+      setPersonalLibrary([]);
+    }
   }, [user?.id]);
 
   const refreshMyStyleLikes = useCallback(async () => {
-    if (!supabase || !user?.id) {
+    if (!user?.id) {
       setLikedStyleIds(new Set());
       return;
     }
-    const { data, error } = await supabase
-      .from('style_likes')
-      .select('style_id')
-      .eq('user_id', user.id);
-    if (error) return;
-    setLikedStyleIds(new Set((data || []).map((r) => r.style_id)));
+    try {
+      const { data } = await apiFetch('/style-likes');
+      setLikedStyleIds(new Set(data || []));
+    } catch {
+      setLikedStyleIds(new Set());
+    }
   }, [user?.id]);
 
   useEffect(() => {
     refreshStyles();
   }, [refreshStyles]);
-
-  useEffect(() => {
-    if (!supabase) return undefined;
-    let cancelled = false;
-    (async () => {
-      await runPendingDailyTallies(supabase);
-      if (!cancelled) await refreshStyles();
-    })();
-    return () => { cancelled = true; };
-  }, [supabase, refreshStyles]);
 
   useEffect(() => {
     refreshMyStyleLikes();
@@ -206,44 +164,44 @@ export default function useColorApp() {
   // ── Toggle like ───────────────────────────────────────────────────────
   const toggleCommunityLike = useCallback(
     async (itemId) => {
-      if (!supabase || !user?.id || communityLikeBusyId) return;
+      if (!user?.id || communityLikeBusyId) return;
       setCommunityLikeBusyId(itemId);
       const wasLiked = likedStyleIds.has(itemId);
-      if (wasLiked) {
-        await supabase
-          .from('style_likes')
-          .delete()
-          .eq('style_id', itemId)
-          .eq('user_id', user.id);
-        setLikedStyleIds((prev) => {
-          const n = new Set(prev);
-          n.delete(itemId);
-          return n;
-        });
-        setExploreFeed((prev) =>
-          prev.map((it) =>
-            it.id === itemId ? { ...it, likeCount: Math.max(0, (it.likeCount ?? 0) - 1) } : it
-          )
-        );
-      } else {
-        await supabase.from('style_likes').insert({ style_id: itemId, user_id: user.id });
-        setLikedStyleIds((prev) => new Set([...prev, itemId]));
-        setExploreFeed((prev) =>
-          prev.map((it) =>
-            it.id === itemId ? { ...it, likeCount: (it.likeCount ?? 0) + 1 } : it
-          )
-        );
+      try {
+        if (wasLiked) {
+          await apiFetch(`/styles/${itemId}/like`, { method: 'DELETE' });
+          setLikedStyleIds((prev) => {
+            const n = new Set(prev);
+            n.delete(itemId);
+            return n;
+          });
+          setExploreFeed((prev) =>
+            prev.map((it) =>
+              it.id === itemId ? { ...it, likeCount: Math.max(0, (it.likeCount ?? 0) - 1) } : it
+            )
+          );
+        } else {
+          await apiFetch(`/styles/${itemId}/like`, { method: 'POST' });
+          setLikedStyleIds((prev) => new Set([...prev, itemId]));
+          setExploreFeed((prev) =>
+            prev.map((it) =>
+              it.id === itemId ? { ...it, likeCount: (it.likeCount ?? 0) + 1 } : it
+            )
+          );
+        }
+      } catch (e) {
+        console.warn('like toggle failed', e);
       }
       setCommunityLikeBusyId(null);
     },
-    [supabase, user?.id, likedStyleIds, communityLikeBusyId]
+    [user?.id, likedStyleIds, communityLikeBusyId]
   );
 
   // ── Save to vault ─────────────────────────────────────────────────────
   const persistColorCardVaultRow = useCallback(
     async (imageSrc, card, opts = {}) => {
-      if (!user || !supabase) {
-        return { id: null, error: new Error('请先登录并配置 Supabase。') };
+      if (!user) {
+        return { id: null, error: new Error('请先登录。') };
       }
       if (!card?.colors?.length || !imageSrc) {
         return { id: null, error: new Error('缺少色卡数据。') };
@@ -252,7 +210,7 @@ export default function useColorApp() {
       let imageUrl = imageSrc;
       if (/^data:image\//.test(imageSrc)) {
         const { publicUrl, error: upErr } = await uploadStyleImageFromDataUrl(
-          supabase, user.id, imageSrc
+          null, user.id, imageSrc
         );
         if (publicUrl) {
           imageUrl = publicUrl;
@@ -273,29 +231,27 @@ export default function useColorApp() {
       });
       let extraction_snapshot;
       try { extraction_snapshot = JSON.parse(JSON.stringify(snapshot)); } catch { extraction_snapshot = null; }
-      const row = {
-        user_id: user.id,
-        is_public: false,
-        image_url: imageUrl,
-        aesthetic: (displayTitle || card.colors[0]?.name || 'Color card').slice(0, 120),
-        typography: null,
-        fonts: null,
-        palette: hexes,
-        design_logic: card.overview,
-        keywords: snapshot.keywords,
-        prompt: card.overview,
-        extraction_snapshot,
-      };
-      let { data, error } = await supabase.from('styles').insert(row).select('id').single();
-      if (error && /extraction_snapshot|column/i.test(error.message || '')) {
-        const { extraction_snapshot: _s, ...rest } = row;
-        const second = await supabase.from('styles').insert(rest).select('id').single();
-        data = second.data;
-        error = second.error;
+      try {
+        const { id } = await apiFetch('/styles', {
+          method: 'POST',
+          body: {
+            is_public: false,
+            image_url: imageUrl,
+            aesthetic: (displayTitle || card.colors[0]?.name || 'Color card').slice(0, 120),
+            typography: null,
+            fonts: null,
+            palette: hexes,
+            design_logic: card.overview,
+            keywords: snapshot.keywords,
+            prompt: card.overview,
+            extraction_snapshot,
+          },
+        });
+        await refreshStyles();
+        return { id: id ?? null, error: null };
+      } catch (e) {
+        return { id: null, error: new Error(e.message || '保存失败。') };
       }
-      if (error) return { id: null, error: new Error(error.message || '保存失败。') };
-      await refreshStyles();
-      return { id: data?.id ?? null, error: null };
     },
     [user, refreshStyles]
   );
@@ -303,18 +259,18 @@ export default function useColorApp() {
   // ── Delete private vault row (never use for public 色海 entries) ───────
   const deleteVaultItem = useCallback(
     async (itemId) => {
-      if (!user || !supabase || !itemId) return { error: new Error('无法删除。') };
+      if (!user || !itemId) return { error: new Error('无法删除。') };
       const item = personalLibrary.find((i) => i.id === itemId);
       if (item?.isPublic) {
         return { error: new Error('已发布色卡请使用「取消收藏」从收藏页移除。') };
       }
-      const { error } = await supabase
-        .from('styles')
-        .delete()
-        .eq('id', itemId)
-        .eq('user_id', user.id);
-      if (!error) await refreshStyles();
-      return { error: error || null };
+      try {
+        await apiFetch(`/styles/${itemId}`, { method: 'DELETE' });
+        await refreshStyles();
+        return { error: null };
+      } catch (e) {
+        return { error: e };
+      }
     },
     [user, personalLibrary, refreshStyles]
   );
@@ -326,7 +282,7 @@ export default function useColorApp() {
    */
   const removeFromVault = useCallback(
     async (itemId) => {
-      if (!user || !supabase || !itemId) return { error: new Error('无法移除。') };
+      if (!user || !itemId) return { error: new Error('无法移除。') };
       const item = personalLibrary.find((i) => i.id === itemId);
       if (!item) return { error: new Error('未找到色卡。') };
 
@@ -336,27 +292,27 @@ export default function useColorApp() {
             ? item.extractionSnapshot
             : {};
         const extraction_snapshot = { ...base, hiddenFromVault: true };
-        const { error } = await supabase
-          .from('styles')
-          .update({ extraction_snapshot })
-          .eq('id', itemId)
-          .eq('user_id', user.id);
-        if (error && /extraction_snapshot|column/i.test(error.message || '')) {
-          return { error: new Error(error.message || '移除失败。') };
+        try {
+          await apiFetch(`/styles/${itemId}`, {
+            method: 'PATCH',
+            body: { extraction_snapshot },
+          });
+          await refreshStyles();
+          return { error: null };
+        } catch (e) {
+          return { error: e };
         }
-        if (!error) await refreshStyles();
-        return { error: error || null };
       }
 
       return deleteVaultItem(itemId);
     },
-    [user, supabase, personalLibrary, deleteVaultItem, refreshStyles]
+    [user, personalLibrary, deleteVaultItem, refreshStyles]
   );
 
   // ── 色海 → 私人收藏库 ─────────────────────────────────────────────────
   const toggleVaultFavoriteFromExplore = useCallback(
     async (item) => {
-      if (!user || !supabase || !item?.id || vaultFavoriteBusyId) return;
+      if (!user || !item?.id || vaultFavoriteBusyId) return;
       const cd = itemColorCardData(item);
       if (!cd?.colors?.length) return;
 
@@ -383,19 +339,19 @@ export default function useColorApp() {
         setVaultFavoriteBusyId(null);
       }
     },
-    [user, supabase, vaultFavoriteBusyId, vaultColorPaletteItems, deleteVaultItem, persistColorCardVaultRow]
+    [user, vaultFavoriteBusyId, vaultColorPaletteItems, deleteVaultItem, persistColorCardVaultRow]
   );
 
   // ── 投稿到每日一色（不公开到色海，进入当日投票池）────────────────────────
   const publishDailyPaletteCard = useCallback(
     async ({ title, hexes, imageDataUrl, tags = [], dailyAnchorHex }) => {
-      if (!user || !supabase) return { ok: false, error: '请先登录再投稿。' };
+      if (!user) return { ok: false, error: '请先登录再投稿。' };
       if (!Array.isArray(hexes) || hexes.length < 2) {
         return { ok: false, error: '缺少色卡数据。' };
       }
       const challengeDate = challengeDateKey();
       const { row: existing } = await fetchMySubmissionForChallengeDate(
-        supabase,
+        null,
         challengeDate,
         user.id,
       );
@@ -442,26 +398,26 @@ export default function useColorApp() {
       let extraction_snapshot;
       try { extraction_snapshot = JSON.parse(JSON.stringify(snapshot)); } catch { extraction_snapshot = null; }
       if (extraction_snapshot) {
-        await supabase
-          .from('styles')
-          .update({ extraction_snapshot })
-          .eq('id', styleId)
-          .eq('user_id', user.id);
+        await apiFetch(`/styles/${styleId}`, {
+          method: 'PATCH',
+          body: { extraction_snapshot },
+        });
       }
 
-      const { data: styleRow } = await supabase
-        .from('styles')
-        .select('image_url')
-        .eq('id', styleId)
-        .maybeSingle();
+      let imageUrlForSub = imageSrc;
+      try {
+        const vaultRes = await apiFetch('/styles?scope=vault');
+        const styleRow = (vaultRes.data || []).find((r) => r.id === styleId);
+        if (styleRow?.image_url) imageUrlForSub = styleRow.image_url;
+      } catch { /* use imageSrc */ }
 
-      const { id: submissionId, error: subErr } = await insertDailyPaletteSubmission(supabase, {
+      const { id: submissionId, error: subErr } = await insertDailyPaletteSubmission(null, {
         challengeDate,
         userId: user.id,
         styleId,
         title: title.trim(),
         palette: hexes,
-        imageUrl: styleRow?.image_url || imageSrc,
+        imageUrl: imageUrlForSub,
         tags: extraKeywords,
         dailyAnchorHex: dailyAnchorHex || hexes[0] || null,
       });
@@ -474,13 +430,13 @@ export default function useColorApp() {
       }
       return { ok: true, id: submissionId, styleId };
     },
-    [user, supabase, persistColorCardVaultRow],
+    [user, persistColorCardVaultRow],
   );
 
   // ── Publish to 色海 ───────────────────────────────────────────────────
   const publishColorCard = useCallback(
     async ({ title, hexes, imageDataUrl, sourceType = 'own_shot', tags = [] }) => {
-      if (!user || !supabase) return { ok: false, error: '请先登录再发布。' };
+      if (!user) return { ok: false, error: '请先登录再发布。' };
       if (!Array.isArray(hexes) || hexes.length < 2 || !imageDataUrl) {
         return { ok: false, error: '缺少色卡数据或图片。' };
       }
@@ -503,12 +459,14 @@ export default function useColorApp() {
       let extraction_snapshot;
       try { extraction_snapshot = JSON.parse(JSON.stringify(snapshotWithMeta)); } catch { extraction_snapshot = null; }
 
-      const { error: pubErr } = await supabase
-        .from('styles')
-        .update({ is_public: true, extraction_snapshot })
-        .eq('id', id)
-        .eq('user_id', user.id);
-      if (pubErr) return { ok: false, error: pubErr.message || '发布失败。' };
+      try {
+        await apiFetch(`/styles/${id}`, {
+          method: 'PATCH',
+          body: { is_public: true, extraction_snapshot },
+        });
+      } catch (e) {
+        return { ok: false, error: e.message || '发布失败。' };
+      }
       await refreshStyles();
       return { ok: true, id };
     },
@@ -563,8 +521,7 @@ export default function useColorApp() {
 
   // ── Sign out ──────────────────────────────────────────────────────────
   const signOut = useCallback(async () => {
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    await authClient.signOut();
     setPersonalLibrary([]);
     setLikedStyleIds(new Set());
   }, []);
@@ -645,8 +602,5 @@ export default function useColorApp() {
     copyShareLink,
     // Flow
     flowStack, pushFlow, popFlow, clearFlows,
-    // Supabase ref (for AuthModal etc.)
-    supabase,
-    supabaseConfigured,
   };
 }

@@ -5,6 +5,8 @@ import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
 import { PROFILE_FONTS } from '../lib/profileFonts';
 import PageHeader from '../components/layout/PageHeader';
+import { authClient } from '../lib/authClient';
+import { syncProfile } from '../lib/apiClient';
 
 const normalizeHex = normalizeProfileHex;
 
@@ -201,7 +203,7 @@ function MenuRow({ icon: Icon, label, sub, onClick, disabled = false }) {
   );
 }
 
-export default function ProfilePage({ user, supabase, onOpenAuth, onSignOut }) {
+export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
   const [editOpen, setEditOpen] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
 
@@ -217,18 +219,18 @@ export default function ProfilePage({ user, supabase, onOpenAuth, onSignOut }) {
 
   const handleSaveProfile = useCallback(
     async ({ username: newName, accentHex: newHex, fontId: newFontId }) => {
-      if (!supabase || !user) return;
+      if (!user) return;
       setSaveBusy(true);
       try {
-        await supabase.auth.updateUser({
-          data: {
-            ...user.user_metadata,
-            username: newName,
-            accent_hex: newHex,
-            font_id: newFontId || 'serif',
-            profile_complete: true,
-          },
+        const { error } = await authClient.updateUser({
+          username: newName,
+          accent_hex: newHex,
+          font_id: newFontId || 'serif',
+          profile_complete: true,
         });
+        if (error) throw error;
+        await authClient.getSession();
+        await syncProfile();
       } catch (e) {
         console.error(e);
       } finally {
@@ -236,7 +238,7 @@ export default function ProfilePage({ user, supabase, onOpenAuth, onSignOut }) {
         setEditOpen(false);
       }
     },
-    [supabase, user]
+    [user]
   );
 
   return (

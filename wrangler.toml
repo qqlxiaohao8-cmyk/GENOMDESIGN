@@ -1,14 +1,36 @@
-# Cloudflare Workers — Vite static build in ./dist
-# `dist/` is gitignored; Wrangler runs [build] before upload so deploy always has assets.
-# CI example: npm ci && npx wrangler deploy
+# Cloudflare Workers — SPA (dist/) + API (workers/src) + D1 + R2
 # https://developers.cloudflare.com/workers/static-assets/
 
-name = "genom"
+name = "genomlab"
+main = "workers/src/index.ts"
 compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
 
 [build]
 command = "npm run build"
 
 [assets]
 directory = "./dist"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+# D1 — create: npx wrangler d1 create genom-db
+[[d1_databases]]
+binding = "DB"
+database_name = "genom-db"
+database_id = "173d76b9-546d-4526-9e4b-0a29b96d03aa"
+
+# R2 — create: npx wrangler r2 bucket create genom-style-images
+[[r2_buckets]]
+binding = "STYLE_IMAGES"
+bucket_name = "sekong-style-images"
+
+[vars]
+# Overridden in .dev.vars for local dev (use http://localhost:5173 with Vite proxy)
+BETTER_AUTH_URL = "https://genomlab.qqlxiaohao8.workers.dev"
+
+# Secrets (wrangler secret put): BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+
+# Daily tally at 16:00 UTC = GMT+8 midnight
+[triggers]
+crons = ["0 16 * * *"]

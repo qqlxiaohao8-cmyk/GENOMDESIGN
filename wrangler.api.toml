@@ -1,0 +1,27 @@
+# Local API dev — same bindings as wrangler.toml but no [build] (avoids poeticColorIndex rebuild loop).
+# Run once before first use: npm run build
+
+name = "genomlab"
+main = "workers/src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "genom-db"
+database_id = "173d76b9-546d-4526-9e4b-0a29b96d03aa"
+
+[[r2_buckets]]
+binding = "STYLE_IMAGES"
+bucket_name = "sekong-style-images"
+
+[vars]
+BETTER_AUTH_URL = "http://localhost:5173"
+
+[triggers]
+crons = ["0 16 * * *"]

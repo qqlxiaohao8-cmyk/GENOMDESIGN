@@ -38,7 +38,7 @@ const PLACEHOLDER_IMAGE =
 export default function App() {
   const app = useColorApp();
   const {
-    user, session, authReady, recoveryMode, setRecoveryMode, signOut, supabase,
+    user, session, authReady, recoveryMode, setRecoveryMode, signOut,
     colorPaletteExploreFeed, vaultColorPaletteItems, favoritedExploreStyleIds, vaultFavoriteBusyId,
     communityTagList, bumpTagClick,
     toggleVaultFavoriteFromExplore, persistColorCardVaultRow, deleteVaultItem, removeFromVault,
@@ -267,7 +267,6 @@ export default function App() {
         return (
           <DailyOneColorPage
             user={user}
-            supabase={supabase}
             onOpenAuth={() => setAuthModalOpen(true)}
             onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
@@ -287,7 +286,6 @@ export default function App() {
         return (
           <ProfilePage
             user={user}
-            supabase={supabase}
             onOpenAuth={() => setAuthModalOpen(true)}
             onSignOut={signOut}
           />
@@ -305,7 +303,6 @@ export default function App() {
     {showProfileOnboarding && (
       <ProfileOnboardingPage
         user={user}
-        supabase={supabase}
         onComplete={() => {
           setProfileSetupDone(true);
           handleTabChange('profile');
@@ -315,12 +312,10 @@ export default function App() {
     <AuthModal
       open={authModalOpen}
       onClose={() => setAuthModalOpen(false)}
-      supabase={supabase}
     />
-    {recoveryMode && supabase && (
+    {recoveryMode && (
       <SetPasswordModal
-        supabase={supabase}
-        onClose={() => setRecoveryMode(false)}
+        onSuccess={() => setRecoveryMode(false)}
       />
     )}
     <div

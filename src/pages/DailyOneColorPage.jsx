@@ -15,7 +15,6 @@ import { DAILY_VOTES_PER_USER } from '../lib/dailyOneColorConstants';
  */
 export default function DailyOneColorPage({
   user,
-  supabase,
   onOpenAuth,
   onOpenInShengSe,
   onDownload,
@@ -30,7 +29,7 @@ export default function DailyOneColorPage({
     mySubmission,
     voteBusyId,
     castVote,
-  } = useDailyOneColor({ supabase, user });
+  } = useDailyOneColor({ user });
 
   const handleVote = async (item) => {
     if (!user) {

@@ -1,36 +1,26 @@
+import { apiFetch } from './apiClient';
+
 /**
- * Upload a data-URL image to Supabase Storage (bucket `style-images`).
- * Path: `{userId}/{uuid}.ext`
+ * Upload a data-URL image to R2 via Worker API.
+ * Returns a same-origin URL: /api/v1/media/{userId}/{uuid}.ext
  */
-export async function uploadStyleImageFromDataUrl(supabase, userId, dataUrl) {
+export async function uploadStyleImageFromDataUrl(_legacy, userId, dataUrl) {
+  void userId;
   if (!/^data:image\//.test(dataUrl || '')) {
     return { publicUrl: null, error: new Error('Not an image data URL.') };
   }
   try {
-    const res = await fetch(dataUrl);
-    const blob = await res.blob();
-    const ext = blob.type.includes('png')
-      ? 'png'
-      : blob.type.includes('webp')
-        ? 'webp'
-        : blob.type.includes('gif')
-          ? 'gif'
-          : 'jpg';
-    const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('style-images').upload(path, blob, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: blob.type || 'image/jpeg',
+    const { publicUrl } = await apiFetch('/upload', {
+      method: 'POST',
+      body: { dataUrl },
     });
-    if (upErr) return { publicUrl: null, error: upErr };
-    const { data } = supabase.storage.from('style-images').getPublicUrl(path);
-    return { publicUrl: data.publicUrl, error: null };
+    return { publicUrl, error: null };
   } catch (e) {
     return { publicUrl: null, error: e };
   }
 }
 
-/** Resize + JPEG re-encode to keep `styles.image_url` under typical PostgREST limits when Storage is unavailable. */
+/** Resize + JPEG re-encode when R2 upload is unavailable. */
 export function compressImageDataUrl(dataUrl, maxEdge = 1200, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const img = new Image();

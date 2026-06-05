@@ -10,7 +10,7 @@ import {
 } from '../lib/dailyOneColorApi';
 import { DAILY_VOTES_PER_USER } from '../lib/dailyOneColorConstants';
 
-export default function useDailyOneColor({ supabase, user }) {
+export default function useDailyOneColor({ user }) {
   const dateKey = useCalendarDateKey();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,22 +21,17 @@ export default function useDailyOneColor({ supabase, user }) {
   const [mySubmission, setMySubmission] = useState(null);
 
   const refresh = useCallback(async () => {
-    if (!supabase) {
-      setLoading(false);
-      setItems([]);
-      return;
-    }
     setLoadError(null);
     setLoading(true);
     try {
-      const { rows, error } = await fetchSubmissionsForChallengeDate(supabase, dateKey);
+      const { rows, error } = await fetchSubmissionsForChallengeDate(null, dateKey);
       if (error) {
         setLoadError(error.message || '加载失败');
         setItems([]);
         return;
       }
       const { bySubmission, myVoteIds: voted, myVoteCount: count } =
-        await fetchVotesForChallengeDate(supabase, dateKey, user?.id);
+        await fetchVotesForChallengeDate(null, dateKey, user?.id);
       setMyVoteCount(count);
       setMyVoteIds(voted);
       const feed = rows.map((row) => {
@@ -49,7 +44,7 @@ export default function useDailyOneColor({ supabase, user }) {
       });
       setItems(feed);
       if (user?.id) {
-        const { row } = await fetchMySubmissionForChallengeDate(supabase, dateKey, user.id);
+        const { row } = await fetchMySubmissionForChallengeDate(null, dateKey, user.id);
         setMySubmission(row);
       } else {
         setMySubmission(null);
@@ -57,7 +52,7 @@ export default function useDailyOneColor({ supabase, user }) {
     } finally {
       setLoading(false);
     }
-  }, [supabase, dateKey, user?.id]);
+  }, [dateKey, user?.id]);
 
   useEffect(() => {
     void refresh();
@@ -67,14 +62,14 @@ export default function useDailyOneColor({ supabase, user }) {
 
   const castVote = useCallback(
     async (submissionId) => {
-      if (!supabase || !user?.id || voteBusyId) return { ok: false, error: '请先登录' };
+      if (!user?.id || voteBusyId) return { ok: false, error: '请先登录' };
       if (remainingVotes <= 0) return { ok: false, error: '今日 5 票已用完' };
       if (myVoteIds.has(submissionId)) return { ok: false, error: '已为该色卡投过票' };
       setVoteBusyId(submissionId);
       try {
-        const { error } = await castDailyPaletteVote(supabase, submissionId, user.id);
+        const { error } = await castDailyPaletteVote(null, submissionId, user.id);
         if (error) {
-          const msg = error.message || '';
+          const msg = error.message || String(error);
           if (msg.includes('daily_vote_quota')) {
             return { ok: false, error: '今日 5 票已用完' };
           }
@@ -102,7 +97,7 @@ export default function useDailyOneColor({ supabase, user }) {
         setVoteBusyId(null);
       }
     },
-    [supabase, user?.id, voteBusyId, remainingVotes, myVoteIds],
+    [user?.id, voteBusyId, remainingVotes, myVoteIds],
   );
 
   return {

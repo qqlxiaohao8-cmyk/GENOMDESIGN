@@ -4,11 +4,13 @@ import { getPoeticColorName } from '../lib/poeticColorNaming';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
 import { PROFILE_FONTS, applyProfileFont } from '../lib/profileFonts';
+import { authClient } from '../lib/authClient';
+import { syncProfile } from '../lib/apiClient';
 
 /**
  * 首次登录：设置用户名、代表色、界面字体 → 进入个人页
  */
-export default function ProfileOnboardingPage({ user, supabase, onComplete }) {
+export default function ProfileOnboardingPage({ user, onComplete }) {
   const defaultName = user?.email?.split('@')[0] || '';
   const [username, setUsername] = useState(defaultName);
   const [hex, setHex] = useState(PROFILE_ACCENT_PRESETS[0]);
@@ -33,23 +35,22 @@ export default function ProfileOnboardingPage({ user, supabase, onComplete }) {
 
   const handleSubmit = async () => {
     const name = username.trim().slice(0, 20) || defaultName || '用户';
-    if (!supabase || !user) {
+    if (!user) {
       setError('无法保存，请稍后重试。');
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      const { error: err } = await supabase.auth.updateUser({
-        data: {
-          ...user.user_metadata,
-          username: name,
-          accent_hex: normalizeProfileHex(activeHex),
-          font_id: fontId,
-          profile_complete: true,
-        },
+      const { error: err } = await authClient.updateUser({
+        username: name,
+        accent_hex: normalizeProfileHex(activeHex),
+        font_id: fontId,
+        profile_complete: true,
       });
       if (err) throw err;
+      await authClient.getSession();
+      await syncProfile();
       applyProfileFont(fontId);
       onComplete?.();
     } catch (e) {

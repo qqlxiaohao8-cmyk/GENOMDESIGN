@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { authClient } from '../lib/authClient';
+import { clearPasswordResetQuery, passwordResetTokenFromUrl } from '../lib/authUser';
 
 /**
- * Shown after user opens the password-reset link from email (Supabase PASSWORD_RECOVERY event).
+ * Shown when user opens a Better Auth password-reset link (?token=…).
  */
-export default function SetPasswordModal({ supabase, onSuccess }) {
+export default function SetPasswordModal({ onSuccess }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -21,12 +23,22 @@ export default function SetPasswordModal({ supabase, onSuccess }) {
       setError('Passwords do not match.');
       return;
     }
-    if (!supabase) return;
+    const token = passwordResetTokenFromUrl();
+    if (!token) {
+      setError('Reset link is invalid or expired.');
+      return;
+    }
     setLoading(true);
-    const { error: err } = await supabase.auth.updateUser({ password });
+    const { error: err } = await authClient.resetPassword({
+      newPassword: password,
+      token,
+    });
     setLoading(false);
     if (err) setError(err.message);
-    else onSuccess?.();
+    else {
+      clearPasswordResetQuery();
+      onSuccess?.();
+    }
   };
 
   return (

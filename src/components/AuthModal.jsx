@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Loader2, Mail, Lock } from 'lucide-react';
+import { authClient, authConfigured } from '../lib/authClient';
 import { buildFullName } from '../lib/pendingProfile';
 
 const redirectUrl = () => `${window.location.origin}${window.location.pathname}`;
@@ -27,7 +28,7 @@ function GoogleIcon() {
   );
 }
 
-export default function AuthModal({ open, onClose, supabase }) {
+export default function AuthModal({ open, onClose }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -90,22 +91,22 @@ export default function AuthModal({ open, onClose, supabase }) {
   };
 
   const oauthGoogle = async () => {
-    if (!supabase) return;
+    if (!authConfigured) return;
     resetMsg();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { error } = await authClient.signIn.social({
       provider: 'google',
-      options: { redirectTo: redirectUrl() },
+      callbackURL: redirectUrl(),
     });
     if (error) {
       setLoading(false);
-      setMsg({ type: 'err', text: error.message });
+      setMsg({ type: 'err', text: error.message || 'Google sign-in failed.' });
     }
   };
 
   const passwordSignIn = async (e) => {
     e?.preventDefault?.();
-    if (!supabase || !email.trim()) {
+    if (!authConfigured || !email.trim()) {
       setMsg({ type: 'err', text: 'Enter your email.' });
       return;
     }
@@ -115,9 +116,10 @@ export default function AuthModal({ open, onClose, supabase }) {
     }
     resetMsg();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await authClient.signIn.email({
       email: email.trim(),
       password,
+      callbackURL: redirectUrl(),
     });
     setLoading(false);
     if (error) setMsg({ type: 'err', text: error.message });
@@ -128,13 +130,14 @@ export default function AuthModal({ open, onClose, supabase }) {
   };
 
   const sendPasswordReset = async () => {
-    if (!supabase || !email.trim()) {
+    if (!authConfigured || !email.trim()) {
       setMsg({ type: 'err', text: 'Enter your email above first.' });
       return;
     }
     resetMsg();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error } = await authClient.requestPasswordReset({
+      email: email.trim(),
       redirectTo: redirectUrl(),
     });
     setLoading(false);
@@ -142,7 +145,7 @@ export default function AuthModal({ open, onClose, supabase }) {
     else
       setMsg({
         type: 'ok',
-        text: 'If that email is registered, you will receive a reset link shortly.',
+        text: 'If that email is registered, check the API console for the reset link (dev mode).',
       });
   };
 
@@ -150,7 +153,7 @@ export default function AuthModal({ open, onClose, supabase }) {
     e?.preventDefault?.();
     const fn = firstName.trim();
     const ln = lastName.trim();
-    if (!supabase || !email.trim()) {
+    if (!authConfigured || !email.trim()) {
       setMsg({ type: 'err', text: 'Enter your email.' });
       return;
     }
@@ -165,25 +168,18 @@ export default function AuthModal({ open, onClose, supabase }) {
     resetMsg();
     const meta = profilePayload();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { error } = await authClient.signUp.email({
       email: email.trim(),
       password,
-      options: {
-        emailRedirectTo: redirectUrl(),
-        data: {
-          first_name: meta.first_name,
-          last_name: meta.last_name,
-          full_name: meta.full_name,
-        },
-      },
+      name: meta.full_name,
+      callbackURL: redirectUrl(),
     });
     setLoading(false);
     if (error) setMsg({ type: 'err', text: error.message });
-    else
-      setMsg({
-        type: 'ok',
-        text: 'Account created. Confirm your email if required, then sign in.',
-      });
+    else {
+      onClose();
+      setPassword('');
+    }
   };
 
   return (
@@ -214,9 +210,9 @@ export default function AuthModal({ open, onClose, supabase }) {
               : 'Welcome back — Google or your email and password.'}
           </p>
 
-          {!supabase && (
+          {!authConfigured && (
             <p className="text-sm font-extralight text-red-700 border border-red-200 bg-red-50/80 rounded-xl p-3 mb-4">
-              Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env, then restart the dev server.
+              Auth API unavailable. Run <code className="font-mono text-xs">npm run dev:api</code> in another terminal.
             </p>
           )}
 
@@ -236,7 +232,7 @@ export default function AuthModal({ open, onClose, supabase }) {
             <div className="space-y-5">
               <button
                 type="button"
-                disabled={!supabase || loading}
+                disabled={!authConfigured || loading}
                 onClick={oauthGoogle}
                 className="btn-outline w-full py-4 rounded-lg text-[13px]"
               >
@@ -278,13 +274,13 @@ export default function AuthModal({ open, onClose, supabase }) {
                     className="zen-input pl-11"
                   />
                 </div>
-                <button type="submit" disabled={!supabase || loading} className="btn-primary w-full py-4 rounded-lg text-[13px]">
+                <button type="submit" disabled={!authConfigured || loading} className="btn-primary w-full py-4 rounded-lg text-[13px]">
                   {loading ? <Loader2 className="animate-spin" size={18} /> : null}
                   Sign in
                 </button>
                 <button
                   type="button"
-                  disabled={!supabase || loading}
+                  disabled={!authConfigured || loading}
                   onClick={sendPasswordReset}
                   className="w-full text-center zen-micro-label text-zen-vermilion/90 hover:underline decoration-zen-vermilion/30 underline-offset-4 transition-colors duration-[2000ms]"
                 >
@@ -294,8 +290,8 @@ export default function AuthModal({ open, onClose, supabase }) {
 
               <div className="pt-2 border-t border-dashed border-zen-ink/10">
                 <p className="text-[9px] font-extralight text-zen-ink/45 px-1 leading-snug text-center">
-                  Supabase → Authentication → Providers: enable Google &amp; Email. Redirect URL:{' '}
-                  <span className="font-mono break-all">{redirectUrl()}</span>
+                  Google OAuth redirect:{' '}
+                  <span className="font-mono break-all">http://localhost:5173/api/auth/callback/google</span>
                 </p>
               </div>
 
@@ -337,7 +333,7 @@ export default function AuthModal({ open, onClose, supabase }) {
               </div>
               <button
                 type="button"
-                disabled={!supabase || loading}
+                disabled={!authConfigured || loading}
                 onClick={oauthGoogle}
                 className="btn-outline w-full py-4 rounded-lg text-[13px]"
               >
@@ -384,7 +380,7 @@ export default function AuthModal({ open, onClose, supabase }) {
                     className="zen-input pl-11"
                   />
                 </div>
-                <button type="submit" disabled={!supabase || loading} className="btn-art w-full py-4 rounded-lg text-[13px]">
+                <button type="submit" disabled={!authConfigured || loading} className="btn-art w-full py-4 rounded-lg text-[13px]">
                   {loading ? <Loader2 className="animate-spin" size={18} /> : null}
                   Create account
                 </button>

@@ -1,26 +1,34 @@
 import React from 'react';
 
 /**
- * CSS-columns masonry layout — no JavaScript height calculations needed.
- * Uses `break-inside-avoid` on each child to prevent card splits.
+ * Feed layout: CSS grid (row-first, 先横后竖) or CSS columns masonry (column-first).
  *
- * Prefer `className` for responsive column counts, e.g. `columns-2 md:columns-4`.
- * Legacy `columns` prop still works when `className` is omitted.
+ * - Grid: pass `className` with `grid`, e.g. `grid grid-cols-2 md:grid-cols-4`
+ * - Columns: `columns-2 md:columns-4` (legacy waterfall)
  *
  * @param {{ columns?: 1|2|3|4, gap?: string, className?: string, children: React.ReactNode }} props
  */
 export default function MasonryColumns({ columns = 2, gap = '1rem', className = '', children }) {
+  const useGrid = /\bgrid\b/.test(className);
+
+  if (useGrid) {
+    return (
+      <div className={className} style={{ gap }}>
+        {children}
+      </div>
+    );
+  }
+
   const legacyClass =
     columns === 1 ? 'columns-1' : columns === 3 ? 'columns-3' : columns === 4 ? 'columns-4' : 'columns-2';
-  const style = { columnGap: gap };
   return (
-    <div className={className || legacyClass} style={style}>
+    <div className={className || legacyClass} style={{ columnGap: gap }}>
       {React.Children.map(children, (child) =>
         child ? (
           <div style={{ breakInside: 'avoid', marginBottom: gap }}>
             {child}
           </div>
-        ) : null
+        ) : null,
       )}
     </div>
   );
