@@ -25,11 +25,28 @@ import DailyChallengePage from './flows/DailyChallengePage';
 import LandingPage from './components/LandingPage';
 
 import { normalizeHex } from './lib/randomInspiration';
+import { authClient } from './lib/authClient';
+
+const LANDING_DISMISSED_KEY = 'genom-landing-dismissed';
 
 function shouldShowDesktopLanding() {
   if (typeof window === 'undefined') return false;
   if (new URLSearchParams(window.location.search).get('style')) return false;
+  try {
+    if (localStorage.getItem(LANDING_DISMISSED_KEY)) return false;
+  } catch {
+    /* private mode */
+  }
   return window.matchMedia('(min-width: 768px)').matches;
+}
+
+function dismissDesktopLanding(setter) {
+  setter(false);
+  try {
+    localStorage.setItem(LANDING_DISMISSED_KEY, '1');
+  } catch {
+    /* ignore */
+  }
 }
 
 const PLACEHOLDER_IMAGE =
@@ -54,6 +71,17 @@ export default function App() {
   const [profileSetupDone, setProfileSetupDone] = useState(false);
   const [desktopLandingOpen, setDesktopLandingOpen] = useState(shouldShowDesktopLanding);
   const mainScrollRef = useRef(null);
+
+  // OAuth redirect / fresh load — ensure session cookie is picked up
+  useEffect(() => {
+    authClient.getSession().catch(() => {});
+  }, []);
+
+  // Logged-in or onboarding users should never see the marketing landing
+  useEffect(() => {
+    if (!authReady) return;
+    if (user) dismissDesktopLanding(setDesktopLandingOpen);
+  }, [authReady, user]);
 
   // ── Deep-link: ?style=<uuid> ──────────────────────────────────────────
   useEffect(() => {
@@ -91,6 +119,10 @@ export default function App() {
     !recoveryMode &&
     !profileSetupDone &&
     needsProfileOnboarding(user);
+
+  useEffect(() => {
+    if (showProfileOnboarding) dismissDesktopLanding(setDesktopLandingOpen);
+  }, [showProfileOnboarding]);
 
   useEffect(() => {
     if (!user) {
@@ -297,8 +329,8 @@ export default function App() {
 
   return (
     <>
-    {desktopLandingOpen && (
-      <LandingPage onGoExplore={() => setDesktopLandingOpen(false)} />
+    {desktopLandingOpen && !user && (
+      <LandingPage onGoExplore={() => dismissDesktopLanding(setDesktopLandingOpen)} />
     )}
     {showProfileOnboarding && (
       <ProfileOnboardingPage

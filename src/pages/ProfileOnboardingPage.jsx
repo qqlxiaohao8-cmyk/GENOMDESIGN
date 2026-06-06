@@ -61,7 +61,7 @@ export default function ProfileOnboardingPage({ user, onComplete }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col overflow-y-auto bg-zen-paper">
+    <div className="fixed inset-0 z-[310] flex flex-col overflow-y-auto bg-zen-paper">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] pt-[max(2.5rem,env(safe-area-inset-top,0px))]">
         <header className="mb-8 text-center">
           <p className="type-overline tracking-[0.35em] text-zen-ink/35">
