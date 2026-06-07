@@ -5,19 +5,38 @@ export default {
     extend: {
       fontFamily: {
         bricolage: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
-        /** 全站中文以宋体风格为主：Noto Serif SC + 系统宋体回退 */
+        /** 标题 / 情感：宋体 */
         zenSerif: ['"Noto Serif SC"', '"Songti SC"', 'STSong', 'SimSun', 'serif'],
-        zenSans: ['"Noto Serif SC"', '"Songti SC"', 'STSong', 'SimSun', 'serif'],
+        /** UI / 正文 / 元数据：黑体 */
+        zenSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
         profileSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
         profileKai: ['"KaiTi"', '"STKaiti"', '"楷体"', '"Noto Serif SC"', 'serif'],
       },
       colors: {
         zen: {
-          paper: '#F9F9F7',
-          mist: '#FDFDFD',
-          ink: '#1A1A1A',
+          /** 素纸 — warm xuan paper */
+          paper: '#FCFBFA',
+          /** 枯骨 — sand / secondary surface */
+          sand: '#F5F2ED',
+          /** 浅灰 — borders, inactive */
+          clay: '#E4DFD5',
+          /** 苔岩 — muted text, secondary strokes */
+          stone: '#A8A297',
+          /** 墨黛 — body copy */
+          ink: '#5C5750',
+          /** 漆黑 — headings, emphasis */
+          coal: '#2C2C2C',
+          /** legacy alias */
+          mist: '#F5F2ED',
           vermilion: '#BC2026',
         },
+      },
+      boxShadow: {
+        zen: '0 4px 24px -4px rgba(92, 87, 80, 0.08)',
+        'zen-lg': '0 8px 40px -8px rgba(92, 87, 80, 0.12)',
+      },
+      transitionTimingFunction: {
+        zen: 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },

@@ -3,6 +3,7 @@ import type { WorkerEnv } from '../auth';
 import { parseJson, toJson } from '../lib/json';
 import { ensureProfile } from '../lib/profiles';
 import { tallyDailyWinners, yesterdayDateKey } from '../lib/tally';
+import { todayChallengeDateKey } from '../lib/dailyDate';
 import { requireUser } from '../middleware/session';
 
 const DAILY_VOTES_PER_USER = 5;
@@ -95,10 +96,15 @@ daily.post('/daily-one-color/submissions', async (c) => {
     dailyAnchorHex?: string | null;
   }>();
 
+  const today = todayChallengeDateKey();
+  if (body.challengeDate !== today) {
+    return c.json({ error: 'challenge_closed' }, 400);
+  }
+
   const existing = await c.env.DB.prepare(
     `SELECT id FROM daily_palette_submissions WHERE challenge_date = ? AND user_id = ?`,
   )
-    .bind(body.challengeDate, user.id)
+    .bind(today, user.id)
     .first();
   if (existing) return c.json({ error: 'one_per_user_per_day' }, 409);
 
@@ -112,7 +118,7 @@ daily.post('/daily-one-color/submissions', async (c) => {
     )
       .bind(
         id,
-        body.challengeDate,
+        today,
         user.id,
         body.styleId,
         body.title,
@@ -146,6 +152,11 @@ daily.post('/daily-one-color/votes', async (c) => {
     return c.json({ error: 'self_vote_not_allowed' }, 400);
   }
 
+  const today = todayChallengeDateKey();
+  if (submission.challenge_date !== today) {
+    return c.json({ error: 'challenge_closed' }, 400);
+  }
+
   const dup = await c.env.DB.prepare(
     `SELECT 1 FROM daily_palette_votes WHERE submission_id = ? AND voter_user_id = ?`,
   )
@@ -175,8 +186,7 @@ daily.post('/daily-one-color/votes', async (c) => {
 });
 
 daily.post('/daily-one-color/tally-yesterday', async (c) => {
-  const today = c.req.query('today');
-  if (!today) return c.json({ error: 'today required' }, 400);
+  const today = c.req.query('today') || todayChallengeDateKey();
   const yesterday = yesterdayDateKey(today);
   const result = await tallyDailyWinners(c.env.DB, yesterday);
   return c.json(result);

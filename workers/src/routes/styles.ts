@@ -9,6 +9,39 @@ type Env = WorkerEnv & { STYLE_IMAGES: R2Bucket };
 
 const styles = new Hono<{ Bindings: Env }>();
 
+async function findDuplicatePublicTitle(
+  db: D1Database,
+  aesthetic: string | null | undefined,
+  excludeId?: string,
+) {
+  const norm = String(aesthetic || '').trim().toLowerCase();
+  if (!norm) return null;
+  const sql = excludeId
+    ? `SELECT id FROM styles WHERE is_public = 1 AND lower(trim(aesthetic)) = ? AND id != ? LIMIT 1`
+    : `SELECT id FROM styles WHERE is_public = 1 AND lower(trim(aesthetic)) = ? LIMIT 1`;
+  const stmt = excludeId
+    ? db.prepare(sql).bind(norm, excludeId)
+    : db.prepare(sql).bind(norm);
+  return stmt.first<{ id: string }>();
+}
+
+styles.get('/styles/:id', async (c) => {
+  const id = c.req.param('id');
+  const row = await c.env.DB.prepare(`SELECT * FROM styles WHERE id = ?`)
+    .bind(id)
+    .first<StyleRow>();
+  if (!row) return c.json({ error: 'not found' }, 404);
+
+  if (!row.is_public) {
+    const user = await getSessionUser(c);
+    if (!user || user.id !== row.user_id) {
+      return c.json({ error: 'not found' }, 404);
+    }
+  }
+
+  return c.json({ data: formatStyleRow(row) });
+});
+
 styles.get('/styles', async (c) => {
   const scope = c.req.query('scope') || 'explore';
   if (scope === 'explore') {
@@ -65,6 +98,11 @@ styles.post('/styles', async (c) => {
   };
   if (!row.image_url) return c.json({ error: 'image_url required' }, 400);
 
+  if (row.is_public && row.aesthetic) {
+    const dup = await findDuplicatePublicTitle(c.env.DB, row.aesthetic);
+    if (dup) return c.json({ error: 'duplicate_title' }, 409);
+  }
+
   await c.env.DB.prepare(
     `INSERT INTO styles (
       id, user_id, is_public, image_url, aesthetic, typography, fonts, palette,
@@ -95,13 +133,22 @@ styles.patch('/styles/:id', async (c) => {
   if (user instanceof Response) return user;
   const id = c.req.param('id');
   const existing = await c.env.DB.prepare(
-    `SELECT id FROM styles WHERE id = ? AND user_id = ?`,
+    `SELECT id, is_public, aesthetic FROM styles WHERE id = ? AND user_id = ?`,
   )
     .bind(id, user.id)
-    .first();
+    .first<{ id: string; is_public: number; aesthetic: string | null }>();
   if (!existing) return c.json({ error: 'not found' }, 404);
 
   const body = await c.req.json<Record<string, unknown>>();
+  const willBePublic =
+    body.is_public === true || (body.is_public === undefined && existing.is_public === 1);
+  const nextAesthetic =
+    body.aesthetic !== undefined ? (body.aesthetic as string) : existing.aesthetic;
+  if (willBePublic && nextAesthetic) {
+    const dup = await findDuplicatePublicTitle(c.env.DB, nextAesthetic, id);
+    if (dup) return c.json({ error: 'duplicate_title' }, 409);
+  }
+
   const fields: string[] = [];
   const values: unknown[] = [];
 

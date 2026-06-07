@@ -291,7 +291,9 @@ export default function AuthModal({ open, onClose }) {
               <div className="pt-2 border-t border-dashed border-zen-ink/10">
                 <p className="text-[9px] font-extralight text-zen-ink/45 px-1 leading-snug text-center">
                   Google OAuth redirect:{' '}
-                  <span className="font-mono break-all">http://localhost:5173/api/auth/callback/google</span>
+                  <span className="font-mono break-all">
+                    {typeof window !== 'undefined' ? window.location.origin : ''}/api/auth/callback/google
+                  </span>
                 </p>
               </div>
 

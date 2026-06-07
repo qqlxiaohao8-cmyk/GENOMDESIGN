@@ -84,18 +84,19 @@ function ColorSampleHandle({ hex, nx, ny, onMove }) {
  */
 export default function ExtractEditorPage({ flow, onBack, onContinue }) {
   const { imageDataUrl } = flow;
+  const saved = flow?.savedState;
   const imgRef = useRef(null);
   const containerRef = useRef(null);
   const wrapRef = useRef(null);
 
-  const [hexes, setHexes] = useState([]);
-  const [samplePoints, setSamplePoints] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [hexes, setHexes] = useState(saved?.hexes ?? []);
+  const [samplePoints, setSamplePoints] = useState(saved?.samplePoints ?? []);
+  const [loading, setLoading] = useState(!saved);
   const [error, setError] = useState(null);
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const [scale, setScale] = useState(1);
-  const [sliderValue, setSliderValue] = useState(50);
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(saved?.selectedIdx ?? 0);
+  const [scale, setScale] = useState(saved?.scale ?? 1);
+  const [sliderValue, setSliderValue] = useState(saved?.sliderValue ?? 50);
+  const [imgLoaded, setImgLoaded] = useState(Boolean(saved));
 
   const sliderBusyRef = useRef(false);
 
@@ -105,7 +106,8 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
   }, []);
 
   useEffect(() => {
-    if (!imageDataUrl) { setError('没有图片数据。'); setLoading(false); return; }
+    if (saved) return undefined;
+    if (!imageDataUrl) { setError('没有图片数据。'); setLoading(false); return undefined; }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -132,7 +134,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [imageDataUrl]);
+  }, [imageDataUrl, saved]);
 
   useEffect(() => {
     const img = imgRef.current;
@@ -275,7 +277,15 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
         <h1 className="type-flow-title">析色</h1>
         <button
           type="button"
-          onClick={() => onContinue(hexes)}
+          onClick={() =>
+            onContinue(hexes, {
+              hexes,
+              samplePoints,
+              selectedIdx,
+              sliderValue,
+              scale,
+            })
+          }
           className="type-flow-action text-zen-vermilion hover:opacity-75 transition-opacity"
         >
           继续

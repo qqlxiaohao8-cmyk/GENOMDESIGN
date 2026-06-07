@@ -10,32 +10,30 @@ const NAV_ITEMS = [
   { key: 'profile', icon: User, label: '我' },
 ];
 
+const ICON_STROKE = 1.35;
+const ICON_STROKE_ACTIVE = 1.6;
+
 /**
  * Unified navigation for mobile (bottom bar) and desktop (left sidebar).
- * - Mobile: fixed bottom bar, left→right
- * - Desktop (md+): fixed left rail, top→bottom
- *
- * @param {{ activeTab: string, onTabChange: (key: string) => void, onFabClick: () => void }} props
  */
 export default function AppNav({ activeTab, onTabChange, onFabClick }) {
   return (
     <>
       {/* ── Desktop sidebar ─────────────────────────────── */}
       <aside
-        className="hidden md:flex h-full w-20 shrink-0 flex-col items-center border-r border-zen-ink/10 bg-zen-paper/95 py-6 backdrop-blur-[2px]"
+        className="zen-glass hidden h-full w-[4.5rem] shrink-0 flex-col items-center border-r border-zen-clay/50 bg-white/30 py-8 backdrop-blur-md lg:w-20 md:flex"
         aria-label="主导航"
       >
-        {/* Logo */}
-        <div className="mb-6 flex items-center justify-center">
+        <div className="mb-8 flex items-center justify-center">
           <img
             src={logoSekong2}
-            alt="GENOM"
-            className="h-8 w-auto object-contain opacity-90"
+            alt="色空"
+            className="h-9 w-auto object-contain opacity-85 smooth-transition hover:opacity-100"
             draggable={false}
           />
         </div>
 
-        <nav className="flex flex-1 flex-col items-center gap-3">
+        <nav className="flex flex-1 flex-col items-center gap-2">
           {NAV_ITEMS.map(({ key, icon: Icon, label, isFab }) => {
             if (isFab) {
               return (
@@ -43,10 +41,10 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
                   key={key}
                   type="button"
                   onClick={onFabClick}
-                  className="my-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-zen-vermilion text-white shadow-lg shadow-zen-vermilion/30 transition-all duration-300 hover:opacity-90 active:scale-95"
+                  className="my-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-zen-coal text-zen-paper shadow-zen smooth-transition hover:bg-zen-ink active:scale-95 lg:h-[3.25rem] lg:w-[3.25rem]"
                   aria-label="创作：生色 / 析色"
                 >
-                  <Icon size={22} strokeWidth={2} aria-hidden />
+                  <Icon size={22} strokeWidth={1.5} aria-hidden />
                 </button>
               );
             }
@@ -56,22 +54,26 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
                 key={key}
                 type="button"
                 onClick={() => onTabChange(key)}
-                className={`group relative flex flex-col items-center gap-1 py-2 w-full transition-all duration-300 ${
-                  isActive ? 'text-zen-vermilion' : 'text-zen-ink/40 hover:text-zen-vermilion'
+                className={`group relative flex w-full flex-col items-center gap-1 py-2 smooth-transition ${
+                  isActive ? 'text-zen-coal' : 'text-zen-stone hover:text-zen-ink'
                 }`}
                 aria-label={label}
                 aria-current={isActive ? 'page' : undefined}
               >
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-300 ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl smooth-transition ${
                     isActive
-                      ? 'bg-zen-vermilion/10'
-                      : 'group-hover:bg-zen-vermilion/[0.06]'
+                      ? 'bg-zen-sand shadow-zen'
+                      : 'group-hover:bg-white/50'
                   }`}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
+                  <Icon
+                    size={20}
+                    strokeWidth={isActive ? ICON_STROKE_ACTIVE : ICON_STROKE}
+                    aria-hidden
+                  />
                 </div>
-                <span className="text-[9px] font-extralight tracking-wide">{label}</span>
+                <span className="text-[9px] font-extralight tracking-[0.2em]">{label}</span>
               </button>
             );
           })}
@@ -79,20 +81,20 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
       </aside>
 
       {/* ── Mobile bottom bar ────────────────────────────── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-[60] flex items-center justify-around rounded-t-[1.5rem] border-t border-zen-ink/10 bg-white/95 px-1 pt-2 pb-[max(0.6rem,env(safe-area-inset-bottom,0px))] shadow-[0_-6px_24px_rgba(0,0,0,0.06)] backdrop-blur-xl">
+      <div className="zen-glass fixed bottom-0 left-0 right-0 z-[60] flex items-center justify-around rounded-t-3xl border-t border-zen-clay/50 bg-white/50 px-2 pt-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] shadow-zen-lg backdrop-blur-xl md:hidden">
         {NAV_ITEMS.map(({ key, icon: Icon, label, isFab }) => {
           if (isFab) {
             return (
-              <div key={key} className="relative -mt-7 flex flex-col items-center">
+              <div key={key} className="relative -mt-8 flex flex-col items-center">
                 <button
                   type="button"
                   onClick={onFabClick}
-                  className="flex h-13 w-13 h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[1.1rem] border-2 border-white bg-zen-vermilion text-white shadow-lg shadow-zen-vermilion/35 transition-transform active:scale-95"
+                  className="flex h-[3.35rem] w-[3.35rem] items-center justify-center rounded-2xl border border-white/80 bg-zen-coal text-zen-paper shadow-zen-lg smooth-transition active:scale-95"
                   aria-label="创作"
                 >
-                  <Icon size={24} strokeWidth={2.25} aria-hidden />
+                  <Icon size={24} strokeWidth={1.5} aria-hidden />
                 </button>
-                <span className="mt-0.5 text-[9px] font-extralight tracking-wide text-zen-ink/35">{label}</span>
+                <span className="mt-1 text-[9px] font-extralight tracking-[0.2em] text-zen-stone">{label}</span>
               </div>
             );
           }
@@ -102,14 +104,18 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
               key={key}
               type="button"
               onClick={() => onTabChange(key)}
-              className={`flex min-w-[3rem] flex-col items-center gap-0.5 py-0.5 transition-colors duration-200 ${
-                isActive ? 'text-zen-vermilion' : 'text-zen-ink/35'
+              className={`flex min-w-[3.25rem] flex-col items-center gap-0.5 py-0.5 smooth-transition ${
+                isActive ? 'text-zen-coal' : 'text-zen-stone'
               }`}
               aria-label={label}
               aria-current={isActive ? 'page' : undefined}
             >
-              <Icon size={22} strokeWidth={isActive ? 2.5 : 2} aria-hidden />
-              <span className="text-[9px] font-extralight tracking-wide">{label}</span>
+              <Icon
+                size={22}
+                strokeWidth={isActive ? ICON_STROKE_ACTIVE : ICON_STROKE}
+                aria-hidden
+              />
+              <span className="text-[9px] font-extralight tracking-[0.18em]">{label}</span>
             </button>
           );
         })}

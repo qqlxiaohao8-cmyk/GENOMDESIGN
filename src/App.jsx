@@ -60,7 +60,8 @@ export default function App() {
     communityTagList, bumpTagClick,
     toggleVaultFavoriteFromExplore, persistColorCardVaultRow, deleteVaultItem, removeFromVault,
     publishColorCard, publishDailyPaletteCard, downloadColorCardPng, copyShareLink,
-    flowStack, pushFlow, popFlow, clearFlows,
+    flowStack, pushFlow, popFlow, clearFlows, updateFlowTop,
+    exploreFeed, personalLibrary, fetchStyleById,
   } = app;
 
   const [activeTab, setActiveTab] = useState('favorites');
@@ -68,8 +69,9 @@ export default function App() {
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   // Shared style preview overlay (deep-link or card detail)
   const [previewOverlay, setPreviewOverlay] = useState(null);
+  const pendingReturnRef = useRef(null);
   const [profileSetupDone, setProfileSetupDone] = useState(false);
-  const [desktopLandingOpen, setDesktopLandingOpen] = useState(shouldShowDesktopLanding);
+  const [desktopLandingOpen, setDesktopLandingOpen] = useState(false);
   const mainScrollRef = useRef(null);
 
   // OAuth redirect / fresh load — ensure session cookie is picked up
@@ -77,32 +79,57 @@ export default function App() {
     authClient.getSession().catch(() => {});
   }, []);
 
-  // Logged-in or onboarding users should never see the marketing landing
+  // Wait for auth before showing intro; logged-in users enter directly
   useEffect(() => {
     if (!authReady) return;
-    if (user) dismissDesktopLanding(setDesktopLandingOpen);
+    if (user) {
+      dismissDesktopLanding(setDesktopLandingOpen);
+      return;
+    }
+    if (shouldShowDesktopLanding()) setDesktopLandingOpen(true);
   }, [authReady, user]);
 
-  // ── Deep-link: ?style=<uuid> ──────────────────────────────────────────
+  // ── Deep-link: ?style=<uuid>&open=shengse|analysis ───────────────────
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const styleId = params.get('style');
-    if (!styleId) return;
-    history.replaceState(null, '', window.location.pathname);
-    // Wait for feed to populate then open overlay
-    const tryOpen = (retries = 0) => {
-      const item = [...(app.exploreFeed || []), ...(app.personalLibrary || [])].find(
-        (i) => i.id === styleId
+    if (!styleId || !authReady) return;
+
+    let cancelled = false;
+
+    const resolveItem = async () => {
+      const local = [...(exploreFeed || []), ...(personalLibrary || [])].find(
+        (i) => i.id === styleId,
       );
-      if (item) {
-        const cd = itemColorCardData(item);
-        if (cd) setPreviewOverlay({ colorCardData: cd, item });
-      } else if (retries < 5) {
-        setTimeout(() => tryOpen(retries + 1), 600);
-      }
+      if (local) return local;
+      return fetchStyleById(styleId);
     };
-    tryOpen();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    (async () => {
+      const item = await resolveItem();
+      if (cancelled || !item) return;
+
+      const openMode = params.get('open') || 'analysis';
+      history.replaceState(null, '', window.location.pathname);
+      dismissDesktopLanding(setDesktopLandingOpen);
+
+      if (openMode === 'shengse') {
+        const cd = itemColorCardData(item);
+        const hexes = (cd?.colors || [])
+          .map((c) => c?.hex)
+          .filter(Boolean)
+          .map(normalizeHex);
+        if (hexes.length >= 2) {
+          pushFlow({ type: 'shengSe', hexes, source: 'share' });
+        }
+        return;
+      }
+
+      pushFlow({ type: 'paletteAnalysis', itemId: styleId, item });
+    })();
+
+    return () => { cancelled = true; };
+  }, [authReady, exploreFeed, personalLibrary, fetchStyleById, pushFlow]);
 
   // ── Close auth modal on sign in ───────────────────────────────────────
   useEffect(() => {
@@ -143,6 +170,44 @@ export default function App() {
   };
 
   // ── Flow helpers ──────────────────────────────────────────────────────
+  const restoreCardPreview = (itemId) => {
+    const item = [...(exploreFeed || []), ...(personalLibrary || [])].find((i) => i.id === itemId);
+    if (!item) return;
+    const cd = itemColorCardData(item);
+    if (cd) setPreviewOverlay({ colorCardData: cd, item });
+  };
+
+  const handleFlowBack = () => {
+    const top = flowStack[flowStack.length - 1];
+    if (top?.returnTo?.kind === 'cardPreview' && flowStack.length === 1) {
+      pendingReturnRef.current = top.returnTo;
+    }
+    popFlow();
+  };
+
+  useEffect(() => {
+    if (flowStack.length > 0 || !pendingReturnRef.current) return;
+    const { itemId } = pendingReturnRef.current;
+    pendingReturnRef.current = null;
+    restoreCardPreview(itemId);
+  }, [flowStack.length, exploreFeed, personalLibrary]);
+
+  const openShengSeFromItem = (item, colors) => {
+    const hexes = (colors || [])
+      .map((c) => (typeof c === 'string' ? c : c?.hex))
+      .filter(Boolean)
+      .map(normalizeHex);
+    const flow = {
+      type: 'shengSe',
+      hexes: hexes.length >= 2 ? hexes : undefined,
+      source: 'card',
+    };
+    if (item?.id) {
+      flow.returnTo = { kind: 'cardPreview', itemId: item.id };
+    }
+    pushFlow(flow);
+  };
+
   const openShengSe = (seedHexes) => {
     const hexes = seedHexes?.length >= 2 ? seedHexes.map(normalizeHex) : undefined;
     pushFlow({ type: 'shengSe', hexes, source: 'card' });
@@ -167,9 +232,15 @@ export default function App() {
       return (
         <ExtractEditorPage
           flow={currentFlow}
-          onBack={popFlow}
-          onContinue={(hexes) => {
-            pushFlow({ type: 'shengSe', hexes, source: 'extract', imageDataUrl: currentFlow.imageDataUrl });
+          onBack={handleFlowBack}
+          onContinue={(hexes, savedState) => {
+            updateFlowTop({ savedState });
+            pushFlow({
+              type: 'shengSe',
+              hexes,
+              source: 'extract',
+              imageDataUrl: currentFlow.imageDataUrl,
+            });
           }}
         />
       );
@@ -179,10 +250,19 @@ export default function App() {
       return (
         <ShengSePage
           flow={currentFlow}
-          onBack={popFlow}
-          onNext={(hexes, tags) => {
+          onBack={handleFlowBack}
+          onNext={(hexes, tags, savedState) => {
+            updateFlowTop({ hexes, savedState, tags });
             const imageDataUrl = currentFlow.imageDataUrl || PLACEHOLDER_IMAGE;
-            pushFlow({ type: 'publish', hexes, tags: tags || [], imageDataUrl, source: currentFlow.source });
+            pushFlow({
+              type: 'publish',
+              hexes,
+              tags: tags || [],
+              paletteMeta: savedState?.paletteMeta ?? currentFlow.paletteMeta,
+              imageDataUrl,
+              source: currentFlow.source,
+              returnTo: currentFlow.returnTo,
+            });
           }}
           onSaveToFavorites={async (hexes) => {
             if (!user) { setAuthModalOpen(true); return; }
@@ -213,7 +293,10 @@ export default function App() {
     }
 
     if (currentFlow.type === 'paletteAnalysis') {
-      const item = vaultColorPaletteItems.find((i) => i.id === currentFlow.itemId);
+      const item =
+        currentFlow.item ||
+        vaultColorPaletteItems.find((i) => i.id === currentFlow.itemId) ||
+        colorPaletteExploreFeed.find((i) => i.id === currentFlow.itemId);
       if (!item) {
         popFlow();
         return null;
@@ -235,7 +318,8 @@ export default function App() {
           flow={currentFlow}
           user={user}
           publishTarget={isDailySubmit ? 'dailyOneColor' : 'colorSea'}
-          onBack={popFlow}
+          existingPublicTitles={colorPaletteExploreFeed.map((i) => i.aesthetic).filter(Boolean)}
+          onBack={handleFlowBack}
           onOpenAuth={() => setAuthModalOpen(true)}
           onPublish={async ({ title, hexes, imageDataUrl, tags }) => {
             if (!user) { setAuthModalOpen(true); return { ok: false, error: '请先登录。' }; }
@@ -246,8 +330,15 @@ export default function App() {
                   imageDataUrl,
                   tags,
                   dailyAnchorHex: currentFlow.dailyData?.hex,
+                  dailyDateKey: currentFlow.dailyData?.dateKey,
                 })
-              : await publishColorCard({ title, hexes, imageDataUrl, tags });
+              : await publishColorCard({
+                  title,
+                  hexes,
+                  imageDataUrl,
+                  tags,
+                  paletteMeta: currentFlow.paletteMeta,
+                });
             if (res.ok) {
               clearFlows();
               handleTabChange(isDailySubmit ? 'dailyOneColor' : 'colorSea');
@@ -255,7 +346,7 @@ export default function App() {
             return res;
           }}
           onDownload={(colors, title) => downloadColorCardPng(colors, title)}
-          onCopyLink={(id) => copyShareLink(id)}
+          onCopyLink={(id) => copyShareLink(id, 'shengse')}
         />
       );
     }
@@ -274,9 +365,10 @@ export default function App() {
             vaultColorPaletteItems={vaultColorPaletteItems}
             onOpenAuth={() => setAuthModalOpen(true)}
             onDeleteItem={(id) => removeFromVault(id)}
-            onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
+            onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onAnalyzePalette={openPaletteAnalysis}
+            onCopyLink={(id) => copyShareLink(id, 'analysis')}
           />
         );
       case 'colorSea':
@@ -289,9 +381,9 @@ export default function App() {
             communityTagList={communityTagList}
             onTagClick={bumpTagClick}
             onToggleFavorite={(item) => toggleVaultFavoriteFromExplore(item)}
-            onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
+            onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
-            onCopyLink={(id) => copyShareLink(id)}
+            onCopyLink={(id) => copyShareLink(id, 'analysis')}
             onOpenAuth={() => setAuthModalOpen(true)}
           />
         );
@@ -300,7 +392,7 @@ export default function App() {
           <DailyOneColorPage
             user={user}
             onOpenAuth={() => setAuthModalOpen(true)}
-            onOpenInShengSe={(colors) => openShengSe(colors?.map((c) => c?.hex || c))}
+            onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onBackToGame={() => handleTabChange('game')}
           />
@@ -329,7 +421,7 @@ export default function App() {
 
   return (
     <>
-    {desktopLandingOpen && !user && (
+    {authReady && desktopLandingOpen && !user && (
       <LandingPage onGoExplore={() => dismissDesktopLanding(setDesktopLandingOpen)} />
     )}
     {showProfileOnboarding && (
@@ -351,7 +443,7 @@ export default function App() {
       />
     )}
     <div
-      className={`relative flex h-screen max-h-dvh min-h-0 flex-col overflow-hidden bg-[#FBFBFC] text-zen-ink font-zenSans font-extralight selection:bg-zen-vermilion/15 selection:text-zen-ink ${showProfileOnboarding ? 'invisible h-0 overflow-hidden' : ''}`}
+      className={`xuan-paper relative flex h-screen max-h-dvh min-h-0 flex-col overflow-hidden font-zenSans font-extralight ${showProfileOnboarding ? 'invisible h-0 overflow-hidden' : ''}`}
       aria-hidden={showProfileOnboarding}
     >
       <div className="zen-mist-layer zen-mist-layer--subtle pointer-events-none" aria-hidden>
@@ -370,7 +462,7 @@ export default function App() {
       >
         <main
           ref={mainScrollRef}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden pt-[env(safe-area-inset-top,0px)] md:pt-0 pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 bg-zen-mist"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-zen-sand pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
         >
           {renderTab()}
         </main>
@@ -397,9 +489,8 @@ export default function App() {
           colorCardData={previewOverlay.colorCardData}
           onClose={() => setPreviewOverlay(null)}
           onOpenInExtract={() => {
-            setPreviewOverlay(null);
             const colors = previewOverlay.colorCardData?.colors || [];
-            openShengSe(colors.map((c) => c?.hex));
+            openShengSeFromItem(previewOverlay.item, colors);
           }}
         />
       )}

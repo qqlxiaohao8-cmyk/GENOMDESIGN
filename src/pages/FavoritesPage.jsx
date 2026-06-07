@@ -11,11 +11,11 @@ const PAGE_DESC = '你的私人色卡库，随时查看与再编辑';
 
 function FavoritesPageShell({ children }) {
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden">
-      <div className="shrink-0 px-4 pt-4 md:px-6 md:pt-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-zen-paper">
+      <div className="zen-page-header">
         <PageHeader title={PAGE_TITLE} description={PAGE_DESC} />
       </div>
-      {children}
+      <div className="zen-page-body flex-1">{children}</div>
     </div>
   );
 }
@@ -32,6 +32,7 @@ export default function FavoritesPage({
   onDeleteItem,
   onOpenInShengSe,
   onDownload,
+  onCopyLink,
   onAnalyzePalette,
 }) {
   if (!authReady) {
@@ -49,19 +50,19 @@ export default function FavoritesPage({
       <FavoritesPageShell>
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-xs text-center">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-zen-ink/10 bg-zen-mist/60">
-            <Bookmark size={28} strokeWidth={1.5} className="text-zen-ink/30" />
+          <div className="zen-panel mx-auto mb-5 flex h-16 w-16 items-center justify-center p-0">
+            <Bookmark size={28} strokeWidth={1.35} className="text-zen-stone" />
           </div>
           <h2 className="type-h2 mb-2">
             登录后解锁收藏
           </h2>
-          <p className="type-body mb-7 text-zen-ink/50">
+          <p className="type-body mb-7 text-zen-stone">
             保存喜欢的色卡，随时查看和使用。
           </p>
           <button
             type="button"
             onClick={onOpenAuth}
-            className="w-full rounded-full bg-zen-ink py-3 text-[11px] font-extralight uppercase tracking-[0.2em] text-white transition-opacity hover:opacity-85"
+            className="zen-btn-primary w-full"
           >
             登录 / 注册
           </button>
@@ -93,7 +94,7 @@ export default function FavoritesPage({
 
   return (
     <FavoritesPageShell>
-      <div className="flex-1 px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] md:px-6 md:pb-8">
+      <div className="flex-1">
         <MasonryColumns className={FAVORITES_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
             {vaultColorPaletteItems.map((item) => {
               const cd = itemColorCardData(item);
@@ -106,8 +107,9 @@ export default function FavoritesPage({
                   mode="favorites"
                   onUnfavorite={() => onDeleteItem?.(item.id)}
                   onAnalyze={() => onAnalyzePalette?.(item)}
-                  onOpenInShengSe={() => onOpenInShengSe?.(cd.colors)}
+                  onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
                   onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
+                  onCopyLink={() => onCopyLink?.(item.id)}
                 />
               );
             })}

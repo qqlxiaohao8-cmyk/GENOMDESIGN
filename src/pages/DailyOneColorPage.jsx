@@ -119,7 +119,7 @@ export default function DailyOneColorPage({
                     || (remainingVotes <= 0 && !item.votedByMe)
                   }
                   onVote={() => handleVote(item)}
-                  onOpenInShengSe={() => onOpenInShengSe?.(item.colors)}
+                  onOpenInShengSe={() => onOpenInShengSe?.(item.colors, item)}
                   onDownload={() => onDownload?.(item.colors, item.title)}
                 />
               ))}

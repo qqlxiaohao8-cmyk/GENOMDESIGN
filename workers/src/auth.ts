@@ -34,6 +34,9 @@ export function createAuth(env: WorkerEnv) {
       'http://127.0.0.1:5173',
       'http://localhost:8787',
       'http://127.0.0.1:8787',
+      'https://sekong.app',
+      'https://www.sekong.app',
+      // Legacy dev/staging URL — remove after sekong.app is stable
       'https://genomlab.qqlxiaohao8.workers.dev',
     ],
     emailAndPassword: {

@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getDailyPalette } from '../lib/dailyPalette';
 import { ChevronDown } from 'lucide-react';
 import logoSekong2 from '../../色空2.png';
-import logoSquare from '../../色空logo方形.png';
+
+const STONE_INTRO_SRC = '/sekong-stone-intro.mp4';
 
 const BRUSH_RADIUS = 52;
 const BRUSH_JITTER = 28;
@@ -338,15 +339,49 @@ function MobileInkIntro({ onDone }) {
   );
 }
 
-export default function LandingPage({ onGoExplore }) {
-  const isMobile = useIsMobile();
-  const [mainLoaded, setMainLoaded] = useState(false);
-  const [mobileAnimDone, setMobileAnimDone] = useState(false);
+/** Desktop: play stone intro video, hold last frame, then click to enter. */
+function DesktopStoneIntro({ onGoExplore }) {
+  const videoRef = useRef(null);
+  const [phase, setPhase] = useState('loading');
   const [desktopLeaving, setDesktopLeaving] = useState(false);
-  const scrollRef = useRef(null);
 
-  const handleDesktopEnter = useCallback(() => {
-    if (desktopLeaving) return;
+  const holdLastFrame = useCallback(() => {
+    const v = videoRef.current;
+    if (v && Number.isFinite(v.duration) && v.duration > 0) {
+      v.pause();
+      v.currentTime = Math.max(0, v.duration - 0.05);
+    }
+    setPhase('ended');
+  }, []);
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return undefined;
+
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const startPlayback = () => {
+      if (reduced) {
+        holdLastFrame();
+        return;
+      }
+      setPhase('playing');
+      v.play().catch(() => {
+        v.muted = true;
+        v.play().catch(() => holdLastFrame());
+      });
+    };
+
+    if (v.readyState >= 1) startPlayback();
+    else v.addEventListener('loadedmetadata', startPlayback, { once: true });
+
+    return () => v.removeEventListener('loadedmetadata', startPlayback);
+  }, [holdLastFrame]);
+
+  const handleEnter = useCallback(() => {
+    if (phase !== 'ended' || desktopLeaving) return;
     const reduced =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -355,7 +390,7 @@ export default function LandingPage({ onGoExplore }) {
       return;
     }
     setDesktopLeaving(true);
-  }, [desktopLeaving, onGoExplore]);
+  }, [phase, desktopLeaving, onGoExplore]);
 
   useEffect(() => {
     if (!desktopLeaving) return undefined;
@@ -363,27 +398,50 @@ export default function LandingPage({ onGoExplore }) {
     return () => window.clearTimeout(timer);
   }, [desktopLeaving, onGoExplore]);
 
+  return (
+    <div
+      className={`landing-page-shell fixed inset-0 z-[300] flex bg-black ${phase === 'ended' ? 'cursor-pointer' : 'cursor-default'} ${desktopLeaving ? 'is-leaving' : ''}`}
+      onClick={handleEnter}
+      onKeyDown={(e) => {
+        if (phase !== 'ended') return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleEnter();
+        }
+      }}
+      role={phase === 'ended' ? 'button' : 'presentation'}
+      tabIndex={phase === 'ended' ? 0 : -1}
+      aria-label={phase === 'ended' ? '进入色空' : undefined}
+    >
+      <video
+        ref={videoRef}
+        src={STONE_INTRO_SRC}
+        className="absolute inset-0 h-full w-full object-cover"
+        playsInline
+        preload="auto"
+        muted={false}
+        onEnded={holdLastFrame}
+      />
+
+      {phase === 'ended' && !desktopLeaving && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-10 z-10 flex justify-center md:bottom-14">
+          <p className="landing-enter-hint text-sm font-extralight tracking-[0.35em] text-white/90 drop-shadow-[0_2px_12px_rgba(0,0,0,0.45)]">
+            点击屏幕进入
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function LandingPage({ onGoExplore }) {
+  const isMobile = useIsMobile();
+  const [mobileAnimDone, setMobileAnimDone] = useState(false);
+
   const handleMobileAnimDone = useCallback(() => {
     setMobileAnimDone(true);
     onGoExplore();
   }, [onGoExplore]);
-
-  const scrollDown = useCallback(() => {
-    scrollRef.current?.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    let ticking = false;
-    const onWheel = (e) => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => { ticking = false; });
-    };
-    el.addEventListener('wheel', onWheel, { passive: true });
-    return () => el.removeEventListener('wheel', onWheel);
-  }, []);
 
   /* ── Mobile: main-page.png underneath, man-on-stone + logo visible,
        white canvas on top slowly erased by brush stamps ── */
@@ -446,33 +504,6 @@ export default function LandingPage({ onGoExplore }) {
     );
   }
 
-  /* ── Desktop: 白底首页，左下角 2× 方形 logo ── */
-  return (
-    <div
-      className={`landing-page-shell fixed inset-0 z-[300] flex bg-white cursor-pointer ${desktopLeaving ? 'is-leaving' : ''}`}
-      onClick={handleDesktopEnter}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleDesktopEnter();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label="进入色空"
-    >
-      <div className="pointer-events-none absolute bottom-0 left-0 p-8 md:p-10 lg:p-12">
-        <div className="origin-bottom-left scale-[4]">
-          <div className="landing-logo-leave-wrap">
-            <img
-              src={logoSquare}
-              alt="色空"
-              draggable={false}
-              className="landing-logo-float block h-[7rem] w-auto select-none"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  /* ── Desktop: stone intro video → last frame → click to enter ── */
+  return <DesktopStoneIntro onGoExplore={onGoExplore} />;
 }

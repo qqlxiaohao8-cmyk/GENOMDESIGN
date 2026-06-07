@@ -1,6 +1,7 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Bookmark, BookmarkX, Sparkles, Download, Link, MoreHorizontal, ThumbsUp, BarChart3 } from 'lucide-react';
-import ColorSeaStripes, { PALETTE_FEED_STRIPE_HEIGHT_CLASS } from './ColorSeaStripes';
+import ColorSeaStripes from './ColorSeaStripes';
 import {
   enrichColorsWithChineseNames,
   resolveChinesePaletteTitle,
@@ -14,7 +15,7 @@ export function formatLikeCount(n) {
 }
 
 const footerBtn =
-  'flex items-center justify-center rounded-full text-zen-ink/50 hover:bg-zen-ink/[0.05] transition-colors';
+  'flex items-center justify-center rounded-full text-zen-stone smooth-transition hover:bg-zen-sand hover:text-zen-ink';
 
 /**
  * 色海 / 收藏 feed 色卡：竖条色盘 + 底部名称与操作（无边框）。
@@ -38,7 +39,47 @@ export default function PaletteFeedCard({
   onVote,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState(null);
   const menuRef = useRef(null);
+  const triggerRef = useRef(null);
+
+  const updateMenuPos = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setMenuPos({
+      bottom: window.innerHeight - rect.top + 4,
+      right: window.innerWidth - rect.right,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    updateMenuPos();
+    const onLayout = () => updateMenuPos();
+    window.addEventListener('scroll', onLayout, true);
+    window.addEventListener('resize', onLayout);
+    return () => {
+      window.removeEventListener('scroll', onLayout, true);
+      window.removeEventListener('resize', onLayout);
+    };
+  }, [menuOpen, updateMenuPos]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e) => {
+      if (
+        menuRef.current?.contains(e.target)
+        || triggerRef.current?.contains(e.target)
+      ) return;
+      setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [menuOpen]);
+
+  const isFavorites = mode === 'favorites';
+  const isDailyVote = mode === 'dailyVote';
 
   const displayColors = useMemo(() => {
     const row = Array.isArray(colors) && colors.length >= 2
@@ -47,24 +88,13 @@ export default function PaletteFeedCard({
     return enrichColorsWithChineseNames(row);
   }, [colors]);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [menuOpen]);
-
-  const isFavorites = mode === 'favorites';
-  const isDailyVote = mode === 'dailyVote';
   const displayTitle = useMemo(
     () => resolveChinesePaletteTitle(title, displayColors) || '未命名色卡',
     [title, displayColors],
   );
 
-  const menuPanel = menuOpen ? (
-    <div className="absolute bottom-full right-0 z-50 mb-1 min-w-[9rem] rounded-xl bg-white py-1 shadow-lg">
+  const menuItems = (
+    <>
       {onAnalyze && (
         <button
           type="button"
@@ -105,21 +135,31 @@ export default function PaletteFeedCard({
           拷贝链接
         </button>
       )}
-    </div>
-  ) : null;
+    </>
+  );
+
+  const menuPanel = menuOpen && menuPos && typeof document !== 'undefined'
+    ? createPortal(
+      <div
+        ref={menuRef}
+        className="fixed z-[500] min-w-[9rem] rounded-2xl border border-zen-clay/60 bg-white/95 py-1 shadow-zen-lg ring-1 ring-zen-clay/30 backdrop-blur-md"
+        style={{ bottom: menuPos.bottom, right: menuPos.right }}
+      >
+        {menuItems}
+      </div>,
+      document.body,
+    )
+    : null;
 
   return (
-    <div className="flex flex-col overflow-hidden rounded-2xl bg-white">
+    <div className="zen-card flex flex-col">
       <ColorSeaStripes
         colors={displayColors}
-        className={`!rounded-none rounded-t-2xl ${PALETTE_FEED_STRIPE_HEIGHT_CLASS}`}
+        className="!rounded-none"
       />
 
-      <div
-        className="relative flex min-h-[2.25rem] items-center gap-2 rounded-b-2xl bg-white px-2.5 py-1.5"
-        ref={menuRef}
-      >
-        <p className="type-caption min-w-0 flex-1 truncate text-zen-ink/75">
+      <div className="relative flex min-h-[2.25rem] items-center gap-2 border-t border-zen-clay/40 bg-white/40 px-2.5 py-2 backdrop-blur-sm">
+        <p className="type-caption min-w-0 flex-1 truncate text-zen-ink">
           {displayTitle}
         </p>
         <div className="relative flex shrink-0 items-center gap-0.5">
@@ -161,10 +201,12 @@ export default function PaletteFeedCard({
           )}
 
           <button
+            ref={triggerRef}
             type="button"
             onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
             className={`${footerBtn} h-8 w-8 hover:text-zen-ink`}
             aria-label="更多选项"
+            aria-expanded={menuOpen}
           >
             <MoreHorizontal size={13} strokeWidth={2} aria-hidden />
           </button>

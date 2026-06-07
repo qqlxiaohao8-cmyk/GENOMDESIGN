@@ -33,12 +33,11 @@ function buildDbCache(entries) {
 /** chinese-poetry 构建索引（构建时已合并手写 override） */
 const _dbCache = buildDbCache(generatedIndex);
 
-const _bucketEntryCache = new Map();
+const _hexEntryCache = new Map();
 
 function nearestPoeticEntry(hex) {
   const norm = normalizeHex(hex);
-  const bucket = oklabBucketKey(norm);
-  if (_bucketEntryCache.has(bucket)) return _bucketEntryCache.get(bucket);
+  if (_hexEntryCache.has(norm)) return _hexEntryCache.get(norm);
 
   let best = null;
   let bestD = Infinity;
@@ -60,7 +59,7 @@ function nearestPoeticEntry(hex) {
       }
     : { ...UNKNOWN_ENTRY, hex: norm };
 
-  _bucketEntryCache.set(bucket, out);
+  _hexEntryCache.set(norm, out);
   return out;
 }
 
@@ -110,24 +109,25 @@ function pickPreferredTwoChar(item) {
  * @returns {string[]}
  */
 export function uniquePoeticNamesForSwatches(items) {
-  const used = new Set();
+  const rows = (items || []).map((item, index) => ({
+    item,
+    index,
+    hex: normalizeHex(item?.hex),
+  }));
   const hexToName = new Map();
-  const out = [];
+  const used = new Set();
 
-  for (const item of items) {
-    const hex = normalizeHex(item?.hex);
-    if (hexToName.has(hex)) {
-      out.push(hexToName.get(hex));
-      continue;
-    }
+  const sortedByHex = [...rows].sort((a, b) => a.hex.localeCompare(b.hex));
+  for (const row of sortedByHex) {
+    if (hexToName.has(row.hex)) continue;
 
-    const preferred = pickPreferredTwoChar(item);
+    const preferred = pickPreferredTwoChar(row.item);
     let chosen = null;
     if (preferred && !used.has(preferred)) {
       chosen = preferred;
     } else {
       const ranked = [..._dbCache]
-        .map((e) => ({ name2: e.name2, d: oklabDistSqFromHex(hex, e.hex) }))
+        .map((e) => ({ name2: e.name2, d: oklabDistSqFromHex(row.hex, e.hex) }))
         .sort((a, b) => a.d - b.d);
       for (const r of ranked) {
         if (!used.has(r.name2)) {
@@ -139,11 +139,10 @@ export function uniquePoeticNamesForSwatches(items) {
 
     if (!chosen) chosen = '素灰';
     used.add(chosen);
-    hexToName.set(hex, chosen);
-    out.push(chosen);
+    hexToName.set(row.hex, chosen);
   }
 
-  return out;
+  return rows.map((row) => hexToName.get(row.hex) || '素灰');
 }
 
 export const POETIC_COLOR_DB_SIZE = _dbCache.length;

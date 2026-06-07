@@ -27,7 +27,16 @@ bucket_name = "sekong-style-images"
 
 [vars]
 # Overridden in .dev.vars for local dev (use http://localhost:5173 with Vite proxy)
-BETTER_AUTH_URL = "https://genomlab.qqlxiaohao8.workers.dev"
+BETTER_AUTH_URL = "https://sekong.app"
+
+# Custom domain (after sekong.app is on Cloudflare — wrangler deploy attaches it)
+[[routes]]
+pattern = "sekong.app"
+custom_domain = true
+
+[[routes]]
+pattern = "www.sekong.app"
+custom_domain = true
 
 # Secrets (wrangler secret put): BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 

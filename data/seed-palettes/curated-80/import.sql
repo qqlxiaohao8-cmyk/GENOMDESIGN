@@ -1,0 +1,1 @@
+-- curated-80 palettes removed.

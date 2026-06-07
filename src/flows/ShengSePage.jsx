@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, startTransition } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, startTransition } from 'react';
 import {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight,
   Lock, Unlock, Plus, Minus, RefreshCw, Bookmark,
@@ -327,17 +327,20 @@ function generateHarmonizedColor(existingHexes) {
  * flow payload: { type: 'shengSe', hexes?: string[], source?: string }
  */
 export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites }) {
-  const seedHexes = parseFlowHexes(flow?.hexes);
+  const saved = flow?.savedState;
+  const seedHexes = parseFlowHexes(saved?.hexes ?? flow?.hexes);
   const hasSeed = seedHexes.length >= MIN_COLORS;
 
   const [hexes, setHexes] = useState(() =>
     hasSeed ? seedHexes : [...LOADING_PLACEHOLDER],
   );
   const [locked, setLocked] = useState(() =>
-    Array(hasSeed ? seedHexes.length : LOADING_PLACEHOLDER.length).fill(false),
+    saved?.locked?.length
+      ? saved.locked
+      : Array(hasSeed ? seedHexes.length : LOADING_PLACEHOLDER.length).fill(false),
   );
   const [paletteBusy, setPaletteBusy] = useState(!hasSeed);
-  const [paletteMeta, setPaletteMeta] = useState(null);
+  const [paletteMeta, setPaletteMeta] = useState(saved?.paletteMeta ?? null);
   const [pickerIdx, setPickerIdx] = useState(null);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveToast, setSaveToast] = useState(null);
@@ -378,64 +381,114 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     });
   }, [hexes.length]);
 
-  // Undo/redo history (ring of hex arrays)
-  const historyRef = useRef([]);
-  const historyPosRef = useRef(-1);
+  // Undo/redo: full palette snapshots (hexes + locked + meta)
+  const [paletteHistory, setPaletteHistory] = useState({ stack: [], index: -1 });
+  const historySeededRef = useRef(false);
 
-  const pushHistory = useCallback((newHexes) => {
-    const truncated = historyRef.current.slice(0, historyPosRef.current + 1);
-    truncated.push([...newHexes]);
-    historyRef.current = truncated.slice(-30);
-    historyPosRef.current = historyRef.current.length - 1;
+  const snapshotEntry = useCallback((hexList, lockList, meta) => ({
+    hexes: [...hexList],
+    locked: [...lockList],
+    paletteMeta: meta ?? null,
+  }), []);
+
+  const applyHistoryEntry = useCallback((entry) => {
+    if (!entry?.hexes?.length) return;
+    setHexes([...entry.hexes]);
+    setLocked([...(entry.locked ?? Array(entry.hexes.length).fill(false))]);
+    setPaletteMeta(entry.paletteMeta ?? null);
   }, []);
+
+  const appendHistory = useCallback((entry) => {
+    setPaletteHistory((prev) => {
+      const snap = snapshotEntry(entry.hexes, entry.locked, entry.paletteMeta);
+      const truncated = prev.stack.slice(0, prev.index + 1);
+      truncated.push(snap);
+      const stack = truncated.slice(-30);
+      return { stack, index: stack.length - 1 };
+    });
+  }, [snapshotEntry]);
+
+  const canUndo = paletteHistory.index > 0;
+  const canRedo = paletteHistory.index >= 0
+    && paletteHistory.index < paletteHistory.stack.length - 1;
 
   const undo = useCallback(() => {
-    if (historyPosRef.current <= 0) return;
-    historyPosRef.current -= 1;
-    const prev = historyRef.current[historyPosRef.current];
-    if (!prev) return;
-    setHexes([...prev]);
-    setLocked(Array(prev.length).fill(false));
-  }, []);
+    setPaletteHistory((prev) => {
+      if (prev.index <= 0) return prev;
+      const nextIndex = prev.index - 1;
+      const entry = prev.stack[nextIndex];
+      if (entry) applyHistoryEntry(entry);
+      return { ...prev, index: nextIndex };
+    });
+  }, [applyHistoryEntry]);
 
   const redo = useCallback(() => {
-    if (historyPosRef.current >= historyRef.current.length - 1) return;
-    historyPosRef.current += 1;
-    const next = historyRef.current[historyPosRef.current];
-    if (!next) return;
-    setHexes([...next]);
-    setLocked(Array(next.length).fill(false));
-  }, []);
+    setPaletteHistory((prev) => {
+      if (prev.index >= prev.stack.length - 1) return prev;
+      const nextIndex = prev.index + 1;
+      const entry = prev.stack[nextIndex];
+      if (entry) applyHistoryEntry(entry);
+      return { ...prev, index: nextIndex };
+    });
+  }, [applyHistoryEntry]);
 
-  // Regenerate — respects locked swatches
+  // Seed history synchronously once the first real palette is ready
+  useLayoutEffect(() => {
+    if (paletteBusy || historySeededRef.current) return;
+    if (hexes.length < MIN_COLORS || hexes.every(isPlaceholderHex)) return;
+    historySeededRef.current = true;
+    setPaletteHistory({
+      stack: [snapshotEntry(hexes, locked, paletteMeta)],
+      index: 0,
+    });
+  }, [hexes, locked, paletteMeta, paletteBusy, snapshotEntry]);
+
+  const hexesRef = useRef(hexes);
   const lockedRef = useRef(locked);
+  const paletteMetaRef = useRef(paletteMeta);
+  useEffect(() => { hexesRef.current = hexes; }, [hexes]);
   useEffect(() => { lockedRef.current = locked; }, [locked]);
+  useEffect(() => { paletteMetaRef.current = paletteMeta; }, [paletteMeta]);
 
   const doRegenerate = useCallback(() => {
     if (paletteBusy) return;
     setPaletteBusy(true);
     window.setTimeout(() => {
       try {
-        setHexes((prevHexes) => {
-          const prevLocked = lockedRef.current;
-          const lockedColors = prevHexes
-            .map((h, i) => (prevLocked[i] ? { hex: h } : null))
-            .filter(Boolean);
-          const { hexes: newHexes, meta } = generatePaletteWithMeta(
-            prevHexes.length,
-            null,
-            lockedColors,
-          );
-          setPaletteMeta(meta);
-          const merged = prevHexes.map((h, i) => (prevLocked[i] ? h : newHexes[i] ?? newHexes[0]));
-          pushHistory(merged);
-          return merged;
+        const prevHexes = hexesRef.current;
+        const prevLocked = lockedRef.current;
+        const prevMeta = paletteMetaRef.current;
+        const lockedColors = prevHexes
+          .map((h, i) => (prevLocked[i] ? { hex: h } : null))
+          .filter(Boolean);
+        const { hexes: newHexes, meta } = generatePaletteWithMeta(
+          prevHexes.length,
+          null,
+          lockedColors,
+        );
+        const merged = prevHexes.map((h, i) => (prevLocked[i] ? h : newHexes[i] ?? newHexes[0]));
+
+        setPaletteHistory((prev) => {
+          const before = snapshotEntry(prevHexes, prevLocked, prevMeta);
+          const after = snapshotEntry(merged, prevLocked, meta);
+          let stack = prev.stack.slice(0, Math.max(prev.index + 1, 0));
+          if (!stack.length) {
+            stack = [before];
+          } else {
+            stack[stack.length - 1] = before;
+          }
+          stack.push(after);
+          stack = stack.slice(-30);
+          return { stack, index: stack.length - 1 };
         });
+
+        setHexes(merged);
+        setPaletteMeta(meta);
       } finally {
         setPaletteBusy(false);
       }
     }, 0);
-  }, [pushHistory, paletteBusy]);
+  }, [paletteBusy, snapshotEntry]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -462,27 +515,22 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   const addColor = (afterIdx) => {
     if (hexes.length >= MAX_COLORS) return;
     const newHex = generateHarmonizedColor(hexes);
-    setHexes((prev) => {
-      const next = [...prev];
-      next.splice(afterIdx + 1, 0, newHex);
-      pushHistory(next);
-      return next;
-    });
-    setLocked((prev) => {
-      const next = [...prev];
-      next.splice(afterIdx + 1, 0, false);
-      return next;
-    });
+    const nextHexes = [...hexes];
+    nextHexes.splice(afterIdx + 1, 0, newHex);
+    const nextLocked = [...lockedRef.current];
+    nextLocked.splice(afterIdx + 1, 0, false);
+    appendHistory({ hexes: nextHexes, locked: nextLocked, paletteMeta: paletteMetaRef.current });
+    setHexes(nextHexes);
+    setLocked(nextLocked);
   };
 
   const removeColor = (idx) => {
     if (hexes.length <= MIN_COLORS) return;
-    setHexes((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
-      pushHistory(next);
-      return next;
-    });
-    setLocked((prev) => prev.filter((_, i) => i !== idx));
+    const nextHexes = hexes.filter((_, i) => i !== idx);
+    const nextLocked = lockedRef.current.filter((_, i) => i !== idx);
+    appendHistory({ hexes: nextHexes, locked: nextLocked, paletteMeta: paletteMetaRef.current });
+    setHexes(nextHexes);
+    setLocked(nextLocked);
     if (pickerIdx === idx) setPickerIdx(null);
   };
 
@@ -506,9 +554,9 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+    <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden bg-zen-paper">
       {/* Top bar */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zen-ink/10 bg-white">
+      <div className="zen-glass shrink-0 flex items-center justify-between border-b border-zen-clay/50 px-4 py-3 md:px-6">
         <button
           type="button"
           onClick={onBack}
@@ -530,7 +578,13 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           </button>
           <button
             type="button"
-            onClick={() => onNext?.(hexes, generatePaletteTags(hexes, paletteMeta))}
+            onClick={() =>
+              onNext?.(hexes, generatePaletteTags(hexes, paletteMeta), {
+                hexes,
+                locked,
+                paletteMeta,
+              })
+            }
             disabled={!canGoNext}
             className="type-flow-action text-zen-vermilion hover:opacity-75 transition-opacity disabled:opacity-40"
             title={canGoNext ? '进入预览发布' : '生色加载中…'}
@@ -568,14 +622,15 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
       </div>
 
       {/* Bottom regenerate bar */}
-      <div className="shrink-0 border-t border-zen-ink/10 bg-white">
+      <div className="zen-glass shrink-0 border-t border-zen-clay/50">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"
             onClick={undo}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-zen-ink/15 text-zen-ink/50 hover:bg-zen-ink/[0.04] transition-colors"
-            aria-label="上一个颜色"
-            title="上一个 (←)"
+            disabled={!canUndo}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-zen-ink/15 text-zen-ink/50 hover:bg-zen-ink/[0.04] transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            aria-label="上一张色卡"
+            title="上一张色卡 (←)"
           >
             <ChevronLeft size={17} strokeWidth={2} aria-hidden />
           </button>
@@ -594,15 +649,16 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           <button
             type="button"
             onClick={redo}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-zen-ink/15 text-zen-ink/50 hover:bg-zen-ink/[0.04] transition-colors"
-            aria-label="下一个颜色"
-            title="下一个 (→)"
+            disabled={!canRedo}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-zen-ink/15 text-zen-ink/50 hover:bg-zen-ink/[0.04] transition-colors disabled:opacity-30 disabled:pointer-events-none"
+            aria-label="下一张色卡"
+            title="下一张色卡 (→)"
           >
             <ChevronRight size={17} strokeWidth={2} aria-hidden />
           </button>
         </div>
         <p className="pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] text-center text-[9px] font-extralight tracking-widest text-zen-ink/20 select-none">
-          空格键生色 · ← → 历史
+          空格键生色 · ← → 切换历史色卡
         </p>
       </div>
 

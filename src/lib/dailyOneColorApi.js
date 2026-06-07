@@ -77,6 +77,9 @@ export async function insertDailyPaletteSubmission(_legacy, row) {
     if (e instanceof ApiError && (e.status === 409 || e.code === 'one_per_user_per_day')) {
       return { id: null, error: new Error('one_per_user_per_day') };
     }
+    if (e instanceof ApiError && (e.status === 400 || e.code === 'challenge_closed')) {
+      return { id: null, error: new Error('challenge_closed') };
+    }
     return { id: null, error: e };
   }
 }

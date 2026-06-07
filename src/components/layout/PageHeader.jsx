@@ -11,19 +11,19 @@ export default function PageHeader({
   className = '',
 }) {
   return (
-    <header className={className}>
+    <header className={`space-y-2 ${className}`}>
       {overline && (
-        <div className="type-overline mb-1.5">{overline}</div>
+        <div className="type-overline">{overline}</div>
       )}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+      <div className="flex items-start justify-between gap-4 md:gap-6">
+        <div className="min-w-0 flex-1 space-y-2">
           <h1 className="type-h1">{title}</h1>
           {description && (
-            <p className="type-caption mt-1 max-w-md">{description}</p>
+            <p className="type-caption max-w-lg leading-relaxed">{description}</p>
           )}
         </div>
         {children ? (
-          <div className="shrink-0">{children}</div>
+          <div className="shrink-0 pt-1">{children}</div>
         ) : null}
       </div>
     </header>

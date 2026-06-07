@@ -1,0 +1,1 @@
+-- xlsx_seed palettes removed; see curated-80 for active seed data.

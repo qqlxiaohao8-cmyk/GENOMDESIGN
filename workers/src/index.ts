@@ -5,6 +5,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { createAuth, type WorkerEnv } from './auth';
 import { tallyDailyWinners, yesterdayDateKey } from './lib/tally';
+import { todayChallengeDateKey } from './lib/dailyDate';
 import dailyRoutes from './routes/dailyOneColor';
 import profilesRoutes from './routes/profiles';
 import stylesRoutes from './routes/styles';
@@ -45,7 +46,7 @@ app.post('/api/internal/tally-daily-winners', async (c) => {
   if (cronSecret !== c.env.BETTER_AUTH_SECRET) {
     return c.json({ error: 'unauthorized' }, 401);
   }
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayChallengeDateKey();
   const yesterday = yesterdayDateKey(today);
   const result = await tallyDailyWinners(c.env.DB, yesterday);
   return c.json(result);

@@ -19,7 +19,19 @@
     "migrate:supabase:dry": "node scripts/migrate-supabase-to-d1.mjs --dry-run",
     "migrate:supabase:local": "node scripts/migrate-supabase-to-d1.mjs --target local",
     "migrate:supabase:remote": "node scripts/migrate-supabase-to-d1.mjs --target remote",
-    "migrate:supabase:export": "node scripts/migrate-supabase-to-d1.mjs --export-only"
+    "migrate:supabase:export": "node scripts/migrate-supabase-to-d1.mjs --export-only",
+    "seed:curated": "node scripts/generate-curated-seed.mjs",
+    "seed:curated:import": "node scripts/generate-curated-seed.mjs --import-local",
+    "seed:curated:import:remote": "node scripts/generate-curated-seed.mjs --import-remote",
+    "seed:delete:xlsx": "node scripts/delete-xlsx-seed.mjs --remote --clean-local",
+    "seed:delete:curated": "node scripts/delete-curated-seed.mjs --remote --r2 --clean-local",
+    "seed:v2": "node scripts/generate-v2-seed.mjs",
+    "seed:v2:import": "node scripts/generate-v2-seed.mjs --import-local",
+    "seed:v2:import:remote": "node scripts/generate-v2-seed.mjs --import-remote",
+    "seed:v3": "node scripts/generate-v3-seed.mjs",
+    "seed:v3:import": "node scripts/generate-v3-seed.mjs --import-local",
+    "seed:v3:import:remote": "node scripts/generate-v3-seed.mjs --import-remote",
+    "seed:delete:v3": "node scripts/delete-v3-seed.mjs --remote --r2 --clean-local"
   },
   "dependencies": {
     "better-auth": "^1.5.0",

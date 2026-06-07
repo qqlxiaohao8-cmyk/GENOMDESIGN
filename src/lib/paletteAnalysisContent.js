@@ -96,21 +96,29 @@ export function buildPaletteAnalysis(item, opts = {}) {
   if (!cd?.colors?.length) return null;
 
   const snap = item?.extractionSnapshot;
-  const rawColors = cd.colors.slice(0, 10);
-  const poeticNames = uniquePoeticNamesForSwatches(rawColors);
+  const snapColors = snap?.colorCardData?.colors;
+  const rawColors = (Array.isArray(snapColors) && snapColors.length
+    ? snapColors
+    : cd.colors
+  ).slice(0, 10);
+
+  const hasSnapNames = rawColors.every((c) => String(c?.name || '').trim());
+  const poeticNames = hasSnapNames ? [] : uniquePoeticNamesForSwatches(rawColors);
   const colors = rawColors.map((c, i) => {
     const hex = normalizeHex(c.hex) || '#888888';
-    const name = String(c.name || poeticNames[i] || getPoeticColorName(hex)).trim() || getPoeticColorName(hex);
+    const name = String(c.name || '').trim()
+      || poeticNames[i]
+      || getPoeticColorName(hex);
     return { hex, name, intro: colorIntro(hex, name) };
   });
 
   const title =
-    (item?.aesthetic || snap?.aesthetic || '').trim() ||
+    (snap?.aesthetic || item?.aesthetic || '').trim() ||
     colors[0]?.name ||
     '未命名色卡';
 
-  const overview = (cd.overview || item?.prompt || snap?.prompt || '').trim();
-  const designLogic = (item?.designLogic || snap?.designLogic || snap?.design_logic || '').trim();
+  const overview = (snap?.colorCardData?.overview || cd.overview || snap?.prompt || item?.prompt || '').trim();
+  const designLogic = (snap?.designLogic || snap?.design_logic || item?.designLogic || '').trim();
 
   let intro = firstSentences(overview, 2);
   if (!intro) {
@@ -119,10 +127,12 @@ export function buildPaletteAnalysis(item, opts = {}) {
   }
 
   const hexes = colors.map((c) => c.hex);
-  const keywordTags = (item?.keywords || snap?.keywords || [])
+  const keywordTags = (snap?.keywords || item?.keywords || [])
     .map((k) => String(k).trim())
     .filter((k) => k && isDisplayableSeaTag(k));
-  const engineTags = generatePaletteTags(hexes, snap?.paletteMeta || {});
+  const engineTags = Array.isArray(snap?.engineTags) && snap.engineTags.length
+    ? snap.engineTags
+    : generatePaletteTags(hexes, snap?.paletteMeta || {});
   const tagSeen = new Set();
   const tags = [];
   for (const t of [...keywordTags, ...engineTags]) {

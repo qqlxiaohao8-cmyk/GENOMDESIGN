@@ -18,11 +18,7 @@ import {
 } from '../lib/paletteFeedLayout';
 
 const tagPill = (active) =>
-  `rounded-full px-2.5 py-1 text-[11px] font-extralight transition-colors ${
-    active
-      ? 'bg-zen-ink text-zen-paper'
-      : 'bg-zen-mist text-zen-ink/60 hover:bg-zen-ink/10 hover:text-zen-ink'
-  }`;
+  `${active ? 'zen-tag-active' : 'zen-tag'} shrink-0 whitespace-nowrap px-3 py-1.5`;
 
 function TagFilterButton({
   tag,
@@ -278,7 +274,7 @@ export default function ColorSeaPage({
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-zen-paper">
-      <div className="shrink-0 z-40 bg-zen-mist/90 backdrop-blur-sm border-b border-zen-ink/[0.07] px-4 pt-4 pb-2 md:px-6 md:pt-6 space-y-3">
+      <div className="zen-page-header z-40 space-y-4 md:space-y-5">
         <PageHeader
           title="色海"
           description="探索社区色卡，搜索标签或名称"
@@ -287,7 +283,8 @@ export default function ColorSeaPage({
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-zen-ink/35 pointer-events-none"
+              strokeWidth={1.35}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zen-stone"
             />
             <input
               type="search"
@@ -299,8 +296,8 @@ export default function ColorSeaPage({
                 if (e.target.value.trim()) setActiveTag('All');
               }}
               placeholder="搜索色票、标签、名称…"
-              className={`type-body-sm w-full rounded-full border bg-white/70 py-2 pl-9 pr-8 text-zen-ink placeholder:text-zen-ink/35 focus:bg-white focus:outline-none transition-all duration-300 ${
-                searchExpanded ? 'border-zen-ink/25' : 'border-zen-ink/10 focus:border-zen-ink/25'
+              className={`zen-input py-2.5 pl-10 pr-9 ${
+                searchExpanded ? 'border-zen-stone/40 bg-white/70' : ''
               }`}
             />
             {(searchQuery || searchExpanded) && (
@@ -311,7 +308,7 @@ export default function ColorSeaPage({
                   setActiveTag('All');
                   setSearchExpanded(false);
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zen-ink/35 hover:text-zen-ink transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zen-stone smooth-transition hover:text-zen-coal"
                 aria-label="清除搜索并关闭标签"
               >
                 <X size={14} />
@@ -342,7 +339,7 @@ export default function ColorSeaPage({
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-3 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-3 md:px-4 md:pb-8">
+        <div className="zen-page-body">
           {featuredItems.length > 0 && (
             <div className="mb-4">
               <div className={COLOR_SEA_FEATURED_GRID_CLASS}>
@@ -361,7 +358,7 @@ export default function ColorSeaPage({
                         onToggleFavorite?.(item);
                       }}
                       mode="sea"
-                      onOpenInShengSe={() => onOpenInShengSe?.(cd.colors)}
+                      onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
                       onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
                       onCopyLink={() => onCopyLink?.(item.id)}
                     />
@@ -388,7 +385,7 @@ export default function ColorSeaPage({
                       onToggleFavorite?.(item);
                     }}
                     mode="sea"
-                    onOpenInShengSe={() => onOpenInShengSe?.(cd.colors)}
+                    onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
                     onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
                     onCopyLink={() => onCopyLink?.(item.id)}
                   />

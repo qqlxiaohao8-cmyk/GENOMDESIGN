@@ -1,6 +1,14 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Download, Link, Send, Loader2, Sparkles, Check } from 'lucide-react';
-import { randomPalettePoeticTitleFromHexes } from '../lib/palettePoeticTitle';
+import {
+  paletteTitleFromHexesAndMeta,
+  randomPalettePoeticTitleFromHexes,
+  PALETTE_TITLE_MAX_LEN,
+  PALETTE_TITLE_MIN_LEN,
+  clampPaletteTitle,
+  isValidPaletteTitle,
+} from '../lib/palettePoeticTitle';
+import { isDuplicatePublicTitle } from '../lib/palettePublicTitle';
 import SekongPaletteSharePreview from '../components/SekongPaletteSharePreview';
 
 /**
@@ -17,20 +25,40 @@ export default function PublishPreviewPage({
   onOpenAuth,
   /** 'colorSea' | 'dailyOneColor' */
   publishTarget = 'colorSea',
+  existingPublicTitles = [],
 }) {
-  const { hexes = [], imageDataUrl, tags: flowTags = [] } = flow;
+  const { hexes = [], imageDataUrl, tags: flowTags = [], paletteMeta = {} } = flow;
   const isDailySubmit = publishTarget === 'dailyOneColor';
   const paletteTags = Array.isArray(flowTags) ? flowTags : [];
   const [title, setTitle] = useState('');
+  const [titleInitialized, setTitleInitialized] = useState(false);
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState(null);
+  const [titleShake, setTitleShake] = useState(false);
   const [publishedId, setPublishedId] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const recentTitlesRef = useRef([]);
   const titleInputRef = useRef(null);
 
   const safeColors = hexes.slice(0, 10);
+
+  const takenTitles = existingPublicTitles;
+
+  useEffect(() => {
+    if (titleInitialized || !hexes.length) return;
+    const defaultTitle = paletteTitleFromHexesAndMeta(hexes, paletteMeta, paletteTags, takenTitles);
+    setTitle(defaultTitle);
+    setTitleInitialized(true);
+  }, [hexes, paletteMeta, paletteTags, takenTitles, titleInitialized]);
+
+  const isDuplicateTitle = (t) => isDuplicatePublicTitle(t, takenTitles);
+
+  const shakeTitleInput = () => {
+    setTitleShake(true);
+    setTimeout(() => setTitleShake(false), 450);
+    titleInputRef.current?.focus();
+  };
 
   const promptLogin = () => {
     titleInputRef.current?.blur();
@@ -48,12 +76,14 @@ export default function PublishPreviewPage({
         ...new Set([
           title.trim(),
           ...recentTitlesRef.current,
+          ...takenTitles,
         ].filter(Boolean)),
       ];
-      const t = randomPalettePoeticTitleFromHexes(hexes, exclude);
+      const t = randomPalettePoeticTitleFromHexes(hexes, exclude, paletteMeta, paletteTags);
       if (t) {
         setTitle(t);
         recentTitlesRef.current = [...recentTitlesRef.current, t].slice(-15);
+        setPublishError(null);
       }
     } catch { /* ignore */ }
     setGeneratingTitle(false);
@@ -61,16 +91,24 @@ export default function PublishPreviewPage({
 
   const handlePublish = async () => {
     if (!requireAuth()) return;
-    if (!title.trim()) {
-      setPublishError('请先填写或生成色卡名称。');
+    if (!isValidPaletteTitle(title)) {
+      setPublishError(`请填写 ${PALETTE_TITLE_MIN_LEN}–${PALETTE_TITLE_MAX_LEN} 字的色卡名称。`);
+      return;
+    }
+    if (!isDailySubmit && isDuplicateTitle(title)) {
+      setPublishError('色海已有同名色卡，请换一个名称。');
+      shakeTitleInput();
       return;
     }
     setPublishing(true);
     setPublishError(null);
     try {
-      const res = await onPublish({ title: title.trim(), hexes, imageDataUrl, tags: paletteTags });
+      const res = await onPublish({ title: clampPaletteTitle(title), hexes, imageDataUrl, tags: paletteTags });
       if (res?.ok) {
         setPublishedId(res.id);
+      } else if (res?.error === 'duplicate_title') {
+        setPublishError('色海已有同名色卡，请换一个名称。');
+        shakeTitleInput();
       } else {
         setPublishError(res?.error || '发布失败，请重试。');
       }
@@ -139,6 +177,9 @@ export default function PublishPreviewPage({
           <div>
             <label className="type-overline mb-1.5 block">
               色卡名称
+              <span className="ml-2 font-extralight normal-case tracking-normal text-zen-ink/40">
+                {PALETTE_TITLE_MIN_LEN}–{PALETTE_TITLE_MAX_LEN} 字
+              </span>
             </label>
             <div className="flex gap-2">
               <input
@@ -148,7 +189,8 @@ export default function PublishPreviewPage({
                 readOnly={!user}
                 onChange={(e) => {
                   if (!user) return;
-                  setTitle(e.target.value.slice(0, 28));
+                  setTitle(clampPaletteTitle(e.target.value));
+                  setPublishError(null);
                 }}
                 onFocus={() => {
                   if (!user) promptLogin();
@@ -156,9 +198,11 @@ export default function PublishPreviewPage({
                 onClick={() => {
                   if (!user) promptLogin();
                 }}
-                placeholder={user ? '命名你的色卡…' : '点击登录后命名'}
-                maxLength={28}
-                className={`type-body-sm flex-1 rounded-xl border border-zen-ink/15 bg-zen-mist/20 px-3 py-2.5 text-zen-ink placeholder:text-zen-ink/30 focus:border-zen-ink/30 focus:outline-none ${!user ? 'cursor-pointer' : ''}`}
+                placeholder={user ? '如：生椰拿铁、降真香、丰收…' : '点击登录后命名'}
+                maxLength={PALETTE_TITLE_MAX_LEN}
+                className={`type-body-sm flex-1 rounded-xl border px-3 py-2.5 text-zen-ink placeholder:text-zen-ink/30 focus:outline-none transition-colors ${
+                  titleShake ? 'animate-title-shake border-red-400 bg-red-50/40' : 'border-zen-ink/15 bg-zen-mist/20 focus:border-zen-ink/30'
+                } ${!user ? 'cursor-pointer' : ''}`}
               />
               <button
                 type="button"
