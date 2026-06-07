@@ -1,4 +1,4 @@
--- Remove v3-88 palettes (88 rows)
+-- Remove v3-88 palettes (86 rows)
 PRAGMA foreign_keys = ON;
 DELETE FROM styles
 WHERE user_id = 'th6enpoWlVBR06fc23WLSCjqeDWNLBub'
@@ -73,7 +73,6 @@ WHERE user_id = 'th6enpoWlVBR06fc23WLSCjqeDWNLBub'
   '5a9350f6-4469-4e42-a8d8-398707c910a4',
   'c8a55af8-d0ef-41c0-a041-433cfb956b9d',
   '8e42f4d6-7c5a-46b8-ad65-f576d8831fe5',
-  '0140ec78-d610-4254-a696-4aa67f0f4b10',
   '5545d485-4b4e-42b6-a891-7ef0cc9a6375',
   'b00ba793-ea46-4406-a259-34b526045424',
   'ace01989-5072-4558-a3e4-17221dd7e5c1',
@@ -87,7 +86,6 @@ WHERE user_id = 'th6enpoWlVBR06fc23WLSCjqeDWNLBub'
   '6e28b3e9-49ef-40b4-ade4-744151ef4ef4',
   'a4a346e4-17ec-4e99-a44d-8a971c0e916f',
   'c8d461bb-c908-4d2e-a020-73b8683573a5',
-  '44ae8cd7-fe04-45a5-a904-b000a30c475a',
   '2b669b8d-3c69-43da-a6db-78126274d735',
   '1e895e63-190a-4dc2-a91b-ad84a96c9d00',
   '4f32d3a8-eb5f-47d6-a8f5-7511b8c1bb3b'

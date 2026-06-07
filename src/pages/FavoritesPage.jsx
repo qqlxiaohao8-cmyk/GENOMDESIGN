@@ -12,10 +12,10 @@ const PAGE_DESC = '你的私人色卡库，随时查看与再编辑';
 function FavoritesPageShell({ children }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-zen-paper">
-      <div className="zen-page-header">
+      <div className="zen-page-header-feed">
         <PageHeader title={PAGE_TITLE} description={PAGE_DESC} />
       </div>
-      <div className="zen-page-body flex-1">{children}</div>
+      <div className="zen-page-body-feed flex-1">{children}</div>
     </div>
   );
 }

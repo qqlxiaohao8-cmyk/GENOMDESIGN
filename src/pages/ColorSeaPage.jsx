@@ -274,7 +274,7 @@ export default function ColorSeaPage({
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-zen-paper">
-      <div className="zen-page-header z-40 space-y-4 md:space-y-5">
+      <div className="zen-page-header-feed z-40 space-y-4 md:space-y-5">
         <PageHeader
           title="色海"
           description="探索社区色卡，搜索标签或名称"
@@ -339,7 +339,7 @@ export default function ColorSeaPage({
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="zen-page-body">
+        <div className="zen-page-body-feed">
           {featuredItems.length > 0 && (
             <div className="mb-4">
               <div className={COLOR_SEA_FEATURED_GRID_CLASS}>

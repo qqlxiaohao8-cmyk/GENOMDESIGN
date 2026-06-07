@@ -152,7 +152,7 @@ export default function PaletteFeedCard({
     : null;
 
   return (
-    <div className="zen-card flex flex-col">
+    <div className="zen-card flex w-full min-w-0 flex-col">
       <ColorSeaStripes
         colors={displayColors}
         className="!rounded-none"
