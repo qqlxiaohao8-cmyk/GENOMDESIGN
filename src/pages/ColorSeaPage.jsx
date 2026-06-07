@@ -12,7 +12,6 @@ import {
   isDailyWinnerTag,
 } from '../lib/dailyWinnerTagStyle';
 import {
-  COLOR_SEA_FEATURED_GRID_CLASS,
   COLOR_SEA_MASONRY_CLASS,
   PALETTE_FEED_MASONRY_GAP,
 } from '../lib/paletteFeedLayout';
@@ -175,7 +174,7 @@ function CategorizedTagPanel({
 }
 
 /**
- * 色海页：顶部精选 + 搜索栏 + 标签 + 瀑布流（移动 2 列 / 桌面 4 列）。
+ * 色海页：搜索栏 + 标签 + 色卡网格（按行优先填满，移动 2 列 / 桌面最多 6 列）。
  */
 export default function ColorSeaPage({
   user,
@@ -257,8 +256,12 @@ export default function ColorSeaPage({
     });
   }, [colorPaletteExploreFeed, searchQuery, activeTag, sort]);
 
-  const featuredItems = filteredFeed.slice(0, 4);
-  const mainFeedItems = filteredFeed.slice(4);
+  const renderableFeed = useMemo(
+    () => filteredFeed
+      .map((item) => ({ item, cd: itemColorCardData(item) }))
+      .filter((row) => row.cd?.colors?.length),
+    [filteredFeed],
+  );
 
   const handleTagClick = (tag) => {
     if (tag === 'All') {
@@ -340,66 +343,32 @@ export default function ColorSeaPage({
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="zen-page-body-feed">
-          {featuredItems.length > 0 && (
-            <div className="mb-4">
-              <div className={COLOR_SEA_FEATURED_GRID_CLASS}>
-                {featuredItems.map((item) => {
-                  const cd = itemColorCardData(item);
-                  if (!cd) return null;
-                  return (
-                    <PaletteFeedCard
-                      key={item.id}
-                      colors={cd.colors}
-                      title={item.aesthetic || ''}
-                      favorited={favoritedExploreStyleIds?.has(item.id)}
-                      favoriteBusy={vaultFavoriteBusyId === item.id}
-                      onToggleFavorite={() => {
-                        if (!user) { onOpenAuth?.(); return; }
-                        onToggleFavorite?.(item);
-                      }}
-                      mode="sea"
-                      onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
-                      onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
-                      onCopyLink={() => onCopyLink?.(item.id)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {mainFeedItems.length > 0 ? (
+          {renderableFeed.length > 0 ? (
             <MasonryColumns className={COLOR_SEA_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
-              {mainFeedItems.map((item) => {
-                const cd = itemColorCardData(item);
-                if (!cd) return null;
-                return (
-                  <PaletteFeedCard
-                    key={item.id}
-                    colors={cd.colors}
-                    title={item.aesthetic || ''}
-                    favorited={favoritedExploreStyleIds?.has(item.id)}
-                    favoriteBusy={vaultFavoriteBusyId === item.id}
-                    onToggleFavorite={() => {
-                      if (!user) { onOpenAuth?.(); return; }
-                      onToggleFavorite?.(item);
-                    }}
-                    mode="sea"
-                    onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
-                    onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
-                    onCopyLink={() => onCopyLink?.(item.id)}
-                  />
-                );
-              })}
+              {renderableFeed.map(({ item, cd }) => (
+                <PaletteFeedCard
+                  key={item.id}
+                  colors={cd.colors}
+                  title={item.aesthetic || ''}
+                  favorited={favoritedExploreStyleIds?.has(item.id)}
+                  favoriteBusy={vaultFavoriteBusyId === item.id}
+                  onToggleFavorite={() => {
+                    if (!user) { onOpenAuth?.(); return; }
+                    onToggleFavorite?.(item);
+                  }}
+                  mode="sea"
+                  onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
+                  onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
+                  onCopyLink={() => onCopyLink?.(item.id)}
+                />
+              ))}
             </MasonryColumns>
           ) : (
-            filteredFeed.length === 0 && (
-              <div className="py-16 text-center">
-                <p className="type-body text-zen-ink/40">
-                  {searchQuery || activeTag !== 'All' ? '没有找到匹配的色卡。' : '色海里还没有色卡。'}
-                </p>
-              </div>
-            )
+            <div className="py-16 text-center">
+              <p className="type-body text-zen-ink/40">
+                {searchQuery || activeTag !== 'All' ? '没有找到匹配的色卡。' : '色海里还没有色卡。'}
+              </p>
+            </div>
           )}
         </div>
       </div>
