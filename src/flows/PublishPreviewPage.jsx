@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Download, Link, Send, Loader2, Sparkles, Check } from 'lucide-react';
 import {
   paletteTitleFromHexesAndMeta,
@@ -9,6 +9,8 @@ import {
   isValidPaletteTitle,
 } from '../lib/palettePoeticTitle';
 import { isDuplicatePublicTitle } from '../lib/palettePublicTitle';
+import { enrichColorsWithChineseNames } from '../lib/paletteChineseDisplay';
+import { fetchAiPaletteTitle } from '../lib/paletteTitleApi';
 import SekongPaletteSharePreview from '../components/SekongPaletteSharePreview';
 
 /**
@@ -43,6 +45,11 @@ export default function PublishPreviewPage({
 
   const safeColors = hexes.slice(0, 10);
 
+  const colorDetails = useMemo(
+    () => enrichColorsWithChineseNames(safeColors.map((h) => ({ hex: h }))),
+    [safeColors],
+  );
+
   const takenTitles = existingPublicTitles;
 
   useEffect(() => {
@@ -68,25 +75,40 @@ export default function PublishPreviewPage({
 
   const requireAuth = () => (user ? true : promptLogin());
 
-  const generateTitle = () => {
+  const generateTitle = async () => {
     if (!requireAuth()) return;
     setGeneratingTitle(true);
+    const exclude = [
+      ...new Set([
+        title.trim(),
+        ...recentTitlesRef.current,
+        ...takenTitles,
+      ].filter(Boolean)),
+    ];
     try {
-      const exclude = [
-        ...new Set([
-          title.trim(),
-          ...recentTitlesRef.current,
-          ...takenTitles,
-        ].filter(Boolean)),
-      ];
-      const t = randomPalettePoeticTitleFromHexes(hexes, exclude, paletteMeta, paletteTags);
+      const aiTitle = await fetchAiPaletteTitle({
+        colors: colorDetails,
+        tags: paletteTags,
+        paletteMeta,
+        excludeTitles: exclude,
+        currentTitle: title.trim(),
+      });
+      const t = aiTitle
+        || randomPalettePoeticTitleFromHexes(hexes, exclude, paletteMeta, paletteTags);
       if (t) {
         setTitle(t);
         recentTitlesRef.current = [...recentTitlesRef.current, t].slice(-15);
         setPublishError(null);
       }
-    } catch { /* ignore */ }
-    setGeneratingTitle(false);
+    } catch {
+      const t = randomPalettePoeticTitleFromHexes(hexes, exclude, paletteMeta, paletteTags);
+      if (t) {
+        setTitle(t);
+        recentTitlesRef.current = [...recentTitlesRef.current, t].slice(-15);
+      }
+    } finally {
+      setGeneratingTitle(false);
+    }
   };
 
   const handlePublish = async () => {
@@ -209,8 +231,8 @@ export default function PublishPreviewPage({
                 onClick={generateTitle}
                 disabled={generatingTitle}
                 className="flex items-center gap-1 rounded-xl border border-zen-ink/15 px-3 py-2.5 text-[11px] font-extralight text-zen-ink/60 hover:bg-zen-ink/[0.04] disabled:opacity-40 transition-colors"
-                aria-label="生成名称，可多次点击换名"
-                title={user ? '可多次生成，直到满意' : '登录后生成名称'}
+                aria-label="AI 生成名称，可多次点击换名"
+                title={user ? 'AI 理解配色意境后生成名称，可多次生成' : '登录后生成名称'}
               >
                 {generatingTitle
                   ? <Loader2 size={13} strokeWidth={2} className="animate-spin" />

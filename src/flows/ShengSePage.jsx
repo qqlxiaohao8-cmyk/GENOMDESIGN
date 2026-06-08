@@ -534,10 +534,22 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     if (pickerIdx === idx) setPickerIdx(null);
   };
 
-  const canGoNext = useMemo(
-    () => hexes.length >= MIN_COLORS && !hexes.every(isPlaceholderHex),
-    [hexes],
-  );
+  const canGoNext = useMemo(() => {
+    if (hexes.length < MIN_COLORS) return false;
+    if (!hexes.some((h) => !isPlaceholderHex(h))) return false;
+    // 析色传入的配色可立即进入预览；空生色需等首盘生成完成
+    if (hasSeed) return true;
+    return !paletteBusy;
+  }, [hexes, hasSeed, paletteBusy]);
+
+  const handleGoNext = useCallback(() => {
+    if (!canGoNext || !onNext) return;
+    onNext(hexes, generatePaletteTags(hexes, paletteMeta), {
+      hexes,
+      locked,
+      paletteMeta,
+    });
+  }, [canGoNext, onNext, hexes, locked, paletteMeta]);
 
   const handleSave = async () => {
     if (saveBusy) return;
@@ -578,16 +590,11 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           </button>
           <button
             type="button"
-            onClick={() =>
-              onNext?.(hexes, generatePaletteTags(hexes, paletteMeta), {
-                hexes,
-                locked,
-                paletteMeta,
-              })
-            }
+            onClick={handleGoNext}
             disabled={!canGoNext}
-            className="type-flow-action text-zen-vermilion hover:opacity-75 transition-opacity disabled:opacity-40"
-            title={canGoNext ? '进入预览发布' : '生色加载中…'}
+            className="type-flow-action flex items-center gap-1 text-zen-vermilion hover:opacity-75 transition-opacity disabled:pointer-events-none disabled:opacity-40"
+            title={canGoNext ? '进入预览发布' : (paletteBusy ? '生色加载中…' : '至少需要 2 种颜色')}
+            aria-label="进入预览发布"
           >
             下一页
             <ArrowRight size={16} strokeWidth={2} aria-hidden />

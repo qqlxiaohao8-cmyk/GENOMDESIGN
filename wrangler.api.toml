@@ -20,6 +20,9 @@ database_id = "173d76b9-546d-4526-9e4b-0a29b96d03aa"
 binding = "STYLE_IMAGES"
 bucket_name = "sekong-style-images"
 
+[ai]
+binding = "AI"
+
 [vars]
 BETTER_AUTH_URL = "http://localhost:5173"
 

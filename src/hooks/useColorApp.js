@@ -592,6 +592,30 @@ export default function useColorApp() {
     });
   }, []);
 
+  /** 生色 → 预览：单次更新栈，避免 update + push 竞态 */
+  const advanceShengSeToPublish = useCallback(({ hexes, tags, savedState, imageFallback = '' }) => {
+    setFlowStack((prev) => {
+      if (!prev.length) return prev;
+      const top = prev[prev.length - 1];
+      if (top.type !== 'shengSe') return prev;
+      const updatedShengSe = { ...top, hexes, tags, savedState };
+      return [
+        ...prev.slice(0, -1),
+        updatedShengSe,
+        {
+          type: 'publish',
+          hexes,
+          tags: tags || [],
+          paletteMeta: savedState?.paletteMeta ?? top.paletteMeta ?? null,
+          imageDataUrl: top.imageDataUrl || imageFallback,
+          source: top.source,
+          returnTo: top.returnTo,
+          dailyData: top.dailyData,
+        },
+      ];
+    });
+  }, []);
+
   const popFlow = useCallback(() => {
     setFlowStack((prev) => prev.slice(0, -1));
   }, []);
@@ -683,6 +707,6 @@ export default function useColorApp() {
     copyShareLink,
     fetchStyleById,
     // Flow
-    flowStack, pushFlow, popFlow, clearFlows, updateFlowTop,
+    flowStack, pushFlow, popFlow, clearFlows, updateFlowTop, advanceShengSeToPublish,
   };
 }

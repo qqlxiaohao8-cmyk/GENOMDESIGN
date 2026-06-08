@@ -60,7 +60,7 @@ export default function App() {
     communityTagList, bumpTagClick,
     toggleVaultFavoriteFromExplore, persistColorCardVaultRow, deleteVaultItem, removeFromVault,
     publishColorCard, publishDailyPaletteCard, downloadColorCardPng, copyShareLink,
-    flowStack, pushFlow, popFlow, clearFlows, updateFlowTop,
+    flowStack, pushFlow, popFlow, clearFlows, updateFlowTop, advanceShengSeToPublish,
     exploreFeed, personalLibrary, fetchStyleById,
   } = app;
 
@@ -252,16 +252,11 @@ export default function App() {
           flow={currentFlow}
           onBack={handleFlowBack}
           onNext={(hexes, tags, savedState) => {
-            updateFlowTop({ hexes, savedState, tags });
-            const imageDataUrl = currentFlow.imageDataUrl || PLACEHOLDER_IMAGE;
-            pushFlow({
-              type: 'publish',
+            advanceShengSeToPublish({
               hexes,
-              tags: tags || [],
-              paletteMeta: savedState?.paletteMeta ?? currentFlow.paletteMeta,
-              imageDataUrl,
-              source: currentFlow.source,
-              returnTo: currentFlow.returnTo,
+              tags,
+              savedState,
+              imageFallback: PLACEHOLDER_IMAGE,
             });
           }}
           onSaveToFavorites={async (hexes) => {

@@ -7,6 +7,7 @@ import { createAuth, type WorkerEnv } from './auth';
 import { tallyDailyWinners, yesterdayDateKey } from './lib/tally';
 import { todayChallengeDateKey } from './lib/dailyDate';
 import dailyRoutes from './routes/dailyOneColor';
+import paletteTitleRoutes from './routes/paletteTitle';
 import profilesRoutes from './routes/profiles';
 import stylesRoutes from './routes/styles';
 import uploadRoutes from './routes/upload';
@@ -14,6 +15,7 @@ import uploadRoutes from './routes/upload';
 type Env = WorkerEnv & {
   ASSETS: Fetcher;
   STYLE_IMAGES: R2Bucket;
+  AI?: Ai;
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -40,6 +42,7 @@ app.route('/api/v1', stylesRoutes);
 app.route('/api/v1', uploadRoutes);
 app.route('/api/v1', dailyRoutes);
 app.route('/api/v1', profilesRoutes);
+app.route('/api/v1', paletteTitleRoutes);
 
 app.post('/api/internal/tally-daily-winners', async (c) => {
   const cronSecret = c.req.header('X-Cron-Secret');

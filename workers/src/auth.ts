@@ -6,6 +6,7 @@ import { betterAuth } from 'better-auth';
 
 export type WorkerEnv = {
   DB: D1Database;
+  AI?: Ai;
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   GOOGLE_CLIENT_ID?: string;
