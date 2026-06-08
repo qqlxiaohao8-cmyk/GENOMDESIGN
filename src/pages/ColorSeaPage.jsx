@@ -174,7 +174,7 @@ function CategorizedTagPanel({
 }
 
 /**
- * 色海页：搜索栏 + 标签 + 色卡网格（按行优先填满，移动 2 列 / 桌面最多 6 列）。
+ * 色海页：搜索栏 + 标签 + 色卡瀑布流（移动 2 列 / 桌面 4 列）。
  */
 export default function ColorSeaPage({
   user,
