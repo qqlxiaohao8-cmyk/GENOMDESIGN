@@ -431,20 +431,20 @@
     @apply type-overline tracking-[0.4em] text-zen-stone;
   }
   .zen-panel {
-    @apply rounded-2xl border border-zen-clay/60 bg-white/50 p-6 shadow-zen backdrop-blur-sm;
+    @apply rounded-2xl border border-zen-clay/60 bg-white p-6 shadow-zen;
   }
   .zen-card {
-    @apply overflow-hidden rounded-2xl border border-zen-clay/50 bg-white/60 shadow-zen backdrop-blur-sm smooth-transition;
+    @apply overflow-hidden rounded-2xl border border-zen-clay/50 bg-white shadow-zen smooth-transition;
   }
   .zen-glass {
-    @apply border border-zen-clay/40 bg-white/40 backdrop-blur-sm;
+    @apply border border-zen-clay/40 bg-white;
   }
   .zen-page-header {
-    @apply shrink-0 border-b border-zen-clay/50 bg-white/40 px-4 py-5 backdrop-blur-md md:px-8 md:py-8;
+    @apply shrink-0 border-b border-zen-clay/50 bg-white px-4 py-5 md:px-8 md:py-8;
   }
   /** 色海 / 收藏：贴边 feed，减少左右留白 */
   .zen-page-header-feed {
-    @apply shrink-0 border-b border-zen-clay/50 bg-white/40 px-2 py-4 backdrop-blur-md md:px-3 md:py-5;
+    @apply shrink-0 border-b border-zen-clay/50 bg-white px-2 py-4 md:px-3 md:py-5;
   }
   .zen-page-body {
     @apply mx-auto w-full max-w-7xl px-3 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-10 md:pt-6;
@@ -453,25 +453,25 @@
     @apply w-full max-w-none px-2 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-3 md:px-3 md:pb-8 md:pt-4;
   }
   .xuan-paper {
-    @apply min-h-screen bg-zen-paper text-zen-ink selection:bg-zen-clay selection:text-zen-coal;
+    @apply min-h-screen bg-white text-zen-ink selection:bg-zen-clay selection:text-zen-coal;
   }
   .zen-modal-surface {
-    @apply relative max-h-[90vh] w-full max-w-md overflow-hidden overflow-y-auto rounded-3xl border border-zen-clay/50 bg-zen-paper/95 shadow-zen-lg backdrop-blur-md;
+    @apply relative max-h-[90vh] w-full max-w-md overflow-hidden overflow-y-auto rounded-3xl border border-zen-clay/50 bg-white shadow-zen-lg;
   }
   .zen-input {
-    @apply type-body-sm w-full rounded-2xl border border-zen-clay/70 bg-white/50 px-4 py-3 text-zen-ink placeholder:text-zen-stone/80 smooth-transition focus:border-zen-stone/60 focus:bg-white/80 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30;
+    @apply type-body-sm w-full rounded-2xl border border-zen-clay/70 bg-white px-4 py-3 text-zen-ink placeholder:text-zen-stone/80 smooth-transition focus:border-zen-stone/60 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30;
   }
   .zen-btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-coal/20 bg-zen-coal px-5 py-3 text-xs font-extralight tracking-[0.3em] text-zen-paper smooth-transition hover:bg-zen-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/40 disabled:pointer-events-none disabled:opacity-40;
   }
   .zen-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-clay bg-white/40 px-5 py-3 text-xs font-extralight tracking-[0.3em] text-zen-ink smooth-transition hover:bg-zen-sand focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30 disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-clay bg-white px-5 py-3 text-xs font-extralight tracking-[0.3em] text-zen-ink smooth-transition hover:bg-zen-ink/[0.04] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30 disabled:opacity-40;
   }
   .zen-btn-vermilion {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-vermilion/25 bg-zen-vermilion px-5 py-3 text-xs font-extralight tracking-[0.3em] text-white smooth-transition hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40 disabled:pointer-events-none disabled:opacity-40;
   }
   .zen-tag {
-    @apply rounded-full border border-zen-clay/60 bg-white/50 px-3 py-1 text-[11px] font-extralight tracking-widest text-zen-stone smooth-transition hover:border-zen-stone/40 hover:bg-zen-sand hover:text-zen-ink;
+    @apply rounded-full border border-zen-clay/60 bg-white px-3 py-1 text-[11px] font-extralight tracking-widest text-zen-stone smooth-transition hover:border-zen-stone/40 hover:bg-zen-ink/[0.04] hover:text-zen-ink;
   }
   .zen-tag-active {
     @apply border-zen-coal/30 bg-zen-coal text-zen-paper;
@@ -484,27 +484,16 @@
   }
 }
 
-/* Ink-wash mist — warm paper diffusion */
+/* Page backdrop — flat white (no warm mist tint) */
 .zen-mist-layer {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-color: #fcfbfa;
+  background-color: #ffffff;
 }
 .zen-mist-c {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 52% 48% at 0% 0%, rgba(168, 162, 151, 0.12) 0%, transparent 58%),
-    radial-gradient(ellipse 58% 52% at 100% 100%, rgba(228, 223, 213, 0.35) 0%, transparent 60%),
-    radial-gradient(ellipse 42% 42% at 100% 0%, rgba(168, 162, 151, 0.08) 0%, transparent 52%),
-    radial-gradient(ellipse 38% 38% at 0% 100%, rgba(245, 242, 237, 0.5) 0%, transparent 54%);
-}
-
-/* Softer mist over #FBFBFC shell (ColorHunt-style base) */
-.zen-mist-layer--subtle .zen-mist-c {
-  opacity: 0.45;
+  display: none;
 }
 .zen-vertical-nav {
   writing-mode: vertical-rl;

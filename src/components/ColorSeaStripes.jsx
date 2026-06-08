@@ -80,7 +80,7 @@ export default function ColorSeaStripes({
               aria-hidden={!showName}
             >
               <span
-                className="font-zenSans text-[clamp(13px,2.8vw,17px)] font-medium leading-none tracking-[0.14em]"
+                className="font-zenSerif text-[clamp(13px,2.8vw,17px)] font-medium leading-none tracking-[0.14em]"
                 style={{ writingMode: 'vertical-rl', textOrientation: 'upright' }}
               >
                 {name}

@@ -15,7 +15,7 @@ export function formatLikeCount(n) {
 }
 
 const footerBtn =
-  'flex items-center justify-center rounded-full text-zen-stone smooth-transition hover:bg-zen-sand hover:text-zen-ink';
+  'flex items-center justify-center rounded-full text-zen-stone smooth-transition hover:bg-zen-ink/[0.04] hover:text-zen-ink';
 
 /**
  * 色海 / 收藏 feed 色卡：竖条色盘 + 底部名称与操作（无边框）。
@@ -158,8 +158,8 @@ export default function PaletteFeedCard({
         className="!rounded-none"
       />
 
-      <div className="relative flex min-h-[2.25rem] items-center gap-2 border-t border-zen-clay/40 bg-white/40 px-2.5 py-2 backdrop-blur-sm">
-        <p className="type-caption min-w-0 flex-1 truncate text-zen-ink">
+      <div className="relative flex min-h-[2.25rem] items-center gap-2 border-t border-zen-clay/40 bg-white px-2.5 py-2">
+        <p className="min-w-0 flex-1 truncate font-zenSerif text-[11px] font-medium tracking-[0.2em] text-zen-ink">
           {displayTitle}
         </p>
         <div className="relative flex shrink-0 items-center gap-0.5">

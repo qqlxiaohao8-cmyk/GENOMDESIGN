@@ -462,7 +462,7 @@ export default function App() {
       >
         <main
           ref={mainScrollRef}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-zen-sand pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-white pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
         >
           {renderTab()}
         </main>

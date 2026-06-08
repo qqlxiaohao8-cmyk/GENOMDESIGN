@@ -41,8 +41,8 @@ export default function DailyOneColorPage({
   };
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 bg-zen-paper">
-      <div className="shrink-0 z-40 border-b border-zen-ink/[0.07] bg-zen-mist/90 px-4 py-3 backdrop-blur-sm md:px-6">
+    <div className="flex flex-1 flex-col min-h-0 bg-white">
+      <div className="shrink-0 z-40 border-b border-zen-ink/[0.07] bg-white px-4 py-3 md:px-6">
         <PageHeader
           title="每日一色"
           description="今日投稿 · 投票 · 前三入选色海「每日色卡」"

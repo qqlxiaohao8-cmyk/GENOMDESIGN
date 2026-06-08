@@ -14,10 +14,10 @@ export default {
       },
       colors: {
         zen: {
-          /** 素纸 — warm xuan paper */
-          paper: '#FCFBFA',
-          /** 枯骨 — sand / secondary surface */
-          sand: '#F5F2ED',
+          /** 页面 / 区块背景 — 统一纯白 */
+          paper: '#FFFFFF',
+          /** 与 paper 一致（兼容旧类名） */
+          sand: '#FFFFFF',
           /** 浅灰 — borders, inactive */
           clay: '#E4DFD5',
           /** 苔岩 — muted text, secondary strokes */
@@ -26,8 +26,8 @@ export default {
           ink: '#5C5750',
           /** 漆黑 — headings, emphasis */
           coal: '#2C2C2C',
-          /** legacy alias */
-          mist: '#F5F2ED',
+          /** 与 paper 一致（兼容旧类名） */
+          mist: '#FFFFFF',
           vermilion: '#BC2026',
         },
       },

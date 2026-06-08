@@ -136,7 +136,7 @@ export default function HeaderNotificationsBell({ open, onOpenChange, onOpen }) 
       </div>
       {open ? (
         <div
-          className="absolute right-0 top-full z-[130] mt-2 w-[min(calc(100vw-2rem),20rem)] max-h-[min(70vh,24rem)] overflow-y-auto rounded-2xl border border-zen-ink/10 bg-zen-mist/98 p-4 shadow-lg backdrop-blur-md"
+          className="absolute right-0 top-full z-[130] mt-2 w-[min(calc(100vw-2rem),20rem)] max-h-[min(70vh,24rem)] overflow-y-auto rounded-2xl border border-zen-ink/10 bg-white p-4 shadow-lg"
           role="dialog"
           aria-label="心讯通知"
         >

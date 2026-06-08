@@ -97,7 +97,7 @@ function CategorizedTagPanel({
 
   return (
     <div
-      className="mt-2 rounded-2xl border border-zen-ink/10 bg-white/95 px-3 py-2.5 shadow-sm"
+      className="mt-2 rounded-2xl border border-zen-ink/10 bg-white px-3 py-2.5 shadow-sm"
       role="region"
       aria-label="标签筛选"
     >
@@ -276,7 +276,7 @@ export default function ColorSeaPage({
   };
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 bg-zen-paper">
+    <div className="flex flex-1 flex-col min-h-0 bg-white">
       <div className="zen-page-header-feed z-40 space-y-4 md:space-y-5">
         <PageHeader
           title="色海"
@@ -300,7 +300,7 @@ export default function ColorSeaPage({
               }}
               placeholder="搜索色票、标签、名称…"
               className={`zen-input py-2.5 pl-10 pr-9 ${
-                searchExpanded ? 'border-zen-stone/40 bg-white/70' : ''
+                searchExpanded ? 'border-zen-stone/40 bg-white' : ''
               }`}
             />
             {(searchQuery || searchExpanded) && (

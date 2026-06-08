@@ -11,7 +11,7 @@ const PAGE_DESC = '你的私人色卡库，随时查看与再编辑';
 
 function FavoritesPageShell({ children }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-zen-paper">
+    <div className="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-white">
       <div className="zen-page-header-feed">
         <PageHeader title={PAGE_TITLE} description={PAGE_DESC} />
       </div>
@@ -21,7 +21,7 @@ function FavoritesPageShell({ children }) {
 }
 
 /**
- * 收藏首页：用户私人色卡库（移动 1 列 / 桌面 2 列，约为色海列数的一半）。
+ * 收藏首页：用户私人色卡库（移动 1 列 / 桌面 2 列瀑布流）。
  * 未登录时显示空态 + 登录引导；数据存于 Supabase，登出后仍保留。
  */
 export default function FavoritesPage({

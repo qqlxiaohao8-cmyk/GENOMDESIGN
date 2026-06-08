@@ -21,7 +21,7 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
     <>
       {/* ── Desktop sidebar ─────────────────────────────── */}
       <aside
-        className="zen-glass hidden h-full w-[4.5rem] shrink-0 flex-col items-center border-r border-zen-clay/50 bg-white/30 py-8 backdrop-blur-md lg:w-20 md:flex"
+        className="zen-glass hidden h-full w-[4.5rem] shrink-0 flex-col items-center border-r border-zen-clay/50 bg-white py-8 lg:w-20 md:flex"
         aria-label="主导航"
       >
         <div className="mb-8 flex items-center justify-center">
@@ -63,8 +63,8 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
                 <div
                   className={`flex h-10 w-10 items-center justify-center rounded-2xl smooth-transition ${
                     isActive
-                      ? 'bg-zen-sand shadow-zen'
-                      : 'group-hover:bg-white/50'
+                      ? 'bg-zen-ink/[0.06] shadow-zen'
+                      : 'group-hover:bg-zen-ink/[0.04]'
                   }`}
                 >
                   <Icon
@@ -81,7 +81,7 @@ export default function AppNav({ activeTab, onTabChange, onFabClick }) {
       </aside>
 
       {/* ── Mobile bottom bar ────────────────────────────── */}
-      <div className="zen-glass fixed bottom-0 left-0 right-0 z-[60] flex items-center justify-around rounded-t-3xl border-t border-zen-clay/50 bg-white/50 px-2 pt-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] shadow-zen-lg backdrop-blur-xl md:hidden">
+      <div className="zen-glass fixed bottom-0 left-0 right-0 z-[60] flex items-center justify-around rounded-t-3xl border-t border-zen-clay/50 bg-white px-2 pt-2.5 pb-[max(0.65rem,env(safe-area-inset-bottom,0px))] shadow-zen-lg md:hidden">
         {NAV_ITEMS.map(({ key, icon: Icon, label, isFab }) => {
           if (isFab) {
             return (

@@ -25,7 +25,7 @@ export default function MasonryColumns({ columns = 2, gap = '1rem', className = 
     <div className={className || legacyClass} style={{ columnGap: gap }}>
       {React.Children.map(children, (child) =>
         child ? (
-          <div style={{ breakInside: 'avoid', marginBottom: gap }}>
+          <div className="w-full" style={{ breakInside: 'avoid', marginBottom: gap }}>
             {child}
           </div>
         ) : null,

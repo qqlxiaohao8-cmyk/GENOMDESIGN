@@ -245,7 +245,7 @@ export default function AuthModal({ open, onClose }) {
                   <div className="w-full border-t border-zen-ink/10" />
                 </div>
                 <div className="relative flex justify-center zen-micro-label">
-                  <span className="bg-zen-mist px-3 text-zen-ink/45">Or email &amp; password</span>
+                  <span className="bg-white px-3 text-zen-ink/45">Or email &amp; password</span>
                 </div>
               </div>
 
@@ -348,7 +348,7 @@ export default function AuthModal({ open, onClose }) {
                   <div className="w-full border-t border-zen-ink/10" />
                 </div>
                 <div className="relative flex justify-center zen-micro-label">
-                  <span className="bg-zen-mist px-3 text-zen-ink/45">Or create with email</span>
+                  <span className="bg-white px-3 text-zen-ink/45">Or create with email</span>
                 </div>
               </div>
 
