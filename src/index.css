@@ -473,8 +473,9 @@
   .zen-tag {
     @apply rounded-full border border-zen-clay/60 bg-white px-3 py-1 text-[11px] font-extralight tracking-widest text-zen-stone smooth-transition hover:border-zen-stone/40 hover:bg-zen-ink/[0.04] hover:text-zen-ink;
   }
+  /** 与 .zen-tag 叠用：仅改颜色，不改变圆角/内边距 */
   .zen-tag-active {
-    @apply border-zen-coal/30 bg-zen-coal text-zen-paper;
+    @apply border-zen-coal/30 bg-zen-coal text-zen-paper hover:border-zen-coal/30 hover:bg-zen-coal hover:text-zen-paper;
   }
   .zen-micro-label {
     @apply type-overline tracking-[0.2em] text-zen-ink/45;

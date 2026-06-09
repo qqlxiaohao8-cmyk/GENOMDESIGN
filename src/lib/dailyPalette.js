@@ -1,9 +1,20 @@
 import { enrichSwatch } from './colorValues';
 import { getPoeticColorName, getPoeticQuoteForHex } from './poeticColorNaming';
-import { wrapHueDeg, lchToHexClamped } from './oklch.js';
+import { classifyHexDomain } from './colorUniverse';
+import { oklabDistSqFromHex, wrapHueDeg, lchToHexClamped } from './oklch.js';
 
 /** How many past calendar days of GENOM Daily cards appear in Community (inclusive of today). */
 export const DAILY_PALETTE_HISTORY_DAYS = 365;
+
+/** 近 N 天内避免过于相近的 hex（感知距离） */
+export const DAILY_COLOR_LOOKBACK_DAYS = 21;
+/** 近 N 天内避免重复同一色系 */
+export const DAILY_DOMAIN_LOOKBACK_DAYS = 7;
+/** OKLab 距离² 下限：低于此视为「同色」 */
+const DAILY_MIN_COLOR_DIST_SQ = 0.014;
+const DAILY_HEX_MAX_ATTEMPTS = 64;
+
+const dailyHexCache = new Map();
 
 /**
  * Date key YYYY-MM-DD in **GMT+8** (Asia/Shanghai).
@@ -364,13 +375,112 @@ function fnv1a32(str) {
   return h >>> 0;
 }
 
-/** Deterministic OKLCH swatch per local calendar day (updates at midnight). */
-export function dailyHexFromDateKey(dateKey) {
-  const u = fnv1a32(`genom-zhuri-${dateKey}`);
-  const h = wrapHueDeg(u % 360);
-  const L = 0.38 + ((u >>> 8) & 0xff) / 650;
-  const C = 0.055 + ((u >>> 16) & 0x7f) / 900;
+function clamp01(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function shiftDailyDateKey(dateKey, deltaDays) {
+  const d = dateFromDailyPaletteKey(dateKey);
+  d.setDate(d.getDate() + deltaDays);
+  return formatDailyPaletteDateKey(d);
+}
+
+/** 由 dateKey + 尝试序号生成候选色（确定性） */
+function dailyHexCandidate(dateKey, attempt = 0) {
+  const u = fnv1a32(`genom-zhuri-${dateKey}|v2|${attempt}`);
+  const h = wrapHueDeg((u % 360) + attempt * 37);
+  const L = clamp01(0.38 + ((u >>> 8) & 0xff) / 650 + ((attempt % 5) - 2) * 0.028, 0.28, 0.78);
+  const C = clamp01(0.055 + ((u >>> 16) & 0x7f) / 900 + ((attempt % 3) - 1) * 0.012, 0.04, 0.13);
   return lchToHexClamped(L, C, h);
+}
+
+function isTooSimilarToRecent(hex, recentHexes) {
+  for (const past of recentHexes) {
+    if (!past) continue;
+    if (past.toUpperCase() === hex.toUpperCase()) return true;
+    if (oklabDistSqFromHex(hex, past) < DAILY_MIN_COLOR_DIST_SQ) return true;
+  }
+  return false;
+}
+
+function domainUsedRecently(hex, recentDomains) {
+  const domain = classifyHexDomain(hex);
+  return recentDomains.includes(domain);
+}
+
+function scoreDailyCandidate(hex, recentHexes, recentDomains) {
+  let minDist = Infinity;
+  for (const past of recentHexes) {
+    if (!past) continue;
+    minDist = Math.min(minDist, oklabDistSqFromHex(hex, past));
+  }
+  let score = minDist;
+  if (domainUsedRecently(hex, recentDomains)) score -= 0.08;
+  return score;
+}
+
+function pickDailyHexForKey(dateKey) {
+  const colorLookback = [];
+  for (let i = 1; i <= DAILY_COLOR_LOOKBACK_DAYS; i++) {
+    const past = dailyHexCache.get(shiftDailyDateKey(dateKey, -i));
+    if (past) colorLookback.push(past);
+  }
+
+  const domainLookback = [];
+  for (let i = 1; i <= DAILY_DOMAIN_LOOKBACK_DAYS; i++) {
+    const past = dailyHexCache.get(shiftDailyDateKey(dateKey, -i));
+    if (past) domainLookback.push(classifyHexDomain(past));
+  }
+
+  for (let attempt = 0; attempt < DAILY_HEX_MAX_ATTEMPTS; attempt++) {
+    const candidate = dailyHexCandidate(dateKey, attempt);
+    if (!isTooSimilarToRecent(candidate, colorLookback) && !domainUsedRecently(candidate, domainLookback)) {
+      return candidate;
+    }
+  }
+
+  let best = dailyHexCandidate(dateKey, 0);
+  let bestScore = -Infinity;
+  for (let a = 0; a < DAILY_HEX_MAX_ATTEMPTS; a++) {
+    const c = dailyHexCandidate(dateKey, a);
+    const s = scoreDailyCandidate(c, colorLookback, domainLookback);
+    if (s > bestScore) {
+      bestScore = s;
+      best = c;
+    }
+  }
+  return best;
+}
+
+function ensureDailyHexChain(dateKey) {
+  const maxLookback = Math.max(DAILY_COLOR_LOOKBACK_DAYS, DAILY_DOMAIN_LOOKBACK_DAYS);
+  for (let i = maxLookback; i >= 1; i--) {
+    const pastKey = shiftDailyDateKey(dateKey, -i);
+    if (!dailyHexCache.has(pastKey)) {
+      dailyHexCache.set(pastKey, pickDailyHexForKey(pastKey));
+    }
+  }
+}
+
+/**
+ * Deterministic OKLCH swatch per GMT+8 calendar day.
+ * Avoids repeating a near-identical color within {@link DAILY_COLOR_LOOKBACK_DAYS}
+ * and the same 色系 within {@link DAILY_DOMAIN_LOOKBACK_DAYS}.
+ */
+export function dailyHexFromDateKey(dateKey) {
+  const key = String(dateKey || '').trim();
+  if (!key) return dailyHexCandidate(formatDailyPaletteDateKey(), 0);
+  if (dailyHexCache.has(key)) return dailyHexCache.get(key);
+
+  ensureDailyHexChain(key);
+  const chosen = pickDailyHexForKey(key);
+  dailyHexCache.set(key, chosen);
+  return chosen;
+}
+
+/** 测试 / 调试：清空按日缓存 */
+export function clearDailyHexCache() {
+  dailyHexCache.clear();
 }
 
 /** Second stop for gradients / hero cards (companion only — not a separate named 国色). */

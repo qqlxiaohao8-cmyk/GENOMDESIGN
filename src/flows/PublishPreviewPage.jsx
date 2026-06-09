@@ -11,6 +11,7 @@ import {
 import { isDuplicatePublicTitle } from '../lib/palettePublicTitle';
 import { enrichColorsWithChineseNames } from '../lib/paletteChineseDisplay';
 import { fetchAiPaletteTitle } from '../lib/paletteTitleApi';
+import DailySubmitSuccessModal from '../components/DailySubmitSuccessModal';
 import SekongPaletteSharePreview from '../components/SekongPaletteSharePreview';
 
 /**
@@ -25,6 +26,8 @@ export default function PublishPreviewPage({
   onDownload,
   onCopyLink,
   onOpenAuth,
+  /** 每日一色投稿成功后进入投票池 */
+  onGoToDailyVote,
   /** 'colorSea' | 'dailyOneColor' */
   publishTarget = 'colorSea',
   existingPublicTitles = [],
@@ -39,6 +42,7 @@ export default function PublishPreviewPage({
   const [publishError, setPublishError] = useState(null);
   const [titleShake, setTitleShake] = useState(false);
   const [publishedId, setPublishedId] = useState(null);
+  const [dailySuccessOpen, setDailySuccessOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const recentTitlesRef = useRef([]);
   const titleInputRef = useRef(null);
@@ -128,6 +132,9 @@ export default function PublishPreviewPage({
       const res = await onPublish({ title: clampPaletteTitle(title), hexes, imageDataUrl, tags: paletteTags });
       if (res?.ok) {
         setPublishedId(res.id);
+        if (isDailySubmit) {
+          setDailySuccessOpen(true);
+        }
       } else if (res?.error === 'duplicate_title') {
         setPublishError('色海已有同名色卡，请换一个名称。');
         shakeTitleInput();
@@ -152,8 +159,20 @@ export default function PublishPreviewPage({
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
+  const handleGoToDailyVote = () => {
+    setDailySuccessOpen(false);
+    onGoToDailyVote?.();
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+      <DailySubmitSuccessModal
+        open={isDailySubmit && dailySuccessOpen}
+        title={clampPaletteTitle(title)}
+        colors={safeColors}
+        onGoVote={handleGoToDailyVote}
+        onClose={() => setDailySuccessOpen(false)}
+      />
       {/* Top bar */}
       <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zen-ink/10">
         <button

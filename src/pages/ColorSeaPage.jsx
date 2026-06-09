@@ -17,14 +17,14 @@ import {
 } from '../lib/paletteFeedLayout';
 
 const tagPill = (active) =>
-  `${active ? 'zen-tag-active' : 'zen-tag'} shrink-0 whitespace-nowrap px-3 py-1.5`;
+  `zen-tag shrink-0 whitespace-nowrap${active ? ' zen-tag-active' : ''}`;
 
 function TagFilterButton({
   tag,
   active,
   onClick,
   dailyAccentHex,
-  sizeClass = 'shrink-0 whitespace-nowrap px-3 py-1',
+  sizeClass = '',
   asTab = false,
 }) {
   const isSelected = active;
@@ -36,7 +36,7 @@ function TagFilterButton({
         type="button"
         {...tabA11y}
         onClick={onClick}
-        className={`${sizeClass} ${className}`}
+        className={`zen-tag shrink-0 whitespace-nowrap ${className} ${sizeClass}`.trim()}
         style={style}
       >
         {tag}
@@ -48,7 +48,7 @@ function TagFilterButton({
       type="button"
       {...tabA11y}
       onClick={onClick}
-      className={`${sizeClass} ${tagPill(isSelected)}`}
+      className={`${tagPill(isSelected)} ${sizeClass}`.trim()}
     >
       {tag}
     </button>
@@ -67,7 +67,7 @@ function CommunityTagBar({ quickTags, activeTag, onTagClick, dailyAccentHex }) {
         role="tab"
         aria-selected={activeTag === 'All'}
         onClick={() => onTagClick('All')}
-        className={`shrink-0 whitespace-nowrap px-3 py-1 ${tagPill(activeTag === 'All')}`}
+        className={tagPill(activeTag === 'All')}
       >
         全部
       </button>

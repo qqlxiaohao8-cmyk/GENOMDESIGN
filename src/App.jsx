@@ -334,11 +334,15 @@ export default function App() {
                   tags,
                   paletteMeta: currentFlow.paletteMeta,
                 });
-            if (res.ok) {
+            if (res.ok && !isDailySubmit) {
               clearFlows();
-              handleTabChange(isDailySubmit ? 'dailyOneColor' : 'colorSea');
+              handleTabChange('colorSea');
             }
             return res;
+          }}
+          onGoToDailyVote={() => {
+            clearFlows();
+            handleTabChange('dailyOneColor');
           }}
           onDownload={(colors, title) => downloadColorCardPng(colors, title)}
           onCopyLink={(id) => copyShareLink(id, 'shengse')}
