@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowRight, ThumbsUp } from 'lucide-react';
 import DailyColorChallengeCard from '../components/DailyColorChallengeCard';
-import PageHeader from '../components/layout/PageHeader';
+import PageShell from '../components/layout/PageShell';
 
 const PLACEHOLDER_PALETTES = [
   ['#F2E8D5', '#C9A87C', '#8B5E3C', '#4A2C17', '#2A1508'],
@@ -29,21 +29,17 @@ function PlaceholderCard({ colors }) {
  */
 export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      <div className="px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-6 md:px-6 md:pb-8">
-        <PageHeader
-          className="mb-4"
-          title="游戏"
-          description="色彩训练与每日挑战"
-        />
+    <PageShell
+      title="游戏"
+      description="色彩训练与每日挑战"
+    >
+      <DailyColorChallengeCard onStart={onStartChallenge} />
 
-        <DailyColorChallengeCard onStart={onStartChallenge} />
-
-        <button
-          type="button"
-          onClick={() => onOpenDailyPool?.()}
-          className="mb-6 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
-        >
+      <button
+        type="button"
+        onClick={() => onOpenDailyPool?.()}
+        className="mb-6 mt-5 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
+      >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-vermilion/10 text-zen-vermilion">
               <ThumbsUp size={18} strokeWidth={2} aria-hidden />
@@ -70,7 +66,6 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
             <PlaceholderCard key={i} colors={colors} />
           ))}
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }

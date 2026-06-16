@@ -439,18 +439,23 @@
   .zen-glass {
     @apply border border-zen-clay/40 bg-white;
   }
-  .zen-page-header {
-    @apply shrink-0 border-b border-zen-clay/50 bg-white px-4 py-5 md:px-8 md:py-8;
+  .zen-page-heading {
+    @apply space-y-1.5;
   }
-  /** 色海 / 收藏：贴边 feed，减少左右留白 */
-  .zen-page-header-feed {
-    @apply shrink-0 border-b border-zen-clay/50 bg-white px-2 py-4 md:px-3 md:py-5;
+  .zen-page-heading__text {
+    @apply min-w-0 flex-1 space-y-1.5;
+  }
+  .zen-page-header {
+    @apply shrink-0 border-b border-zen-clay/50 bg-white px-4 py-4 md:px-6 md:py-5;
+  }
+  .zen-page-header-extra {
+    @apply mt-4 space-y-4 md:mt-5 md:space-y-5;
   }
   .zen-page-body {
-    @apply mx-auto w-full max-w-7xl px-3 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-10 md:pt-6;
+    @apply mx-auto w-full max-w-7xl px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-10 md:pt-5;
   }
   .zen-page-body-feed {
-    @apply w-full max-w-none px-2 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-3 md:px-3 md:pb-8 md:pt-4;
+    @apply w-full max-w-none px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-8 md:pt-5;
   }
   .xuan-paper {
     @apply min-h-screen bg-white text-zen-ink selection:bg-zen-clay selection:text-zen-coal;

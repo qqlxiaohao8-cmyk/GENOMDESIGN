@@ -7,7 +7,7 @@ import {
   COLOR_SEA_MASONRY_CLASS,
   PALETTE_FEED_MASONRY_GAP,
 } from '../lib/paletteFeedLayout';
-import PageHeader from '../components/layout/PageHeader';
+import PageShell from '../components/layout/PageShell';
 import { DAILY_VOTES_PER_USER } from '../lib/dailyOneColorConstants';
 
 /**
@@ -41,51 +41,51 @@ export default function DailyOneColorPage({
   };
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 bg-white">
-      <div className="shrink-0 z-40 border-b border-zen-ink/[0.07] bg-white px-4 py-3 md:px-6">
-        <PageHeader
-          title="每日一色"
-          description="今日投稿 · 投票 · 前三入选色海「每日色卡」"
-          overline={(
-            <span className="flex items-center gap-1.5">
-              <CalendarSync size={12} strokeWidth={2} aria-hidden />
-              <span>{dateKey}</span>
+    <PageShell
+      title="每日一色"
+      description="今日投稿 · 投票 · 前三入选色海「每日色卡」"
+      overline={(
+        <span className="flex items-center gap-1.5">
+          <CalendarSync size={12} strokeWidth={2} aria-hidden />
+          <span>{dateKey}</span>
+        </span>
+      )}
+      bodyClassName="zen-page-body-feed"
+      headerAside={(
+        <div className="rounded-xl border border-zen-ink/10 bg-white px-3 py-2 text-right">
+          <p className="type-overline text-zen-ink/40">今日剩余票数</p>
+          <p className="type-stat text-zen-vermilion">
+            {user ? remainingVotes : '—'}
+            <span className="type-caption text-zen-ink/35">
+              /{DAILY_VOTES_PER_USER}
             </span>
-          )}
-        >
-          <div className="rounded-xl border border-zen-ink/10 bg-white px-3 py-2 text-right">
-            <p className="type-overline text-zen-ink/40">今日剩余票数</p>
-            <p className="type-stat text-zen-vermilion">
-              {user ? remainingVotes : '—'}
-              <span className="type-caption text-zen-ink/35">
-                /{DAILY_VOTES_PER_USER}
-              </span>
+          </p>
+        </div>
+      )}
+      headerExtra={(
+        <>
+          {onBackToGame ? (
+            <button
+              type="button"
+              onClick={onBackToGame}
+              className="type-caption hover:text-zen-ink"
+            >
+              ← 返回游戏
+            </button>
+          ) : null}
+          {user && mySubmission ? (
+            <p className="type-caption text-green-700/90">
+              你已投稿今日色卡，可邀请他人为你投票。
             </p>
-          </div>
-        </PageHeader>
-        {onBackToGame && (
-          <button
-            type="button"
-            onClick={onBackToGame}
-            className="type-caption -mt-2 mb-1 hover:text-zen-ink"
-          >
-            ← 返回游戏
-          </button>
-        )}
-        {user && mySubmission && (
-          <p className="type-caption mt-2 text-green-700/90">
-            你已投稿今日色卡，可邀请他人为你投票。
-          </p>
-        )}
-        {!user && (
-          <p className="type-note mt-2">
-            登录后可投票；完成游戏页「每日一色」挑战即可投稿。
-          </p>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="px-3 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-3 md:px-4 md:pb-8">
+          ) : null}
+          {!user ? (
+            <p className="type-note">
+              登录后可投票；完成游戏页「每日一色」挑战即可投稿。
+            </p>
+          ) : null}
+        </>
+      )}
+    >
           {loading && (
             <div className="flex justify-center py-16">
               <Loader2 className="animate-spin text-zen-ink/30" size={28} strokeWidth={2} />
@@ -125,8 +125,6 @@ export default function DailyOneColorPage({
               ))}
             </MasonryColumns>
           )}
-        </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }

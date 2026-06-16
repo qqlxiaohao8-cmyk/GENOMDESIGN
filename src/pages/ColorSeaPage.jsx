@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, X } from 'lucide-react';
 import MasonryColumns from '../components/MasonryColumns';
-import PageHeader from '../components/layout/PageHeader';
+import PageShell from '../components/layout/PageShell';
 import PaletteFeedCard from '../components/PaletteFeedCard';
 import { itemColorCardData } from '../components/StyleUiPreviewCard';
 import { useCalendarDateKey } from '../hooks/useCalendarDateKey';
@@ -276,102 +276,99 @@ export default function ColorSeaPage({
   };
 
   return (
-    <div className="flex flex-1 flex-col min-h-0 bg-white">
-      <div className="zen-page-header-feed z-40 space-y-4 md:space-y-5">
-        <PageHeader
-          title="色海"
-          description="探索社区色卡，搜索标签或名称"
-        />
-        <div ref={searchAreaRef}>
-          <div className="relative">
-            <Search
-              size={16}
-              strokeWidth={1.35}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zen-stone"
-            />
-            <input
-              type="search"
-              value={searchQuery}
-              onFocus={() => setSearchExpanded(true)}
-              onClick={() => setSearchExpanded(true)}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                if (e.target.value.trim()) setActiveTag('All');
-              }}
-              placeholder="搜索色票、标签、名称…"
-              className={`zen-input py-2.5 pl-10 pr-9 ${
-                searchExpanded ? 'border-zen-stone/40 bg-white' : ''
-              }`}
-            />
-            {(searchQuery || searchExpanded) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery('');
-                  setActiveTag('All');
-                  setSearchExpanded(false);
+    <PageShell
+      title="色海"
+      description="探索社区色卡，搜索标签或名称"
+      bodyClassName="zen-page-body-feed"
+      headerExtra={(
+        <>
+          <div ref={searchAreaRef}>
+            <div className="relative">
+              <Search
+                size={16}
+                strokeWidth={1.35}
+                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zen-stone"
+              />
+              <input
+                type="search"
+                value={searchQuery}
+                onFocus={() => setSearchExpanded(true)}
+                onClick={() => setSearchExpanded(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value.trim()) setActiveTag('All');
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zen-stone smooth-transition hover:text-zen-coal"
-                aria-label="清除搜索并关闭标签"
-              >
-                <X size={14} />
-              </button>
+                placeholder="搜索色票、标签、名称…"
+                className={`zen-input py-2.5 pl-10 pr-9 ${
+                  searchExpanded ? 'border-zen-stone/40 bg-white' : ''
+                }`}
+              />
+              {(searchQuery || searchExpanded) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveTag('All');
+                    setSearchExpanded(false);
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zen-stone smooth-transition hover:text-zen-coal"
+                  aria-label="清除搜索并关闭标签"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {searchExpanded && (
+              <CategorizedTagPanel
+                categories={categories}
+                activeTag={activeTag}
+                sort={sort}
+                onSelectTag={handleTagClick}
+                onSelectSort={setSort}
+                dailyAccentHex={dailyAccentHex}
+              />
             )}
           </div>
 
-          {searchExpanded && (
-            <CategorizedTagPanel
-              categories={categories}
+          {!searchExpanded && (
+            <CommunityTagBar
+              quickTags={quickTags}
               activeTag={activeTag}
-              sort={sort}
-              onSelectTag={handleTagClick}
-              onSelectSort={setSort}
+              onTagClick={handleTagClick}
               dailyAccentHex={dailyAccentHex}
             />
           )}
+        </>
+      )}
+    >
+      {renderableFeed.length > 0 ? (
+        <MasonryColumns className={COLOR_SEA_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
+          {renderableFeed.map(({ item, cd }) => (
+            <PaletteFeedCard
+              key={item.id}
+              colors={cd.colors}
+              title={item.aesthetic || ''}
+              favorited={favoritedExploreStyleIds?.has(item.id)}
+              favoriteBusy={vaultFavoriteBusyId === item.id}
+              onToggleFavorite={() => {
+                if (!user) { onOpenAuth?.(); return; }
+                onToggleFavorite?.(item);
+              }}
+              mode="sea"
+              onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
+              onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
+              onCopyLink={() => onCopyLink?.(item.id)}
+            />
+          ))}
+        </MasonryColumns>
+      ) : (
+        <div className="py-16 text-center">
+          <p className="type-body text-zen-ink/40">
+            {searchQuery || activeTag !== 'All' ? '没有找到匹配的色卡。' : '色海里还没有色卡。'}
+          </p>
         </div>
-
-        {!searchExpanded && (
-          <CommunityTagBar
-            quickTags={quickTags}
-            activeTag={activeTag}
-            onTagClick={handleTagClick}
-            dailyAccentHex={dailyAccentHex}
-          />
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="zen-page-body-feed">
-          {renderableFeed.length > 0 ? (
-            <MasonryColumns className={COLOR_SEA_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
-              {renderableFeed.map(({ item, cd }) => (
-                <PaletteFeedCard
-                  key={item.id}
-                  colors={cd.colors}
-                  title={item.aesthetic || ''}
-                  favorited={favoritedExploreStyleIds?.has(item.id)}
-                  favoriteBusy={vaultFavoriteBusyId === item.id}
-                  onToggleFavorite={() => {
-                    if (!user) { onOpenAuth?.(); return; }
-                    onToggleFavorite?.(item);
-                  }}
-                  mode="sea"
-                  onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
-                  onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
-                  onCopyLink={() => onCopyLink?.(item.id)}
-                />
-              ))}
-            </MasonryColumns>
-          ) : (
-            <div className="py-16 text-center">
-              <p className="type-body text-zen-ink/40">
-                {searchQuery || activeTag !== 'All' ? '没有找到匹配的色卡。' : '色海里还没有色卡。'}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </PageShell>
   );
 }

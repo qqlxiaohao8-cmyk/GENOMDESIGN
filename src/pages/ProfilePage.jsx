@@ -4,7 +4,7 @@ import { getPoeticColorName } from '../lib/poeticColorNaming';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
 import { PROFILE_FONTS } from '../lib/profileFonts';
-import PageHeader from '../components/layout/PageHeader';
+import PageShell from '../components/layout/PageShell';
 import { authClient } from '../lib/authClient';
 import { syncProfile } from '../lib/apiClient';
 
@@ -242,14 +242,11 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
   );
 
   return (
-    <div className="flex flex-1 flex-col overflow-y-auto">
-      <div className="px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-8 md:pt-6">
-        <PageHeader
-          className="mb-5"
-          title="我"
-          description="你的色彩身份与账号设置"
-        />
-        {/* Hero card */}
+    <>
+      <PageShell
+        title="我"
+        description="你的色彩身份与账号设置"
+      >
         <div className="mb-5">
           <ProfileHeroCard
             user={user}
@@ -259,7 +256,6 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
           />
         </div>
 
-        {/* Menu list */}
         <div className="space-y-1">
           <MenuRow
             icon={BookOpen}
@@ -272,7 +268,6 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
           <MenuRow icon={BookOpen} label="关于 GENOM" sub="即将开放" disabled />
         </div>
 
-        {/* Sign out */}
         {user && (
           <div className="mt-6">
             <button
@@ -285,9 +280,8 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
             </button>
           </div>
         )}
-      </div>
+      </PageShell>
 
-      {/* Edit profile sheet */}
       {editOpen && user && (
         <EditProfileSheet
           user={user}
@@ -299,6 +293,6 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
           busy={saveBusy}
         />
       )}
-    </div>
+    </>
   );
 }
