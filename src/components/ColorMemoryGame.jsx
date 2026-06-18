@@ -161,7 +161,7 @@ function FlipNumber({
  * Vertical gradient slider with draggable white-circle thumb.
  * top = max value, bottom = min value.
  */
-function VerticalSlider({ label, value, min, max, gradient, height = 140, onChange }) {
+function VerticalSlider({ label, value, min, max, gradient, height = 200, trackWidth = 16, thumbSize = 26, onChange }) {
   const trackRef = useRef(null);
 
   const applyY = useCallback((clientY) => {
@@ -193,20 +193,20 @@ function VerticalSlider({ label, value, min, max, gradient, height = 140, onChan
   const thumbTop = `${(1 - pct) * 100}%`;
 
   return (
-    <div className="flex flex-col items-center gap-2 select-none">
+    <div className="flex flex-col items-center gap-2.5 select-none">
       <div
         ref={trackRef}
         className="relative rounded-full cursor-pointer"
-        style={{ width: 12, height, background: gradient }}
+        style={{ width: trackWidth, height, background: gradient }}
         onMouseDown={onMouseDown}
         onTouchStart={onTouchStart}
       >
         <div
-          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md pointer-events-none"
-          style={{ top: thumbTop, width: 20, height: 20 }}
+          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-lg pointer-events-none"
+          style={{ top: thumbTop, width: thumbSize, height: thumbSize }}
         />
       </div>
-      <span className="text-[10px] md:text-xs font-extralight opacity-60 tracking-wider">{label}</span>
+      <span className="text-[11px] md:text-xs font-extralight opacity-60 tracking-wider">{label}</span>
     </div>
   );
 }
@@ -321,7 +321,7 @@ export default function ColorMemoryGame() {
 
   const blockBase = 'relative w-full overflow-hidden rounded-2xl';
   const blockHeight = { minHeight: 'clamp(220px, 50vw, 420px)' };
-  const guessBlockHeight = { minHeight: 'clamp(320px, 55vw, 460px)' };
+  const guessBlockHeight = { minHeight: 'clamp(360px, 58vw, 500px)' };
 
   // ── Idle ──────────────────────────────────────────────────────────────
 
@@ -462,16 +462,16 @@ export default function ColorMemoryGame() {
         style={{ ...guessBlockHeight, backgroundColor: currentBg, color: tc }}
       >
         {/* Desktop sliders — vertical, left panel */}
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden md:flex flex-row gap-5 items-center">
+        <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden md:flex flex-row gap-7 items-center">
           {sliders.map((sl) => (
-            <VerticalSlider key={sl.label} height={160} {...sl} />
+            <VerticalSlider key={sl.label} height={240} trackWidth={18} thumbSize={30} {...sl} />
           ))}
         </div>
 
         {/* Mobile sliders — vertical, bottom-left row */}
-        <div className="absolute bottom-5 left-5 flex flex-row gap-4 items-end md:hidden">
+        <div className="absolute bottom-5 left-5 flex flex-row gap-5 items-end md:hidden">
           {sliders.map((sl) => (
-            <VerticalSlider key={sl.label} height={90} {...sl} />
+            <VerticalSlider key={sl.label} height={130} trackWidth={14} thumbSize={24} {...sl} />
           ))}
         </div>
 
