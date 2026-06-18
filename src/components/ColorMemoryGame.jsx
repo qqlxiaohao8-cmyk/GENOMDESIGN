@@ -86,52 +86,75 @@ function totalDescription(total) {
 
 // ── Sub-components ──────────────────────────────────────────────────────
 
+const GAME_NUM_CLASS = 'font-zenSerif font-medium tabular-nums leading-none';
+
 /**
- * Animated number display: rapidly cycles through intermediate values
- * before settling on `value`.
- * - Normal use: starts at current value, animates on subsequent changes.
- * - Score reveal: pass `initialFrom={0}` to animate from 0 on mount.
+ * 连续滚动的数字动画（rAF，无帧间停顿）。
+ * - continuous: 到达目标后仍保持轻微波动（用于倒计时）
+ * - initialFrom: 挂载时从该值滚向 value（用于评分揭示）
  */
-function FlipNumber({ value, decimals = 2, duration = 440, initialFrom }) {
-  const start = initialFrom !== undefined ? initialFrom : value;
-  const [displayed, setDisplayed] = useState(start);
-  const prevRef = useRef(start);
-  const timerRef = useRef(null);
+function FlipNumber({
+  value,
+  decimals = 2,
+  duration = 520,
+  initialFrom,
+  continuous = false,
+  className = '',
+}) {
+  const displayedRef = useRef(initialFrom ?? value);
+  const [displayed, setDisplayed] = useState(initialFrom ?? value);
+  const rafRef = useRef(null);
 
-  const animate = useCallback((from, to, ms) => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    if (from === to) { setDisplayed(to); return; }
-    const FRAMES = 22;
-    const frameMs = ms / FRAMES;
-    let f = 0;
-    const step = () => {
-      f++;
-      if (f >= FRAMES) { setDisplayed(to); return; }
-      const t = f / FRAMES;
-      const base = from + (to - from) * t;
-      const noise = (Math.random() * 2 - 1) * Math.abs(to - from) * 0.55 * Math.sin(t * Math.PI);
-      setDisplayed(Math.max(0, base + noise));
-      timerRef.current = setTimeout(step, frameMs);
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+    const from = displayedRef.current;
+    const target = value;
+    const start = performance.now();
+    const span = Math.max(Math.abs(target - from), 0.08);
+
+    const loop = (now) => {
+      const elapsed = now - start;
+      const t = Math.min(1, elapsed / duration);
+      const eased = 1 - (1 - t) ** 3;
+
+      let next;
+      if (t < 1) {
+        const base = from + (target - from) * eased;
+        const damp = 1 - eased;
+        const w1 = Math.sin(now * 0.019) * span * 0.38 * damp;
+        const w2 = Math.sin(now * 0.033 + 1.1) * span * 0.2 * damp;
+        const w3 = Math.sin(now * 0.055 + 2.3) * span * 0.09 * damp;
+        next = base + w1 + w2 + w3;
+      } else if (continuous) {
+        const w1 = Math.sin(now * 0.022) * span * 0.07;
+        const w2 = Math.sin(now * 0.041 + 0.9) * span * 0.04;
+        const w3 = Math.sin(now * 0.063 + 1.7) * span * 0.025;
+        next = target + w1 + w2 + w3;
+      } else {
+        next = target;
+        displayedRef.current = next;
+        setDisplayed(next);
+        return;
+      }
+
+      next = Math.max(0, next);
+      displayedRef.current = next;
+      setDisplayed(next);
+      rafRef.current = requestAnimationFrame(loop);
     };
-    timerRef.current = setTimeout(step, 0);
-  }, []);
 
-  // Animate on mount when initialFrom is specified
-  useEffect(() => {
-    if (initialFrom !== undefined) animate(initialFrom, value, duration);
-    return () => clearTimeout(timerRef.current);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    rafRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [value, duration, continuous]);
 
-  // Animate on value changes
-  useEffect(() => {
-    if (prevRef.current === value) return;
-    const from = prevRef.current;
-    prevRef.current = value;
-    animate(from, value, duration);
-    return () => clearTimeout(timerRef.current);
-  }, [value, animate, duration]);
-
-  return <span className="tabular-nums">{displayed.toFixed(decimals)}</span>;
+  return (
+    <span className={`${GAME_NUM_CLASS} ${className}`}>
+      {displayed.toFixed(decimals)}
+    </span>
+  );
 }
 
 /**
@@ -370,8 +393,13 @@ export default function ColorMemoryGame() {
           className="absolute top-5 right-6 md:top-8 md:right-10 text-right"
           style={{ color: tc }}
         >
-          <p className="text-6xl md:text-9xl font-extralight leading-none">
-            <FlipNumber value={memorySecs} decimals={2} duration={380} />
+          <p className={`text-6xl md:text-9xl ${GAME_NUM_CLASS}`} style={{ color: tc }}>
+            <FlipNumber
+              value={memorySecs}
+              decimals={2}
+              duration={720}
+              continuous
+            />
           </p>
           <p className="text-xs md:text-sm font-extralight opacity-55 mt-1 tracking-wide">
             秒时间记住颜色
@@ -507,13 +535,13 @@ export default function ColorMemoryGame() {
 
         {/* Score — top right, animated from 0 (key forces remount each round) */}
         <div className="absolute top-5 right-6 md:top-8 md:right-10 text-right pointer-events-none">
-          <p className="text-6xl md:text-9xl font-extralight leading-none text-white drop-shadow-lg">
+          <p className={`text-6xl md:text-9xl ${GAME_NUM_CLASS} text-white drop-shadow-lg`}>
             <FlipNumber
               key={rounds.length}
               value={score}
               initialFrom={0}
               decimals={2}
-              duration={600}
+              duration={900}
             />
           </p>
           <p className="text-xs md:text-sm font-extralight text-white/55 mt-1 tracking-wide">
@@ -559,10 +587,15 @@ export default function ColorMemoryGame() {
       >
         {/* Big score */}
         <div className="flex items-baseline gap-2 mb-2">
-          <span className="text-5xl md:text-8xl font-extralight text-white leading-none tabular-nums">
-            {total.toFixed(2)}
+          <span className={`text-5xl md:text-8xl text-white ${GAME_NUM_CLASS}`}>
+            <FlipNumber
+              value={total}
+              initialFrom={0}
+              decimals={2}
+              duration={1100}
+            />
           </span>
-          <span className="text-2xl md:text-4xl text-white/35 font-extralight">/50</span>
+          <span className="text-2xl md:text-4xl text-white/35 font-zenSerif font-extralight">/50</span>
         </div>
 
         <p className="text-white/50 font-extralight text-sm md:text-lg mb-7 md:mb-10 leading-relaxed">
@@ -602,7 +635,7 @@ export default function ColorMemoryGame() {
                 </svg>
                 {/* Per-round score */}
                 <span
-                  className="absolute left-1 top-1 text-[9px] md:text-[11px] font-light tabular-nums leading-none"
+                  className={`absolute left-1 top-1 text-[9px] md:text-[11px] font-zenSerif font-medium tabular-nums leading-none`}
                   style={{ color: adaptiveTextHex(gHex) }}
                 >
                   {sc.toFixed(2)}
