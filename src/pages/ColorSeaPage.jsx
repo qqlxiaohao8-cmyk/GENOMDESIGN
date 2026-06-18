@@ -11,6 +11,7 @@ import {
   getDailyWinnerTagButtonProps,
   isDailyWinnerTag,
 } from '../lib/dailyWinnerTagStyle';
+import { tagMatchesSeaFilter } from '../lib/colorHueTagStyle';
 import {
   COLOR_SEA_MASONRY_CLASS,
   PALETTE_FEED_MASONRY_GAP,
@@ -93,7 +94,30 @@ function CategorizedTagPanel({
   onSelectSort,
   dailyAccentHex,
 }) {
+  const colorTagsRef = useRef(null);
+  const styleTagsRef = useRef(null);
+  const [themeScrollMaxH, setThemeScrollMaxH] = useState(null);
+
   const hasAnyTag = categories.some((c) => c.tags.length > 0);
+
+  useEffect(() => {
+    const measure = () => {
+      const colorH = colorTagsRef.current?.offsetHeight ?? 0;
+      const styleH = styleTagsRef.current?.offsetHeight ?? 0;
+      const max = Math.max(colorH, styleH);
+      if (max > 0) setThemeScrollMaxH(max);
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (colorTagsRef.current) ro.observe(colorTagsRef.current);
+    if (styleTagsRef.current) ro.observe(styleTagsRef.current);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [categories]);
 
   return (
     <div
@@ -126,47 +150,55 @@ function CategorizedTagPanel({
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onSelectTag('All')}
-        className={`mb-2 ${tagPill(activeTag === 'All')}`}
-      >
-        全部
-      </button>
-
       {!hasAnyTag ? (
         <p className="type-body-sm py-3 text-center text-zen-ink/40">
           暂无可筛选标签
         </p>
       ) : (
-        <div className="community-tag-scroll max-h-[min(50vh,18rem)] overflow-x-auto overflow-y-hidden pb-1">
-          <div className="flex min-w-min flex-row items-stretch gap-3 pr-1">
-            {categories.map(({ id, label, tags }) =>
-              tags.length === 0 ? null : (
-                <section
-                  key={id}
-                  className="flex w-[min(11.5rem,38vw)] shrink-0 flex-col gap-1.5 border-r border-zen-ink/[0.06] pr-3 last:border-r-0 last:pr-0"
-                  aria-label={label}
+        <div className="grid w-full grid-cols-3 items-start gap-2 md:gap-3">
+          {categories.map(({ id, label, tags }) =>
+            tags.length === 0 ? null : (
+              <section
+                key={id}
+                className="flex min-w-0 flex-col gap-1.5 border-r border-zen-ink/[0.06] pr-2 last:border-r-0 last:pr-0 md:gap-2 md:pr-3"
+                aria-label={label}
+              >
+                <h3 className="type-overline shrink-0 text-zen-ink/50">
+                  {label}
+                </h3>
+                <div
+                  ref={
+                    id === 'color'
+                      ? colorTagsRef
+                      : id === 'style'
+                        ? styleTagsRef
+                        : undefined
+                  }
+                  className={
+                    id === 'theme'
+                      ? 'categorized-tag-scroll flex min-h-0 max-h-44 flex-wrap content-start gap-1.5 overflow-y-auto overscroll-y-contain pr-0.5 md:max-h-48'
+                      : 'flex flex-wrap content-start gap-1.5'
+                  }
+                  style={
+                    id === 'theme' && themeScrollMaxH
+                      ? { maxHeight: themeScrollMaxH }
+                      : undefined
+                  }
                 >
-                  <h3 className="type-overline shrink-0 text-zen-ink/50">
-                    {label}
-                  </h3>
-                  <div className="flex max-h-[min(42vh,15rem)] flex-wrap content-start gap-1.5 overflow-y-auto">
-                    {tags.map((tag) => (
-                      <TagFilterButton
-                        key={tag}
-                        tag={tag}
-                        active={activeTag === tag}
-                        dailyAccentHex={dailyAccentHex}
-                        sizeClass=""
-                        onClick={() => onSelectTag(tag)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ),
-            )}
-          </div>
+                  {tags.map((tag) => (
+                    <TagFilterButton
+                      key={tag}
+                      tag={tag}
+                      active={activeTag === tag}
+                      dailyAccentHex={dailyAccentHex}
+                      sizeClass=""
+                      onClick={() => onSelectTag(tag)}
+                    />
+                  ))}
+                </div>
+              </section>
+            ),
+          )}
         </div>
       )}
     </div>
@@ -201,8 +233,8 @@ export default function ColorSeaPage({
   }, [dateKey]);
 
   const { quickTags, categories } = useMemo(
-    () => buildColorSeaTagSets(communityTagList),
-    [communityTagList],
+    () => buildColorSeaTagSets(communityTagList, { dateKey }),
+    [communityTagList, dateKey],
   );
 
   useEffect(() => {
@@ -227,10 +259,12 @@ export default function ColorSeaPage({
         if (!a.includes(q) && !p.includes(q) && !keys.includes(q) && !ov.includes(q)) return false;
       }
       if (activeTag && activeTag !== 'All') {
-        const t = activeTag.toLowerCase();
-        const keys = (item.keywords || []).map((k) => String(k).toLowerCase());
-        if (keys.some((k) => k === t || k.includes(t))) return true;
-        if ((item.aesthetic || '').toLowerCase().includes(t)) return true;
+        const keys = (item.keywords || []).map((k) => String(k).trim());
+        const snapTags = item.extractionSnapshot?.engineTags;
+        const engineTags = Array.isArray(snapTags) ? snapTags.map((k) => String(k).trim()) : [];
+        const allTags = [...keys, ...engineTags];
+        if (allTags.some((k) => tagMatchesSeaFilter(activeTag, k))) return true;
+        if ((item.aesthetic || '').toLowerCase().includes(activeTag.toLowerCase())) return true;
         return false;
       }
       return true;

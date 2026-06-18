@@ -1,8 +1,31 @@
 /**
- * 色海标签：完整可搜词表 + 分类（颜色 → 风格 → 主题，从左到右展示）
+ * 色海标签：精简词表 + 分类面板（颜色 → 风格 → 主题）
  */
 
-import { UNIVERSE_STYLES } from './colorUniverse.js';
+import {
+  ALL_CANONICAL_SEA_TAGS,
+  buildCanonicalTagBuckets,
+  classifySeaTag,
+  normalizeLegacySeaTag,
+  SEA_COLOR_HUE_TAGS,
+  SEA_DAILY_COLOR_TAG,
+  SEA_STYLE_TAGS,
+  SEA_TAG_CATEGORIES,
+  SEA_THEME_TAGS,
+} from './seaTagVocabulary.js';
+import { getSeasonalQuickTagScores } from './seaTagSeasonality.js';
+
+export { SEA_TAG_CATEGORIES, classifySeaTag } from './seaTagVocabulary.js';
+
+/** 横向快捷栏最多展示数量（可横向滑动） */
+export const QUICK_TAG_LIMIT = 20;
+
+/** 热度不足时补位的默认标签（保证栏内多样） */
+const QUICK_TAG_FALLBACK = [
+  '红色', '蓝色', '绿色', '紫色', '粉色',
+  '极简', '莫兰迪', '自然', '新中式',
+  '海洋', '森林', '星空宇宙', '市集文创',
+];
 
 const META_TAG_DENY = [
   /^genom\s*daily$/i,
@@ -11,42 +34,7 @@ const META_TAG_DENY = [
   /^24\s*solar\s*terms$/i,
   /^中国色$/i,
   /^逐日观色$/i,
-];
-
-const HUE_DOMAIN_TAGS = [
-  '红色系', '橙色系', '黄色系', '绿色系', '青色系', '蓝色系', '靛色系',
-  '紫色系', '粉色系', '褐色系', '灰色系', '黑色', '白色', '金属色',
-];
-
-const COLOR_FEEL_TAGS = [
-  '暖色', '冷色', '浅色', '深色', '高饱和', '低饱和', '极简灰', '对比',
-];
-
-const STYLE_CATEGORY_TAGS = ['自然', '艺术', '情绪', '素材', '设计'];
-
-const THEME_CATEGORY_LABEL = '文化';
-
-const HARMONY_TAGS = [
-  '单色阶', '近似色', '互补色', '分裂互补', '三角配色', '四角配色',
-];
-
-/** 设计类中偏场景/氛围 → 主题 */
-const THEME_DESIGN_LABELS = new Set([
-  '海洋', '森林', '日落', '黎明', '星空', '糖果', '咖啡', '岩石', '植物',
-  '金属', '雾感', '热带水果', '复古游戏', '梦幻',
-]);
-
-/** 横向快捷栏 */
-export const COLOR_SEA_QUICK_TAGS = [
-  '每日色卡',
-  '暖色', '冷色', '红色系', '蓝色系', '自然', '艺术', '莫兰迪', '互补色', '苔藓', '竹林',
-];
-
-/** @type {{ id: 'color' | 'style' | 'theme', label: string }[]} */
-export const SEA_TAG_CATEGORIES = [
-  { id: 'color', label: '颜色' },
-  { id: 'style', label: '风格' },
-  { id: 'theme', label: '主题' },
+  /^色海导入$/i,
 ];
 
 /**
@@ -59,114 +47,88 @@ export function isDisplayableSeaTag(tag) {
   if (META_TAG_DENY.some((re) => re.test(s))) return false;
   if (/^#[0-9a-f]{3,8}$/i.test(s)) return false;
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
-  if (/[\u4e00-\u9fff]/.test(s)) return s.length >= 2 && s.length <= 14;
-  return false;
+  if (ALL_CANONICAL_SEA_TAGS.has(s)) return true;
+  return normalizeLegacySeaTag(s) != null;
 }
 
-const styleLabelSet = new Set(
-  UNIVERSE_STYLES.filter((s) =>
-    ['nature', 'art', 'emotion', 'material', 'design'].includes(s.category)
-    && !THEME_DESIGN_LABELS.has(s.labelZh),
-  ).map((s) => s.labelZh),
-);
-
-const themeLabelSet = new Set([
-  ...HARMONY_TAGS,
-  ...UNIVERSE_STYLES.filter((s) => s.category === 'culture').map((s) => s.labelZh),
-  ...THEME_DESIGN_LABELS,
-  '每日色卡',
-]);
-
-/**
- * @param {string} tag
- * @returns {'color' | 'style' | 'theme'}
- */
-export function classifySeaTag(tag) {
+function canonicalizeForFilter(tag) {
   const s = String(tag || '').trim();
-  if (COLOR_FEEL_TAGS.includes(s) || HUE_DOMAIN_TAGS.includes(s)) return 'color';
-  if (HARMONY_TAGS.includes(s) || themeLabelSet.has(s)) return 'theme';
-  if (STYLE_CATEGORY_TAGS.includes(s) || styleLabelSet.has(s)) return 'style';
-  if (/色系$/.test(s)) return 'color';
-  if (/配色$|色阶$/.test(s)) return 'theme';
-  return 'style';
+  if (ALL_CANONICAL_SEA_TAGS.has(s)) return s;
+  return normalizeLegacySeaTag(s);
 }
 
-function sortZh(tags) {
-  return [...tags].sort((a, b) => a.localeCompare(b, 'zh-Hans'));
-}
-
-function buildMasterBuckets() {
-  const buckets = {
-    color: sortZh([...new Set([...COLOR_FEEL_TAGS, ...HUE_DOMAIN_TAGS])]),
-    style: sortZh([
-      ...new Set([
-        ...STYLE_CATEGORY_TAGS,
-        ...UNIVERSE_STYLES.filter(
-          (s) =>
-            ['nature', 'art', 'emotion', 'material', 'design'].includes(s.category)
-            && !THEME_DESIGN_LABELS.has(s.labelZh),
-        ).map((s) => s.labelZh),
-      ]),
-    ]),
-    theme: sortZh([
-      ...new Set([
-        THEME_CATEGORY_LABEL,
-        ...HARMONY_TAGS,
-        ...UNIVERSE_STYLES.filter(
-          (s) => s.category === 'culture' || THEME_DESIGN_LABELS.has(s.labelZh),
-        ).map((s) => s.labelZh),
-      ]),
-    ]),
-  };
-  return buckets;
-}
-
-function addToBucket(buckets, bucketSeen, tag) {
-  if (!isDisplayableSeaTag(tag)) return;
-  const cat = classifySeaTag(tag);
-  if (bucketSeen[cat].has(tag)) return;
-  bucketSeen[cat].add(tag);
-  buckets[cat].push(tag);
+function pushUnique(list, seen, tag) {
+  const t = String(tag || '').trim();
+  if (!t || !ALL_CANONICAL_SEA_TAGS.has(t) || seen.has(t)) return false;
+  seen.add(t);
+  list.push(t);
+  return true;
 }
 
 /**
  * @param {string[]} rankedFromFeed
+ * @param {{ dateKey?: string, limit?: number }} [options]
  * @returns {{
  *   quickTags: string[],
  *   categories: Array<{ id: string, label: string, tags: string[] }>,
  * }}
  */
-export function buildColorSeaTagSets(rankedFromFeed = []) {
-  const buckets = buildMasterBuckets();
-  const bucketSeen = {
-    color: new Set(buckets.color),
-    style: new Set(buckets.style),
-    theme: new Set(buckets.theme),
-  };
+export function buildColorSeaTagSets(rankedFromFeed = [], options = {}) {
+  const buckets = buildCanonicalTagBuckets();
+  const limit = options.limit ?? QUICK_TAG_LIMIT;
+  const dateKey = options.dateKey;
 
-  const fromFeed = rankedFromFeed.filter((t) => t !== 'All' && isDisplayableSeaTag(t));
-  for (const tag of fromFeed) {
-    addToBucket(buckets, bucketSeen, tag);
-  }
+  const popularity = new Map();
+  rankedFromFeed.forEach((tag, i) => {
+    if (tag === 'All') return;
+    const c = canonicalizeForFilter(tag);
+    if (!c) return;
+    const rankScore = rankedFromFeed.length - i;
+    popularity.set(c, Math.max(popularity.get(c) || 0, rankScore));
+  });
 
-  for (const id of SEA_TAG_CATEGORIES) {
-    buckets[id.id] = sortZh(buckets[id.id]);
-  }
+  const seasonalScores = getSeasonalQuickTagScores(dateKey);
+  const seasonalBoost = new Map(seasonalScores.map(({ tag, score }) => [tag, score]));
+
+  const heatRanked = [...popularity.entries()]
+    .sort((a, b) => {
+      const boostA = seasonalBoost.get(a[0]) || 0;
+      const boostB = seasonalBoost.get(b[0]) || 0;
+      if (boostB !== boostA) return boostB - boostA;
+      return b[1] - a[1];
+    })
+    .map(([tag]) => tag);
 
   const seen = new Set();
   const quickTags = [];
-  for (const t of COLOR_SEA_QUICK_TAGS) {
-    if (seen.has(t)) continue;
-    seen.add(t);
-    quickTags.push(t);
+
+  pushUnique(quickTags, seen, SEA_DAILY_COLOR_TAG);
+
+  for (const { tag, score } of seasonalScores) {
+    if (quickTags.length >= limit) break;
+    if (score < 45) break;
+    pushUnique(quickTags, seen, tag);
+    if (quickTags.filter((t) => seasonalBoost.has(t)).length >= 4) break;
   }
-  for (const cat of SEA_TAG_CATEGORIES) {
-    for (const t of buckets[cat.id]) {
-      if (quickTags.length >= 20) break;
-      if (seen.has(t)) continue;
-      seen.add(t);
-      quickTags.push(t);
-    }
+
+  for (const tag of heatRanked) {
+    if (quickTags.length >= limit) break;
+    pushUnique(quickTags, seen, tag);
+  }
+
+  for (const tag of QUICK_TAG_FALLBACK) {
+    if (quickTags.length >= limit) break;
+    pushUnique(quickTags, seen, tag);
+  }
+
+  const diversifyPool = [
+    ...SEA_COLOR_HUE_TAGS,
+    ...SEA_STYLE_TAGS,
+    ...SEA_THEME_TAGS,
+  ];
+  for (const tag of diversifyPool) {
+    if (quickTags.length >= limit) break;
+    pushUnique(quickTags, seen, tag);
   }
 
   const categories = SEA_TAG_CATEGORIES.map(({ id, label }) => ({

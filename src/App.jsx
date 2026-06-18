@@ -34,7 +34,7 @@ function shouldShowDesktopLanding() {
   if (new URLSearchParams(window.location.search).get('style')) return false;
   try {
     if (localStorage.getItem(LANDING_DISMISSED_KEY)) return false;
-  } catch {
+    } catch {
     /* private mode */
   }
   return window.matchMedia('(min-width: 768px)').matches;
@@ -44,9 +44,9 @@ function dismissDesktopLanding(setter) {
   setter(false);
   try {
     localStorage.setItem(LANDING_DISMISSED_KEY, '1');
-  } catch {
-    /* ignore */
-  }
+    } catch {
+      /* ignore */
+    }
 }
 
 const PLACEHOLDER_IMAGE =
@@ -122,8 +122,8 @@ export default function App() {
         if (hexes.length >= 2) {
           pushFlow({ type: 'shengSe', hexes, source: 'share' });
         }
-        return;
-      }
+      return;
+    }
 
       pushFlow({ type: 'paletteAnalysis', itemId: styleId, item });
     })();
@@ -154,8 +154,8 @@ export default function App() {
   useEffect(() => {
     if (!user) {
       applyProfileFont('serif');
-      return;
-    }
+        return;
+      }
     applyProfileFont(user.user_metadata?.font_id || 'serif');
   }, [user?.id, user?.user_metadata?.font_id]);
 
@@ -229,7 +229,7 @@ export default function App() {
     if (!currentFlow) return null;
 
     if (currentFlow.type === 'extract') {
-      return (
+    return (
         <ExtractEditorPage
           flow={currentFlow}
           onBack={handleFlowBack}
@@ -241,13 +241,13 @@ export default function App() {
               source: 'extract',
               imageDataUrl: currentFlow.imageDataUrl,
             });
-          }}
-        />
-      );
-    }
+        }}
+      />
+    );
+  }
 
     if (currentFlow.type === 'shengSe') {
-      return (
+  return (
         <ShengSePage
           flow={currentFlow}
           onBack={handleFlowBack}
@@ -269,7 +269,7 @@ export default function App() {
     }
 
     if (currentFlow.type === 'dailyChallenge') {
-      return (
+                  return (
         <DailyChallengePage
           flow={currentFlow}
           onBack={popFlow}
@@ -296,7 +296,7 @@ export default function App() {
         popFlow();
         return null;
       }
-      return (
+                  return (
         <PaletteAnalysisPage
           item={item}
           exploreFeed={colorPaletteExploreFeed}
@@ -373,7 +373,7 @@ export default function App() {
       case 'colorSea':
         return (
           <ColorSeaPage
-            user={user}
+                user={user}
             colorPaletteExploreFeed={colorPaletteExploreFeed}
             favoritedExploreStyleIds={favoritedExploreStyleIds}
             vaultFavoriteBusyId={vaultFavoriteBusyId}
@@ -383,13 +383,13 @@ export default function App() {
             onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onCopyLink={(id) => copyShareLink(id, 'analysis')}
-            onOpenAuth={() => setAuthModalOpen(true)}
+                onOpenAuth={() => setAuthModalOpen(true)}
           />
         );
       case 'dailyOneColor':
         return (
           <DailyOneColorPage
-            user={user}
+                user={user}
             onOpenAuth={() => setAuthModalOpen(true)}
             onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
@@ -406,7 +406,7 @@ export default function App() {
           />
         );
       case 'profile':
-        return (
+                        return (
           <ProfilePage
             user={user}
             onOpenAuth={() => setAuthModalOpen(true)}
@@ -447,7 +447,7 @@ export default function App() {
     >
       <div className="zen-mist-layer zen-mist-layer--subtle pointer-events-none" aria-hidden>
         <div className="zen-mist-c" />
-      </div>
+            </div>
 
       <ColorHuntShell
         sidebar={
@@ -464,7 +464,7 @@ export default function App() {
           className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-white pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
         >
           {renderTab()}
-        </main>
+      </main>
       </ColorHuntShell>
 
       {/* ── Full-screen flows ── */}
@@ -494,7 +494,7 @@ export default function App() {
         />
       )}
 
-    </div>
+            </div>
     </>
   );
 }
