@@ -226,7 +226,7 @@ function ActionButton({ onClick, children, label }) {
 
 // ── Main component ──────────────────────────────────────────────────────
 
-export default function ColorMemoryGame() {
+export default function ColorMemoryGame({ mobileFill = false }) {
   const [phase, setPhase] = useState('idle');
   const [countdownIdx, setCountdownIdx] = useState(0);
   const [memorySecs, setMemorySecs] = useState(MEMORIZE_SECS);
@@ -319,9 +319,27 @@ export default function ColorMemoryGame() {
 
   // ── Shared block dimensions ───────────────────────────────────────────
 
-  const blockBase = 'relative w-full overflow-hidden rounded-2xl';
+  const blockBase = 'relative w-full overflow-hidden';
   const blockHeight = { minHeight: 'clamp(220px, 50vw, 420px)' };
   const guessBlockHeight = { minHeight: 'clamp(360px, 58vw, 500px)' };
+  const resultsBlockHeight = { minHeight: 'clamp(260px, 60vw, 480px)' };
+
+  const shellClass = mobileFill
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-none md:rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(220px,50vw,420px)]`
+    : `${blockBase} rounded-2xl`;
+  const defaultSize = mobileFill ? undefined : blockHeight;
+  const guessSize = mobileFill
+    ? undefined
+    : guessBlockHeight;
+  const resultsSize = mobileFill
+    ? undefined
+    : resultsBlockHeight;
+  const guessShellClass = mobileFill
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-none md:rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(360px,58vw,500px)]`
+    : `${blockBase} rounded-2xl`;
+  const resultsShellClass = mobileFill
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-none md:rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(260px,60vw,480px)]`
+    : `${blockBase} rounded-2xl`;
 
   // ── Idle ──────────────────────────────────────────────────────────────
 
@@ -330,8 +348,8 @@ export default function ColorMemoryGame() {
       <button
         type="button"
         onClick={handleStart}
-        className={`${blockBase} bg-black group cursor-pointer`}
-        style={blockHeight}
+        className={`${shellClass} bg-black group cursor-pointer`}
+        style={defaultSize}
       >
         <div className="absolute top-5 right-6 md:top-8 md:right-10 text-right">
           <p className="text-white/25 text-[10px] md:text-xs tracking-[0.25em] uppercase font-extralight">
@@ -349,7 +367,7 @@ export default function ColorMemoryGame() {
             点击开始
           </p>
         </div>
-        <div className="absolute inset-0 bg-white/0 group-hover:bg-white/[0.04] transition-colors duration-300 rounded-2xl" />
+        <div className="absolute inset-0 rounded-none bg-white/0 transition-colors duration-300 group-hover:bg-white/[0.04] md:rounded-2xl" />
       </button>
     );
   }
@@ -358,7 +376,7 @@ export default function ColorMemoryGame() {
 
   if (phase === 'countdown') {
     return (
-      <div className={`${blockBase} bg-black`} style={blockHeight}>
+      <div className={`${shellClass} bg-black`} style={defaultSize}>
         <div className="absolute top-5 right-6 md:top-8 md:right-10 text-right space-y-1.5">
           {COUNTDOWN_MESSAGES.slice(0, countdownIdx + 1).map((msg, i) => (
             <p
@@ -386,8 +404,8 @@ export default function ColorMemoryGame() {
     const tc = adaptiveTextHex(targetHex);
     return (
       <div
-        className={`${blockBase} transition-colors duration-700`}
-        style={{ ...blockHeight, backgroundColor: targetHex }}
+        className={`${shellClass} transition-colors duration-700`}
+        style={{ ...defaultSize, backgroundColor: targetHex }}
       >
         <div
           className="absolute top-5 right-6 md:top-8 md:right-10 text-right"
@@ -458,8 +476,8 @@ export default function ColorMemoryGame() {
 
     return (
       <div
-        className={`${blockBase} transition-colors`}
-        style={{ ...guessBlockHeight, backgroundColor: currentBg, color: tc }}
+        className={`${guessShellClass} transition-colors`}
+        style={{ ...guessSize, backgroundColor: currentBg, color: tc }}
       >
         {/* Desktop sliders — vertical, left panel */}
         <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden md:flex flex-row gap-7 items-center">
@@ -504,8 +522,8 @@ export default function ColorMemoryGame() {
 
     return (
       <div
-        className={`${blockBase}`}
-        style={blockHeight}
+        className={shellClass}
+        style={defaultSize}
       >
         {/* Split halves */}
         <div className="absolute inset-0 flex flex-col md:flex-row">
@@ -582,8 +600,8 @@ export default function ColorMemoryGame() {
 
     return (
       <div
-        className={`${blockBase} bg-black p-6 md:p-10`}
-        style={{ minHeight: 'clamp(260px, 60vw, 480px)' }}
+        className={`${resultsShellClass} bg-black p-6 md:p-10`}
+        style={resultsSize}
       >
         {/* Big score */}
         <div className="flex items-baseline gap-2 mb-2">

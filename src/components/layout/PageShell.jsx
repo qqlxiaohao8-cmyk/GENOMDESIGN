@@ -25,7 +25,7 @@ export default function PageShell({
         ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className={bodyClassName}>{children}</div>
+        <div className={`${bodyClassName} min-h-full`}>{children}</div>
       </div>
     </div>
   );

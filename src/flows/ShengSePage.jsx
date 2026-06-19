@@ -21,7 +21,26 @@ function paletteToHexes(entries) {
 
 function parseFlowHexes(raw) {
   if (!Array.isArray(raw)) return [];
-  return raw.map((e) => normalizeHex(typeof e === 'string' ? e : e?.hex)).filter((h) => h !== '#000000' || raw.length === 1);
+  const out = [];
+  for (const entry of raw) {
+    const src = String(typeof entry === 'string' ? entry : entry?.hex || '').trim();
+    if (!src) continue;
+    const body = src.replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{6}$/.test(body)) continue;
+    const hex = normalizeHex(body);
+    if (hex === '#000000' && body.toUpperCase() !== '000000') continue;
+    out.push(hex);
+  }
+  return out;
+}
+
+/** Prefer flow.hexes (析色传入) over savedState.hexes when both exist. */
+function resolveSeedHexes(flow) {
+  const fromFlow = parseFlowHexes(flow?.hexes);
+  const fromSaved = parseFlowHexes(flow?.savedState?.hexes);
+  if (fromFlow.length >= MIN_COLORS) return fromFlow;
+  if (fromSaved.length >= MIN_COLORS) return fromSaved;
+  return fromFlow.length ? fromFlow : fromSaved;
 }
 
 const LOADING_PLACEHOLDER = ['#E8E6E1', '#D4D0C8', '#C9C5BC', '#BEB9B0', '#B3ADA4'];
@@ -381,7 +400,7 @@ function generateHarmonizedColor(existingHexes) {
  */
 export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites }) {
   const saved = flow?.savedState;
-  const seedHexes = parseFlowHexes(saved?.hexes ?? flow?.hexes);
+  const seedHexes = resolveSeedHexes(flow);
   const hasSeed = seedHexes.length >= MIN_COLORS;
 
   const [hexes, setHexes] = useState(() =>
@@ -672,17 +691,21 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   };
 
   const canGoNext = useMemo(() => {
+    if (paletteBusy) return false;
     if (hexes.length < MIN_COLORS) return false;
-    if (!hexes.some((h) => !isPlaceholderHex(h))) return false;
-    // 析色传入的配色可立即进入预览；空生色需等首盘生成完成
-    if (hasSeed) return true;
-    return !paletteBusy;
-  }, [hexes, hasSeed, paletteBusy]);
+    return hexes.some((h) => !isPlaceholderHex(h));
+  }, [hexes, paletteBusy]);
 
   const handleGoNext = useCallback(() => {
     if (!canGoNext || !onNext) return;
     const meta = paletteMeta && typeof paletteMeta === 'object' ? paletteMeta : {};
-    onNext(hexes, generatePaletteTags(hexes, meta), {
+    let tags = [];
+    try {
+      tags = generatePaletteTags(hexes, meta);
+    } catch {
+      tags = [];
+    }
+    onNext(hexes, tags, {
       hexes,
       locked,
       paletteMeta: meta,
@@ -731,7 +754,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
             onClick={handleGoNext}
             disabled={!canGoNext}
             className="type-flow-action flex items-center gap-1 text-zen-vermilion hover:opacity-75 transition-opacity disabled:pointer-events-none disabled:opacity-40"
-            title={canGoNext ? '进入预览发布' : (paletteBusy ? '生色加载中…' : '至少需要 2 种颜色')}
+            title={canGoNext ? '进入预览发布' : (paletteBusy ? '生色加载中…' : '至少需要 2 种有效颜色')}
             aria-label="进入预览发布"
           >
             下一页

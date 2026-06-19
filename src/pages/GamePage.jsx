@@ -12,15 +12,14 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
     <PageShell
       title="游戏"
       description="色彩训练与每日挑战"
+      bodyClassName="zen-page-body flex min-h-full flex-col !pb-0 md:!pb-10"
     >
       <DailyColorChallengeCard onStart={onStartChallenge} />
-
-      <ColorMemoryGame />
 
       <button
         type="button"
         onClick={() => onOpenDailyPool?.()}
-        className="mt-5 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
+        className="mb-4 flex w-full shrink-0 items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md md:mb-0"
       >
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-vermilion/10 text-zen-vermilion">
@@ -35,6 +34,10 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
         </div>
         <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
       </button>
+
+      <div className="-mx-4 flex min-h-[calc(100dvh-14rem-env(safe-area-inset-top,0px)-max(5.5rem,env(safe-area-inset-bottom,0px)))] flex-1 flex-col md:mx-0 md:mt-5 md:min-h-0 md:flex-none">
+        <ColorMemoryGame mobileFill />
+      </div>
     </PageShell>
   );
 }

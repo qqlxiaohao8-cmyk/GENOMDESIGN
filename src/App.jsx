@@ -234,10 +234,14 @@ export default function App() {
           flow={currentFlow}
           onBack={handleFlowBack}
           onContinue={(hexes, savedState) => {
-            updateFlowTop({ savedState });
+            const normalized = (hexes || [])
+              .map((h) => normalizeHex(typeof h === 'string' ? h : h?.hex))
+              .filter(Boolean);
+            if (normalized.length < 2) return;
+            updateFlowTop({ savedState: { ...savedState, hexes: normalized } });
             pushFlow({
               type: 'shengSe',
-              hexes,
+              hexes: normalized,
               source: 'extract',
               imageDataUrl: currentFlow.imageDataUrl,
             });
@@ -249,6 +253,7 @@ export default function App() {
     if (currentFlow.type === 'shengSe') {
   return (
         <ShengSePage
+          key={`shengse-${(currentFlow.hexes || []).join(',')}-${(currentFlow.savedState?.hexes || []).join(',')}`}
           flow={currentFlow}
           onBack={handleFlowBack}
           onNext={(hexes, tags, savedState) => {
