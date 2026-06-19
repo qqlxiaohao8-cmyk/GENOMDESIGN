@@ -282,11 +282,13 @@ export function pickPaletteCountV2() {
   return pickWeighted(COUNT_WEIGHTS);
 }
 
-export function pickHarmonyModeV2(forcedId, themeEntry = null) {
+export function pickHarmonyModeV2(forcedId, themeEntry = null, lockedHarmony = null) {
   if (forcedId && forcedId !== 'customTheme') {
     const m = HARMONY_WEIGHTS_V2.find((x) => x.id === forcedId);
     if (m) return m.id;
   }
+  // When locks imply a harmony, use it 75% of the time
+  if (lockedHarmony && Math.random() < 0.75) return lockedHarmony;
   const picked = pickWeighted(HARMONY_WEIGHTS_V2.map((m) => ({ value: m.id, weight: m.weight })));
   if (picked === 'customTheme' && themeEntry?.naturalHarmony) {
     return themeEntry.naturalHarmony;
@@ -405,7 +407,11 @@ function assignLightnessSlots(n, lightMode, brightnessMode) {
     ...Array(n - darkN - midN).fill('light'),
   ];
   while (slots.length < n) slots.push('mid');
-  return slots.slice(0, n).sort(() => Math.random() - 0.5);
+  // Preserve a consistent distribution, but shuffle only the middle portion
+  // so anchor/accent roles can later be placed aesthetically.
+  const mid = slots.slice(1, n - 1);
+  mid.sort(() => Math.random() - 0.5);
+  return [slots[0], ...mid, slots[n - 1]].slice(0, n);
 }
 
 function lForSlot(slot, lightMode) {
@@ -475,34 +481,50 @@ function injectSurprise(specs, themeEntry, satMode) {
   return next;
 }
 
-const GRADIENT_MODES = ['hueGradient', 'brightnessGradient', 'saturationGradient', 'themeNarrative'];
-
-function applyGradientOrder(specs, gradientMode) {
+/**
+ * Principled palette ordering.
+ *
+ * Strategy per harmony mode:
+ *  - monochromatic / analogous → smooth hue gradient; within same hue, dark→light
+ *  - complementary / splitComplementary → narrative: darkest anchor → mid support → brightest accent
+ *  - triadic / tetradic → hue gradient (shows the multi-hue spread cleanly)
+ *  - default (unknown) → brightness gradient dark→light
+ *
+ * The surprise/accent color (if any) is always placed last.
+ * This produces a visually coherent stripe in ShengSe regardless of harmony mode.
+ */
+function assignArchitecture(specs, harmonyId = 'analogous') {
   const list = [...specs];
-  if (gradientMode === 'hueGradient') {
-    list.sort((a, b) => a._h - b._h);
-  } else if (gradientMode === 'brightnessGradient') {
-    list.sort((a, b) => a._l - b._l);
-  } else if (gradientMode === 'saturationGradient') {
-    list.sort((a, b) => a._c - b._c);
-    const surprise = list.find((s) => s._surprise);
+  const surprise = list.find((s) => s._surprise);
+  const rest = surprise ? list.filter((s) => !s._surprise) : list;
+
+  let ordered;
+  if (harmonyId === 'monochromatic' || harmonyId === 'analogous') {
+    // Hue gradient, tie-break by lightness dark→light
+    rest.sort((a, b) => {
+      const hDiff = a._h - b._h;
+      return Math.abs(hDiff) > 12 ? hDiff : a._l - b._l;
+    });
+    ordered = surprise ? [...rest, surprise] : rest;
+  } else if (harmonyId === 'complementary' || harmonyId === 'splitComplementary') {
+    // Narrative: darkest → mid-support by hue → most saturated or surprise last
+    const anchor = rest.reduce((best, s) => (s._l < best._l ? s : best), rest[0]);
+    const accentCand = rest.filter((s) => s !== anchor);
+    accentCand.sort((a, b) => a._h - b._h);
     if (surprise) {
-      const rest = list.filter((s) => !s._surprise);
-      return [...rest, surprise];
+      ordered = [anchor, ...accentCand, surprise];
+    } else {
+      // Place highest-chroma last as accent
+      const accent = accentCand.reduce((best, s) => (s._c > best._c ? s : best), accentCand[0]);
+      const support = accentCand.filter((s) => s !== accent);
+      ordered = [anchor, ...support, accent];
     }
   } else {
-    const anchor = list.reduce((best, s) => (s._l < best._l ? s : best), list[0]);
-    const accent = list.find((s) => s._surprise) || list.reduce((best, s) => (s._c > best._c ? s : best), list[0]);
-    const support = list.filter((s) => s !== anchor && s !== accent);
-    support.sort((a, b) => a._h - b._h);
-    return [anchor, ...support, accent];
+    // triadic / tetradic / default → hue gradient, surprise last
+    rest.sort((a, b) => a._h - b._h);
+    ordered = surprise ? [...rest, surprise] : rest;
   }
-  return list;
-}
 
-function assignArchitecture(specs) {
-  const gradientMode = GRADIENT_MODES[Math.floor(Math.random() * GRADIENT_MODES.length)];
-  const ordered = applyGradientOrder(specs, gradientMode);
   return ordered.map((s, i) => ({
     ...s,
     _role: i === 0 ? 'anchor' : i === ordered.length - 1 ? 'accent' : 'support',
@@ -596,34 +618,101 @@ function passesQualityGates(entries) {
 
 function rootFromLocked(locked) {
   if (!locked?.length) return null;
-  let hSum = 0;
-  let n = 0;
+  // Circular mean for hue to handle wrapping correctly
+  let sinSum = 0, cosSum = 0, chromatic = 0;
   let lSum = 0;
   let cSum = 0;
   for (const e of locked) {
     const o = hexToOklch(e.hex);
     if (o.c > 0.012) {
-      hSum += o.h;
-      n++;
+      const rad = (o.h * Math.PI) / 180;
+      sinSum += Math.sin(rad);
+      cosSum += Math.cos(rad);
+      chromatic++;
     }
     lSum += o.l;
     cSum += o.c;
   }
-  if (n === 0) {
-    return { h: Math.random() * 360, l: lSum / locked.length, c: Math.max(0.03, cSum / locked.length) };
+  const avgL = lSum / locked.length;
+  const avgC = Math.max(0.03, cSum / locked.length);
+  if (chromatic === 0) {
+    return { h: Math.random() * 360, l: avgL, c: avgC };
   }
-  return { h: wrapHue(hSum / n), l: lSum / locked.length, c: Math.max(0.03, cSum / locked.length) };
+  const meanH = wrapHue((Math.atan2(sinSum / chromatic, cosSum / chromatic) * 180) / Math.PI);
+  return { h: meanH, l: avgL, c: avgC };
 }
 
-function lockedBonus(entries, locked) {
-  if (!locked?.length) return 0;
-  let bonus = 0;
-  for (const c of entries) {
-    for (const l of locked) {
-      bonus += oklabDistSqFromHex(c.hex, l.hex) * 4000;
+/**
+ * Infer the harmony mode implied by the locked colors' hue relationships.
+ * Returns a harmony id, or null when indeterminate.
+ */
+function detectLockedHarmony(locked) {
+  if (!locked?.length || locked.length < 2) return null;
+  const hues = locked
+    .map((e) => hexToOklch(e.hex))
+    .filter((o) => o.c > 0.012)
+    .map((o) => o.h);
+  if (hues.length < 2) return null;
+
+  let maxDist = 0;
+  for (let i = 0; i < hues.length; i++) {
+    for (let j = i + 1; j < hues.length; j++) {
+      const d = Math.min(
+        Math.abs(hues[i] - hues[j]),
+        360 - Math.abs(hues[i] - hues[j]),
+      );
+      maxDist = Math.max(maxDist, d);
     }
   }
-  return bonus;
+  if (maxDist < 22) return 'monochromatic';
+  if (maxDist < 60) return 'analogous';
+  if (maxDist >= 145 && maxDist <= 215) return 'complementary';
+  if (maxDist >= 100 && maxDist < 145) return 'splitComplementary';
+  if (hues.length >= 3 && maxDist >= 110 && maxDist <= 130) return 'triadic';
+  return 'analogous';
+}
+
+/**
+ * Harmony-aware bonus that rewards generated colors being at the
+ * "right" perceptual distance from locked colors for the given harmony mode.
+ * Replaces the old lockedBonus which mistakenly rewarded high distance.
+ */
+function lockedBonus(entries, locked, harmonyId) {
+  if (!locked?.length) return 0;
+
+  // Target OKLab distance ranges per harmony mode
+  const [lo, hi] = {
+    monochromatic: [0.02, 0.10],
+    analogous: [0.04, 0.14],
+    complementary: [0.14, 0.34],
+    splitComplementary: [0.10, 0.26],
+    triadic: [0.10, 0.28],
+    tetradic: [0.09, 0.26],
+  }[harmonyId] || [0.04, 0.20];
+  const mid = (lo + hi) / 2;
+  const halfSpan = (hi - lo) / 2;
+
+  let total = 0;
+  let pairs = 0;
+  for (const entry of entries) {
+    // Skip entries that are themselves locked colors
+    if (locked.some((l) => l.hex.toUpperCase() === entry.hex.toUpperCase())) continue;
+    for (const l of locked) {
+      const dist = Math.sqrt(oklabDistSqFromHex(entry.hex, l.hex));
+      if (dist >= lo && dist <= hi) {
+        // Sweet spot — reward proportional to proximity to center
+        total += 100 * (1 - Math.abs(dist - mid) / halfSpan);
+      } else if (dist < lo) {
+        // Too similar — penalise (near-duplicate)
+        total -= 60;
+      } else {
+        // Too far — moderate penalty
+        total -= 25 * Math.min(1, (dist - hi) / 0.18);
+      }
+      pairs++;
+    }
+  }
+  return pairs > 0 ? total / pairs : 0;
 }
 
 function maxHistorySimilarity(fingerprint) {
@@ -731,6 +820,7 @@ export function generateEnginePalette(options = {}) {
   const maxAttempts = options.maxAttempts ?? 28;
   const locked = options.lockedColors?.length ? options.lockedColors : null;
   const lockedRoot = rootFromLocked(locked);
+  const lockedHarmony = detectLockedHarmony(locked);
   const skipHistory = options.skipHistory === true;
 
   let bestEntries = null;
@@ -747,21 +837,23 @@ export function generateEnginePalette(options = {}) {
     const satMode = pickSaturationMode(options.saturationMode);
     const brightnessMode = pickBrightnessMode(options.brightnessMode, themeEntry);
     const lightMode = brightnessModeToLightMode(brightnessMode);
-    const harmonyId = pickHarmonyModeV2(options.harmonyId, themeEntry);
+    const harmonyId = pickHarmonyModeV2(options.harmonyId, themeEntry, lockedHarmony);
     const satTier = saturationModeToTier(satMode, themeEntry);
 
+    // When colors are locked, anchor tightly to their hue/L/C root.
+    // Jitter is narrow (±4° hue) to keep generated colors clearly harmonious.
     const primary = lockedRoot
       ? {
-          h: wrapHue(lockedRoot.h + rand(-10, 10)),
-          l: clamp(lockedRoot.l + rand(-0.05, 0.05), 0.08, 0.95),
-          c: clamp(lockedRoot.c * rand(0.88, 1.12), satTier.cRange[0], satTier.cRange[1]),
+          h: wrapHue(lockedRoot.h + rand(-4, 4)),
+          l: clamp(lockedRoot.l + rand(-0.04, 0.04), 0.08, 0.95),
+          c: clamp(lockedRoot.c * rand(0.90, 1.10), satTier.cRange[0], satTier.cRange[1]),
           domainId: classifyHexDomain(lchToHexClamped(lockedRoot.l, lockedRoot.c, lockedRoot.h)),
         }
       : samplePrimaryFromUniverse(domain, satTier, lightMode);
 
     let specs = buildPaletteSpec(primary, satMode, themeEntry, lightMode, harmonyId, brightnessMode, count);
     specs = injectSurprise(specs, themeEntry, satMode);
-    specs = assignArchitecture(specs);
+    specs = assignArchitecture(specs, harmonyId);
 
     const entries = specs.map(({ hex, _surprise, _discovery }) => ({
       hex,
@@ -792,7 +884,7 @@ export function generateEnginePalette(options = {}) {
       fingerprint,
       skipUniqueness: relaxHistory,
     });
-    beauty += lockedBonus(entries, locked) * 0.008;
+    beauty += lockedBonus(entries, locked, harmonyId) * 0.12;
     beauty = clamp(Math.round(beauty), 0, 100);
 
     if (!relaxHistory && isTooSimilarToHistory(fingerprint, 0.6)) continue;
@@ -852,7 +944,7 @@ export function generateEnginePalette(options = {}) {
     const primary = samplePrimaryFromUniverse(domain, satTier, lightMode);
     let specs = buildPaletteSpec(primary, satMode, themeEntry, lightMode, harmonyId, brightnessMode, count);
     specs = injectSurprise(specs, themeEntry, satMode);
-    specs = assignArchitecture(specs);
+    specs = assignArchitecture(specs, harmonyId);
     const colors = specs.map((s) => s.hex);
     bestEntries = specs.map(({ hex }) => ({ hex, label: getPoeticColorName(hex) }));
     bestPalette = {
