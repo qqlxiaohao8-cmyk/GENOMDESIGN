@@ -83,6 +83,7 @@ function dominantHueTag(hexes) {
  * @returns {string[]}
  */
 export function generatePaletteTags(hexes, meta = {}, legacyKeywords = [], paletteTitle = '') {
+  const safeMeta = meta && typeof meta === 'object' ? meta : {};
   const legacy = Array.isArray(legacyKeywords) ? legacyKeywords : [];
   const mappedLegacy = legacy.map((k) => normalizeLegacySeaTag(k)).filter(Boolean);
 
@@ -91,14 +92,14 @@ export function generatePaletteTags(hexes, meta = {}, legacyKeywords = [], palet
   ) || null;
   const legacyTheme = mappedLegacy.find((t) => SEA_THEME_TAGS.includes(t)) || null;
 
-  const domain = meta.primaryDomain || null;
+  const domain = safeMeta.primaryDomain || null;
   const hueFromMeta = domain ? DOMAIN_TO_HUE[domain] : null;
-  const harmonyTheme = harmonyTagFromId(meta.harmonyId);
+  const harmonyTheme = harmonyTagFromId(safeMeta.harmonyId);
 
   return assembleSeaTags({
     hue: hueFromMeta || dominantHueTag(hexes || []),
-    style: legacyStyle || inferStyleFromTitle(paletteTitle) || broadStyleFromMeta(meta.styleLabel, meta.category),
-    theme: legacyTheme || inferThemeFromTitle(paletteTitle) || broadThemeFromMeta(meta.styleLabel, meta.category) || harmonyTheme,
+    style: legacyStyle || inferStyleFromTitle(paletteTitle) || broadStyleFromMeta(safeMeta.styleLabel, safeMeta.category),
+    theme: legacyTheme || inferThemeFromTitle(paletteTitle) || broadThemeFromMeta(safeMeta.styleLabel, safeMeta.category) || harmonyTheme,
     colorFeel: [],
     legacy: [
       ...legacy,

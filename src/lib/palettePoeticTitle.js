@@ -105,7 +105,8 @@ function moodKeyFromTags(tags = []) {
 }
 
 function buildCandidatePool(hexes, paletteMeta = {}, tags = []) {
-  const moodTags = tags.length ? tags : generatePaletteTags(hexes, paletteMeta);
+  const safeMeta = paletteMeta && typeof paletteMeta === 'object' ? paletteMeta : {};
+  const moodTags = tags.length ? tags : generatePaletteTags(hexes, safeMeta);
   const seen = new Set();
   const out = [];
 

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight,
   Lock, Unlock, Plus, Minus, RefreshCw, Bookmark,
-  Pipette, X, Loader2,
+  Pipette, X, Loader2, GripVertical,
 } from 'lucide-react';
 import { randomPaletteHarmony, randomPaletteHarmonyWithMeta, quickFallbackPalette, normalizeHex } from '../lib/randomInspiration';
 import { generatePaletteTags } from '../lib/paletteTags';
@@ -44,6 +44,24 @@ function isPlaceholderHex(hex) {
 
 function generatePalette(count, harmonyId, lockedColors) {
   return generatePaletteWithMeta(count, harmonyId, lockedColors).hexes;
+}
+
+function createStripeId() {
+  return `stripe-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+function initialStripeIds(count) {
+  return Array.from({ length: count }, () => createStripeId());
+}
+
+function reorderTriple(list, from, to) {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) {
+    return list;
+  }
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
 }
 
 // ─── HSL ↔ HEX helpers ───────────────────────────────────────────────────────
@@ -227,7 +245,24 @@ function SliderRow({ label, unit, value, min, max, track, thumbColor, onChange }
 
 // ─── Color stripe row ─────────────────────────────────────────────────────────
 
-function ColorStripeRow({ hex, name, locked, onToggleLock, onPick, onAdd, onRemove, canAdd, canRemove }) {
+function ColorStripeRow({
+  hex,
+  name,
+  locked,
+  onToggleLock,
+  onPick,
+  onAdd,
+  onRemove,
+  canAdd,
+  canRemove,
+  stripeRef,
+  isDragging,
+  isDragOver,
+  onGripPointerDown,
+  onGripPointerMove,
+  onGripPointerUp,
+  dragDisabled,
+}) {
   const textColor = pickReadableTextOnHex(hex);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -243,16 +278,34 @@ function ColorStripeRow({ hex, name, locked, onToggleLock, onPick, onAdd, onRemo
 
   return (
     <div
-      className="relative flex min-h-[3.5rem] flex-1 cursor-pointer select-none items-center transition-all duration-300"
+      ref={stripeRef}
+      className={`relative flex min-h-[3.5rem] flex-1 select-none items-center transition-all duration-200 ${
+        isDragging ? 'z-20 scale-[0.99] opacity-85 shadow-xl ring-2 ring-white/50' : ''
+      } ${isDragOver && !isDragging ? 'ring-2 ring-inset ring-white/45' : ''}`}
       style={{ backgroundColor: hex }}
-      onClick={() => setMenuOpen(true)}
+      onClick={() => !isDragging && setMenuOpen(true)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && setMenuOpen(true)}
       aria-label={`颜色: ${name} ${normalizeHex(hex)}`}
     >
+      <button
+        type="button"
+        disabled={dragDisabled}
+        className="flex h-full shrink-0 touch-none items-center px-2 md:px-3 disabled:cursor-default disabled:opacity-30 cursor-grab active:cursor-grabbing"
+        style={{ color: textColor }}
+        aria-label="拖动排序"
+        onPointerDown={onGripPointerDown}
+        onPointerMove={onGripPointerMove}
+        onPointerUp={onGripPointerUp}
+        onPointerCancel={onGripPointerUp}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <GripVertical size={17} strokeWidth={1.5} style={{ opacity: 0.42 }} aria-hidden />
+      </button>
+
       <div
-        className="pointer-events-none ml-4 flex min-w-0 flex-col gap-0.5"
+        className="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5 cursor-pointer"
         style={{ color: textColor }}
       >
         <span className="font-zenSerif text-lg font-medium tracking-[0.12em] md:text-xl">
@@ -544,10 +597,11 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
 
   const handleGoNext = useCallback(() => {
     if (!canGoNext || !onNext) return;
-    onNext(hexes, generatePaletteTags(hexes, paletteMeta), {
+    const meta = paletteMeta && typeof paletteMeta === 'object' ? paletteMeta : {};
+    onNext(hexes, generatePaletteTags(hexes, meta), {
       hexes,
       locked,
-      paletteMeta,
+      paletteMeta: meta,
     });
   }, [canGoNext, onNext, hexes, locked, paletteMeta]);
 

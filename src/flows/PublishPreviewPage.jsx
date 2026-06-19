@@ -32,7 +32,8 @@ export default function PublishPreviewPage({
   publishTarget = 'colorSea',
   existingPublicTitles = [],
 }) {
-  const { hexes = [], imageDataUrl, tags: flowTags = [], paletteMeta = {} } = flow;
+  const { hexes = [], imageDataUrl, tags: flowTags = [], paletteMeta: rawPaletteMeta } = flow;
+  const paletteMeta = rawPaletteMeta && typeof rawPaletteMeta === 'object' ? rawPaletteMeta : {};
   const isDailySubmit = publishTarget === 'dailyOneColor';
   const paletteTags = Array.isArray(flowTags) ? flowTags : [];
   const [title, setTitle] = useState('');
