@@ -392,6 +392,9 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
       ? saved.locked
       : Array(hasSeed ? seedHexes.length : LOADING_PLACEHOLDER.length).fill(false),
   );
+  const [stripeIds, setStripeIds] = useState(() =>
+    initialStripeIds(hasSeed ? seedHexes.length : LOADING_PLACEHOLDER.length),
+  );
   const [paletteBusy, setPaletteBusy] = useState(!hasSeed);
   const [paletteMeta, setPaletteMeta] = useState(saved?.paletteMeta ?? null);
   const [pickerIdx, setPickerIdx] = useState(null);
@@ -408,6 +411,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
         startTransition(() => {
           setHexes(next);
           setLocked(Array(next.length).fill(false));
+          setStripeIds(initialStripeIds(next.length));
           setPaletteMeta(meta);
           setPaletteBusy(false);
         });
@@ -416,6 +420,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           const fb = paletteToHexes(quickFallbackPalette(5));
           setHexes(fb);
           setLocked(Array(fb.length).fill(false));
+          setStripeIds(initialStripeIds(fb.length));
           setPaletteBusy(false);
         }
       }
@@ -438,10 +443,11 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   const [paletteHistory, setPaletteHistory] = useState({ stack: [], index: -1 });
   const historySeededRef = useRef(false);
 
-  const snapshotEntry = useCallback((hexList, lockList, meta) => ({
+  const snapshotEntry = useCallback((hexList, lockList, meta, idList) => ({
     hexes: [...hexList],
     locked: [...lockList],
     paletteMeta: meta ?? null,
+    stripeIds: idList ? [...idList] : undefined,
   }), []);
 
   const applyHistoryEntry = useCallback((entry) => {
@@ -449,11 +455,21 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     setHexes([...entry.hexes]);
     setLocked([...(entry.locked ?? Array(entry.hexes.length).fill(false))]);
     setPaletteMeta(entry.paletteMeta ?? null);
+    if (entry.stripeIds?.length === entry.hexes.length) {
+      setStripeIds([...entry.stripeIds]);
+    } else {
+      setStripeIds(initialStripeIds(entry.hexes.length));
+    }
   }, []);
 
   const appendHistory = useCallback((entry) => {
     setPaletteHistory((prev) => {
-      const snap = snapshotEntry(entry.hexes, entry.locked, entry.paletteMeta);
+      const snap = snapshotEntry(
+        entry.hexes,
+        entry.locked,
+        entry.paletteMeta,
+        entry.stripeIds,
+      );
       const truncated = prev.stack.slice(0, prev.index + 1);
       truncated.push(snap);
       const stack = truncated.slice(-30);
@@ -491,17 +507,80 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     if (hexes.length < MIN_COLORS || hexes.every(isPlaceholderHex)) return;
     historySeededRef.current = true;
     setPaletteHistory({
-      stack: [snapshotEntry(hexes, locked, paletteMeta)],
+      stack: [snapshotEntry(hexes, locked, paletteMeta, stripeIds)],
       index: 0,
     });
-  }, [hexes, locked, paletteMeta, paletteBusy, snapshotEntry]);
+  }, [hexes, locked, paletteMeta, paletteBusy, snapshotEntry, stripeIds]);
 
   const hexesRef = useRef(hexes);
   const lockedRef = useRef(locked);
+  const stripeIdsRef = useRef(stripeIds);
   const paletteMetaRef = useRef(paletteMeta);
+  const stripeRefs = useRef([]);
+  const dragFromRef = useRef(null);
+  const [dragFromIdx, setDragFromIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+
   useEffect(() => { hexesRef.current = hexes; }, [hexes]);
   useEffect(() => { lockedRef.current = locked; }, [locked]);
+  useEffect(() => { stripeIdsRef.current = stripeIds; }, [stripeIds]);
   useEffect(() => { paletteMetaRef.current = paletteMeta; }, [paletteMeta]);
+
+  const findDropIndex = useCallback((clientY) => {
+    for (let i = 0; i < stripeRefs.current.length; i++) {
+      const el = stripeRefs.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) return i;
+    }
+    return null;
+  }, []);
+
+  const commitReorder = useCallback((from, to) => {
+    if (from === null || to === null || from === to) return;
+    const nextHexes = reorderTriple(hexesRef.current, from, to);
+    const nextLocked = reorderTriple(lockedRef.current, from, to);
+    const nextIds = reorderTriple(stripeIdsRef.current, from, to);
+    appendHistory({
+      hexes: nextHexes,
+      locked: nextLocked,
+      paletteMeta: paletteMetaRef.current,
+      stripeIds: nextIds,
+    });
+    setHexes(nextHexes);
+    setLocked(nextLocked);
+    setStripeIds(nextIds);
+  }, [appendHistory]);
+
+  const handleGripPointerDown = useCallback((idx, e) => {
+    if (paletteBusy) return;
+    e.stopPropagation();
+    e.preventDefault();
+    dragFromRef.current = idx;
+    setDragFromIdx(idx);
+    setDragOverIdx(idx);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [paletteBusy]);
+
+  const handleGripPointerMove = useCallback((e) => {
+    if (dragFromRef.current === null) return;
+    const over = findDropIndex(e.clientY);
+    if (over !== null) setDragOverIdx(over);
+  }, [findDropIndex]);
+
+  const handleGripPointerUp = useCallback((e) => {
+    const from = dragFromRef.current;
+    dragFromRef.current = null;
+    const to = findDropIndex(e.clientY);
+    setDragFromIdx(null);
+    setDragOverIdx(null);
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    commitReorder(from, to);
+  }, [commitReorder, findDropIndex]);
 
   const doRegenerate = useCallback(() => {
     if (paletteBusy) return;
@@ -522,8 +601,8 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
         const merged = prevHexes.map((h, i) => (prevLocked[i] ? h : newHexes[i] ?? newHexes[0]));
 
         setPaletteHistory((prev) => {
-          const before = snapshotEntry(prevHexes, prevLocked, prevMeta);
-          const after = snapshotEntry(merged, prevLocked, meta);
+          const before = snapshotEntry(prevHexes, prevLocked, prevMeta, stripeIdsRef.current);
+          const after = snapshotEntry(merged, prevLocked, meta, stripeIdsRef.current);
           let stack = prev.stack.slice(0, Math.max(prev.index + 1, 0));
           if (!stack.length) {
             stack = [before];
@@ -572,18 +651,23 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
     nextHexes.splice(afterIdx + 1, 0, newHex);
     const nextLocked = [...lockedRef.current];
     nextLocked.splice(afterIdx + 1, 0, false);
-    appendHistory({ hexes: nextHexes, locked: nextLocked, paletteMeta: paletteMetaRef.current });
+    const nextIds = [...stripeIdsRef.current];
+    nextIds.splice(afterIdx + 1, 0, createStripeId());
+    appendHistory({ hexes: nextHexes, locked: nextLocked, paletteMeta: paletteMetaRef.current, stripeIds: nextIds });
     setHexes(nextHexes);
     setLocked(nextLocked);
+    setStripeIds(nextIds);
   };
 
   const removeColor = (idx) => {
     if (hexes.length <= MIN_COLORS) return;
     const nextHexes = hexes.filter((_, i) => i !== idx);
     const nextLocked = lockedRef.current.filter((_, i) => i !== idx);
-    appendHistory({ hexes: nextHexes, locked: nextLocked, paletteMeta: paletteMetaRef.current });
+    const nextIds = stripeIdsRef.current.filter((_, i) => i !== idx);
+    appendHistory({ hexes: nextHexes, locked: nextLocked, paletteMeta: paletteMetaRef.current, stripeIds: nextIds });
     setHexes(nextHexes);
     setLocked(nextLocked);
+    setStripeIds(nextIds);
     if (pickerIdx === idx) setPickerIdx(null);
   };
 
@@ -668,10 +752,17 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
         )}
         {hexes.map((hex, i) => (
           <ColorStripeRow
-            key={`${hex}-${i}`}
+            key={stripeIds[i] ?? `${hex}-${i}`}
             hex={hex}
             name={getPoeticColorName(hex)}
             locked={locked[i]}
+            stripeRef={(el) => { stripeRefs.current[i] = el; }}
+            isDragging={dragFromIdx === i}
+            isDragOver={dragOverIdx === i}
+            dragDisabled={paletteBusy}
+            onGripPointerDown={(e) => handleGripPointerDown(i, e)}
+            onGripPointerMove={handleGripPointerMove}
+            onGripPointerUp={handleGripPointerUp}
             onToggleLock={() => toggleLock(i)}
             onPick={() => setPickerIdx(i)}
             onAdd={() => addColor(i)}
@@ -719,7 +810,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
           </button>
         </div>
         <p className="pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] text-center text-[9px] font-extralight tracking-widest text-zen-ink/20 select-none">
-          空格键生色 · ← → 切换历史色卡
+          拖动左侧把手排序 · 空格键生色 · ← → 切换历史色卡
         </p>
       </div>
 
