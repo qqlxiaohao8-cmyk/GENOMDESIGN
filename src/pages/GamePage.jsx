@@ -12,7 +12,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
     <PageShell
       title="游戏"
       description="色彩训练与每日挑战"
-      bodyClassName="zen-page-body flex min-h-full flex-col !pb-0 md:!pb-10"
+      bodyClassName="zen-page-body flex min-h-full flex-col"
     >
       <DailyColorChallengeCard onStart={onStartChallenge} />
 
@@ -35,7 +35,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
         <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
       </button>
 
-      <div className="-mx-4 flex min-h-[calc(100dvh-14rem-env(safe-area-inset-top,0px)-max(5.5rem,env(safe-area-inset-bottom,0px)))] flex-1 flex-col md:mx-0 md:mt-5 md:min-h-0 md:flex-none">
+      <div className="flex min-h-[calc(100dvh-15rem-env(safe-area-inset-top,0px)-max(6rem,env(safe-area-inset-bottom,0px)))] flex-1 flex-col md:mt-5 md:min-h-0 md:flex-none">
         <ColorMemoryGame mobileFill />
       </div>
     </PageShell>

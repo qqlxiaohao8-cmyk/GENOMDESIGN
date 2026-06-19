@@ -325,7 +325,7 @@ export default function ColorMemoryGame({ mobileFill = false }) {
   const resultsBlockHeight = { minHeight: 'clamp(260px, 60vw, 480px)' };
 
   const shellClass = mobileFill
-    ? `${blockBase} h-full min-h-0 flex-1 rounded-none md:rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(220px,50vw,420px)]`
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(220px,50vw,420px)]`
     : `${blockBase} rounded-2xl`;
   const defaultSize = mobileFill ? undefined : blockHeight;
   const guessSize = mobileFill
@@ -335,10 +335,10 @@ export default function ColorMemoryGame({ mobileFill = false }) {
     ? undefined
     : resultsBlockHeight;
   const guessShellClass = mobileFill
-    ? `${blockBase} h-full min-h-0 flex-1 rounded-none md:rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(360px,58vw,500px)]`
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(360px,58vw,500px)]`
     : `${blockBase} rounded-2xl`;
   const resultsShellClass = mobileFill
-    ? `${blockBase} h-full min-h-0 flex-1 rounded-none md:rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(260px,60vw,480px)]`
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(260px,60vw,480px)]`
     : `${blockBase} rounded-2xl`;
 
   // ── Idle ──────────────────────────────────────────────────────────────
@@ -367,7 +367,7 @@ export default function ColorMemoryGame({ mobileFill = false }) {
             点击开始
           </p>
         </div>
-        <div className="absolute inset-0 rounded-none bg-white/0 transition-colors duration-300 group-hover:bg-white/[0.04] md:rounded-2xl" />
+        <div className="absolute inset-0 rounded-2xl bg-white/0 transition-colors duration-300 group-hover:bg-white/[0.04]" />
       </button>
     );
   }
