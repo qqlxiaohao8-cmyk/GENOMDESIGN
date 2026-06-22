@@ -3,6 +3,7 @@ import { ArrowRight, ThumbsUp, X } from 'lucide-react';
 import DailyColorChallengeCard from '../components/DailyColorChallengeCard';
 import ColorMemoryChallengeCard from '../components/ColorMemoryChallengeCard';
 import ColorMemoryGame from '../components/ColorMemoryGame';
+import ColorWalk from '../components/ColorWalk';
 import PageShell from '../components/layout/PageShell';
 
 /**
@@ -58,6 +59,8 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
       </button>
 
       <ColorMemoryChallengeCard onOpen={openMemoryGame} />
+
+      <ColorWalk />
 
       {memoryGameOpen && (
         <div
