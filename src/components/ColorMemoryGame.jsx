@@ -325,7 +325,7 @@ export default function ColorMemoryGame({ mobileFill = false }) {
   const resultsBlockHeight = { minHeight: 'clamp(260px, 60vw, 480px)' };
 
   const shellClass = mobileFill
-    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(220px,50vw,420px)]`
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl`
     : `${blockBase} rounded-2xl`;
   const defaultSize = mobileFill ? undefined : blockHeight;
   const guessSize = mobileFill
@@ -335,10 +335,10 @@ export default function ColorMemoryGame({ mobileFill = false }) {
     ? undefined
     : resultsBlockHeight;
   const guessShellClass = mobileFill
-    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(360px,58vw,500px)]`
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl`
     : `${blockBase} rounded-2xl`;
   const resultsShellClass = mobileFill
-    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl md:h-auto md:flex-none md:min-h-[clamp(260px,60vw,480px)]`
+    ? `${blockBase} h-full min-h-0 flex-1 rounded-2xl`
     : `${blockBase} rounded-2xl`;
 
   // ── Idle ──────────────────────────────────────────────────────────────
@@ -479,15 +479,15 @@ export default function ColorMemoryGame({ mobileFill = false }) {
         className={`${guessShellClass} transition-colors`}
         style={{ ...guessSize, backgroundColor: currentBg, color: tc }}
       >
-        {/* Desktop sliders — vertical, left panel */}
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden md:flex flex-row gap-7 items-center">
+        {/* Desktop sliders — vertical, left panel (wide layouts only) */}
+        <div className={`absolute left-6 top-1/2 -translate-y-1/2 hidden flex-row items-center gap-7 ${mobileFill ? '' : 'md:flex'}`}>
           {sliders.map((sl) => (
             <VerticalSlider key={sl.label} height={240} trackWidth={18} thumbSize={30} {...sl} />
           ))}
         </div>
 
-        {/* Mobile sliders — vertical, bottom-left row */}
-        <div className="absolute bottom-5 left-5 flex flex-row gap-5 items-end md:hidden">
+        {/* Mobile / narrow panel sliders — bottom-left row */}
+        <div className={`absolute bottom-5 left-5 flex flex-row items-end gap-5 ${mobileFill ? '' : 'md:hidden'}`}>
           {sliders.map((sl) => (
             <VerticalSlider key={sl.label} height={130} trackWidth={14} thumbSize={24} {...sl} />
           ))}
@@ -526,7 +526,7 @@ export default function ColorMemoryGame({ mobileFill = false }) {
         style={defaultSize}
       >
         {/* Split halves */}
-        <div className="absolute inset-0 flex flex-col md:flex-row">
+        <div className={`absolute inset-0 flex ${mobileFill ? 'flex-col' : 'flex-col md:flex-row'}`}>
           {/* Guess — left / top */}
           <div
             className="flex-1 flex flex-col justify-end p-4 md:p-6"

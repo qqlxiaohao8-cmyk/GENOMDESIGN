@@ -68,8 +68,8 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
         >
           <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" aria-hidden />
 
-          <div className="relative z-10 flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8 md:py-8">
-            <div className="mb-3 flex shrink-0 justify-end md:mb-4">
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8 md:py-8">
+            <div className="mb-3 flex w-full max-w-md shrink-0 justify-end md:mb-4">
               <button
                 type="button"
                 onClick={() => setMemoryGameOpen(false)}
@@ -80,7 +80,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
               </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex min-h-0 w-full max-w-md flex-1 flex-col">
               <ColorMemoryGame key={memorySession} mobileFill />
             </div>
           </div>
