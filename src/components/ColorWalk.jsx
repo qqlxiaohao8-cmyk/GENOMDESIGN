@@ -14,7 +14,10 @@ const LAYOUTS = [
   { id: 'strips', label: 'Strips' },
 ];
 
-const ROLL_DURATION_MS = 2200;
+const ROLL_DELAYS = [
+  28, 30, 32, 34, 36, 38, 42, 46, 52, 60,
+  72, 88, 108, 132, 162, 198, 240, 290, 350,
+];
 
 function randomWalkHex() {
   return lchToHexClamped(
@@ -173,6 +176,7 @@ export default function ColorWalk() {
   const [mode, setMode] = useState('color');
   const [hex, setHex] = useState(() => randomWalkHex());
   const [rolling, setRolling] = useState(false);
+  const [revealed, setRevealed] = useState(true);
   const [photos, setPhotos] = useState([]);
   const [layout, setLayout] = useState('palette');
   const timeoutRef = useRef(null);
@@ -190,22 +194,24 @@ export default function ColorWalk() {
     clearRollTimers();
     setMode('color');
     setRolling(true);
-    const start = performance.now();
+    setRevealed(false);
 
+    let step = 0;
     const tick = () => {
-      const elapsed = performance.now() - start;
-      const progress = Math.min(1, elapsed / ROLL_DURATION_MS);
-      const eased = progress * progress;
       setHex(randomWalkHex());
 
-      if (progress >= 1) {
+      if (step >= ROLL_DELAYS.length) {
         timeoutRef.current = null;
         setRolling(false);
+        timeoutRef.current = window.setTimeout(() => {
+          timeoutRef.current = null;
+          setRevealed(true);
+        }, 260);
         return;
       }
 
-      // Wheel-like deceleration: rapid flicker first, then increasingly long pauses.
-      const delay = 32 + eased * 260;
+      const delay = ROLL_DELAYS[step];
+      step += 1;
       timeoutRef.current = window.setTimeout(tick, delay);
     };
 
@@ -223,6 +229,7 @@ export default function ColorWalk() {
     clearRollTimers();
     setOpen(false);
     setRolling(false);
+    setRevealed(true);
     setMode('color');
   }, [clearRollTimers]);
 
@@ -275,7 +282,9 @@ export default function ColorWalk() {
           {mode === 'color' ? (
             <button
               type="button"
-              className="absolute inset-0 cursor-pointer transition-colors duration-150"
+              className={`absolute inset-0 cursor-pointer ${
+                rolling ? 'transition-none' : 'transition-colors duration-700'
+              }`}
               style={{ backgroundColor: hex, color: textColor }}
               onClick={() => {
                 if (!rolling) startRoll();
@@ -300,13 +309,9 @@ export default function ColorWalk() {
               className="pointer-events-none relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-6 text-center"
               style={{ color: textColor }}
             >
-              {rolling ? (
-                <p className="font-zenSerif text-4xl font-medium tracking-wide opacity-80 md:text-6xl">
-                  color walk
-                </p>
-              ) : (
+              {revealed && !rolling ? (
                 <>
-                  <div className="mb-10">
+                  <div className="mb-10 animate-[zenShellFade_420ms_ease-out_both]">
                     <p className="font-zenSerif text-5xl font-medium tracking-wide md:text-7xl">{name}</p>
                     <p className="mt-3 font-mono text-sm tracking-[0.35em] opacity-70">{hex}</p>
                   </div>
@@ -325,6 +330,8 @@ export default function ColorWalk() {
                     上传 1-5 张照片 · 点击空白处换色
                   </p>
                 </>
+              ) : (
+                <div className="h-24 w-24 rounded-full border border-current/20 opacity-30 shadow-[0_0_80px_currentColor] transition-opacity" />
               )}
             </div>
           ) : (
