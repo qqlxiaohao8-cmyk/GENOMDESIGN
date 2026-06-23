@@ -24,27 +24,10 @@ function randomWalkHex(prevHue = null) {
   return lchToHexClamped(l, c, h);
 }
 
-function makeToneScale(hex, count) {
-  const { l, c, h } = hexToOklch(hex);
-  const out = [];
-  for (let i = 0; i < count; i += 1) {
-    const t = count <= 1 ? 0 : i / (count - 1);
-    const nextL = Math.max(0.28, Math.min(0.9, l + 0.22 - t * 0.38));
-    const nextC = Math.max(0.02, c * (0.72 + (1 - t) * 0.18));
-    out.push(lchToHexClamped(nextL, nextC, h));
-  }
-  return out;
-}
-
-function PhotoSlot({
-  fileUrl,
-  fallbackHex,
-  fallbackName,
-  onPick,
-}) {
+function PhotoSlot({ fileUrl, onPick }) {
   if (fileUrl) {
     return (
-      <div className="relative h-full w-full overflow-hidden rounded-2xl bg-white/50">
+      <div className="relative h-full w-full overflow-hidden rounded-2xl bg-white">
         <img
           src={fileUrl}
           alt="uploaded"
@@ -66,69 +49,62 @@ function PhotoSlot({
   }
 
   return (
-    <div
-      className="relative h-full w-full overflow-hidden rounded-2xl"
-      style={{ backgroundColor: fallbackHex }}
-    >
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-black/10 bg-white">
       <button
         type="button"
         onClick={(e) => {
           e.stopPropagation();
           onPick?.();
         }}
-        className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-black/20 bg-white/70 text-black/70 transition-colors hover:bg-white"
+        className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-black/15 bg-white text-black/55 shadow-sm transition-colors hover:bg-zen-mist hover:text-black/75"
         aria-label="上传该色块照片"
       >
         <Camera size={16} strokeWidth={2} aria-hidden />
       </button>
-      <div className="absolute bottom-3 left-3 right-3">
-        <p className="type-h4 text-black">{fallbackName}</p>
-        <p className="type-note text-black/70 font-mono">{fallbackHex}</p>
-      </div>
     </div>
   );
 }
 
-function PaletteMosaic({ files, tones, onPickAt }) {
+function PaletteMosaic({ files, onPickAt }) {
   return (
     <div className="grid grid-cols-3 gap-3">
       <div className="col-span-1 row-span-2 min-h-[18rem]">
-        <PhotoSlot fileUrl={files[0]} fallbackHex={tones[0]} fallbackName={getPoeticColorName(tones[0])} onPick={() => onPickAt(0)} />
+        <PhotoSlot fileUrl={files[0]} onPick={() => onPickAt(0)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[1]} fallbackHex={tones[1]} fallbackName={getPoeticColorName(tones[1])} onPick={() => onPickAt(1)} />
+        <PhotoSlot fileUrl={files[1]} onPick={() => onPickAt(1)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[2]} fallbackHex={tones[2]} fallbackName={getPoeticColorName(tones[2])} onPick={() => onPickAt(2)} />
+        <PhotoSlot fileUrl={files[2]} onPick={() => onPickAt(2)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[3]} fallbackHex={tones[3]} fallbackName={getPoeticColorName(tones[3])} onPick={() => onPickAt(3)} />
+        <PhotoSlot fileUrl={files[3]} onPick={() => onPickAt(3)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[4]} fallbackHex={tones[4]} fallbackName={getPoeticColorName(tones[4])} onPick={() => onPickAt(4)} />
+        <PhotoSlot fileUrl={files[4]} onPick={() => onPickAt(4)} />
       </div>
     </div>
   );
 }
 
-function PaletteColumns({ files, tones, onPickAt }) {
+function PaletteColumns({ files, onPickAt }) {
   return (
     <div className="grid grid-cols-5 gap-3">
-      {tones.map((hex, i) => (
-        <div key={`${hex}-${i}`} className="min-h-[18rem]">
-          <PhotoSlot fileUrl={files[i]} fallbackHex={hex} fallbackName={getPoeticColorName(hex)} onPick={() => onPickAt(i)} />
+      {Array.from({ length: MAX_PHOTOS }, (_, i) => (
+        <div key={i} className="min-h-[18rem]">
+          <PhotoSlot fileUrl={files[i]} onPick={() => onPickAt(i)} />
         </div>
       ))}
     </div>
   );
 }
 
-function PaletteStrip({ files, tones, onPickAt }) {
+function PaletteStrip({ files, onPickAt }) {
   return (
     <div className="grid grid-cols-1 gap-3">
-      {tones.map((hex, i) => (
-        <div key={`${hex}-${i}`} className="min-h-[8.5rem]">
-          <PhotoSlot fileUrl={files[i]} fallbackHex={hex} fallbackName={getPoeticColorName(hex)} onPick={() => onPickAt(i)} />
+      {Array.from({ length: MAX_PHOTOS }, (_, i) => (
+        <div key={i} className="min-h-[8.5rem]">
+          <PhotoSlot fileUrl={files[i]} onPick={() => onPickAt(i)} />
         </div>
       ))}
     </div>
@@ -152,7 +128,6 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
   const [layoutId, setLayoutId] = useState('mosaic');
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
-  const tones = useMemo(() => makeToneScale(finalHex, 5), [finalHex]);
 
   const clearSlotUrl = (idx) => {
     const cur = fileUrlsRef.current[idx];
@@ -395,9 +370,9 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               className="rounded-3xl border border-black/10 p-4 md:p-6"
               style={{ backgroundColor: finalHex }}
             >
-              {layoutId === 'mosaic' && <PaletteMosaic files={files} tones={tones} onPickAt={pickSlotPhoto} />}
-              {layoutId === 'columns' && <PaletteColumns files={files} tones={tones} onPickAt={pickSlotPhoto} />}
-              {layoutId === 'strip' && <PaletteStrip files={files} tones={tones} onPickAt={pickSlotPhoto} />}
+              {layoutId === 'mosaic' && <PaletteMosaic files={files} onPickAt={pickSlotPhoto} />}
+              {layoutId === 'columns' && <PaletteColumns files={files} onPickAt={pickSlotPhoto} />}
+              {layoutId === 'strip' && <PaletteStrip files={files} onPickAt={pickSlotPhoto} />}
 
               <div className="mt-5 border-t border-zen-ink/10 pt-3">
                 <div className="mb-2 flex items-center justify-between">
