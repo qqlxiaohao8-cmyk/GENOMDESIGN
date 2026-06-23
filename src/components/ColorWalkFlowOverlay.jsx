@@ -141,6 +141,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
   const rafRef = useRef(null);
   const fileUrlsRef = useRef(Array(MAX_PHOTOS).fill(null));
   const hueRef = useRef(null);
+  const suppressRerollRef = useRef(false);
 
   const [phase, setPhase] = useState('spin'); // spin | ready | layout
   const [currentHex, setCurrentHex] = useState('#D89A80');
@@ -220,7 +221,16 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
 
   const reroll = () => {
     if (phase !== 'ready') return;
+    if (suppressRerollRef.current) return;
     setSpinNonce((n) => n + 1);
+  };
+
+  const openMultiPicker = () => {
+    suppressRerollRef.current = true;
+    multiFileInputRef.current?.click();
+    window.setTimeout(() => {
+      suppressRerollRef.current = false;
+    }, 800);
   };
 
   const onPickPhotos = (e) => {
@@ -268,18 +278,19 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
     singleFileInputRef.current?.click();
   };
 
+  const displayHex = phase === 'spin' ? currentHex : finalHex;
+
   return (
     <div
       className="fixed inset-0 z-[220] flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-label="Color Walk"
-      onClick={reroll}
     >
       {phase !== 'layout' && (
         <div
           className="absolute inset-0 transition-colors duration-300"
-          style={{ backgroundColor: currentHex }}
+          style={{ backgroundColor: displayHex }}
           aria-hidden
         />
       )}
@@ -322,7 +333,10 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
       </div>
 
       {phase !== 'layout' ? (
-        <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-6">
+        <div
+          className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-6"
+          onClick={phase === 'ready' ? reroll : undefined}
+        >
           <div className="mb-8 text-center text-white drop-shadow-lg">
             {phase === 'spin' ? (
               <>
@@ -344,9 +358,10 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
             <button
               type="button"
               className="flex h-20 w-20 items-center justify-center rounded-full border border-white/70 bg-black/25 text-white shadow-xl backdrop-blur-md transition-transform hover:scale-105"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
-                multiFileInputRef.current?.click();
+                openMultiPicker();
               }}
               aria-label="上传照片开始排版"
             >
@@ -366,7 +381,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                multiFileInputRef.current?.click();
+                openMultiPicker();
               }}
               className="inline-flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-4 py-2 text-sm font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
             >
