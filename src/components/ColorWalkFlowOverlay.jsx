@@ -146,7 +146,6 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
   const [currentHex, setCurrentHex] = useState('#D89A80');
   const [finalHex, setFinalHex] = useState('#D89A80');
   const [spinNonce, setSpinNonce] = useState(0);
-  const [pendingUploadAfterSpin, setPendingUploadAfterSpin] = useState(false);
   const [files, setFiles] = useState(() => Array(MAX_PHOTOS).fill(null));
   const [slotPickIdx, setSlotPickIdx] = useState(null);
   const [layoutId, setLayoutId] = useState('mosaic');
@@ -175,7 +174,6 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
     cleanupUrls();
     setLayoutId('mosaic');
     setSlotPickIdx(null);
-    setPendingUploadAfterSpin(false);
     setSpinNonce((n) => n + 1);
     return undefined;
   }, [open]);
@@ -217,14 +215,6 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [open, spinNonce]);
-
-  useEffect(() => {
-    if (!open) return;
-    if (phase !== 'ready') return;
-    if (!pendingUploadAfterSpin) return;
-    setPendingUploadAfterSpin(false);
-    multiFileInputRef.current?.click();
-  }, [open, phase, pendingUploadAfterSpin]);
 
   if (!open) return null;
 
@@ -356,8 +346,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               className="flex h-20 w-20 items-center justify-center rounded-full border border-white/70 bg-black/25 text-white shadow-xl backdrop-blur-md transition-transform hover:scale-105"
               onClick={(e) => {
                 e.stopPropagation();
-                setPendingUploadAfterSpin(true);
-                setSpinNonce((n) => n + 1);
+                multiFileInputRef.current?.click();
               }}
               aria-label="上传照片开始排版"
             >
