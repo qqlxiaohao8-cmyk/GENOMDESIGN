@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { ArrowRight, ThumbsUp, X } from 'lucide-react';
 import DailyColorChallengeCard from '../components/DailyColorChallengeCard';
 import ColorMemoryChallengeCard from '../components/ColorMemoryChallengeCard';
+import ColorWalkChallengeCard from '../components/ColorWalkChallengeCard';
+import ColorWalkFlowOverlay from '../components/ColorWalkFlowOverlay';
 import ColorMemoryGame from '../components/ColorMemoryGame';
-import ColorWalk from '../components/ColorWalk';
 import PageShell from '../components/layout/PageShell';
 
 /**
@@ -12,6 +13,7 @@ import PageShell from '../components/layout/PageShell';
 export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
   const [memoryGameOpen, setMemoryGameOpen] = useState(false);
   const [memorySession, setMemorySession] = useState(0);
+  const [colorWalkOpen, setColorWalkOpen] = useState(false);
 
   const openMemoryGame = () => {
     setMemorySession((n) => n + 1);
@@ -19,18 +21,21 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
   };
 
   useEffect(() => {
-    if (!memoryGameOpen) return undefined;
+    if (!memoryGameOpen && !colorWalkOpen) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKey = (e) => {
-      if (e.key === 'Escape') setMemoryGameOpen(false);
+      if (e.key === 'Escape') {
+        setMemoryGameOpen(false);
+        setColorWalkOpen(false);
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener('keydown', onKey);
     };
-  }, [memoryGameOpen]);
+  }, [memoryGameOpen, colorWalkOpen]);
 
   return (
     <PageShell
@@ -59,8 +64,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
       </button>
 
       <ColorMemoryChallengeCard onOpen={openMemoryGame} />
-
-      <ColorWalk />
+      <ColorWalkChallengeCard onOpen={() => setColorWalkOpen(true)} />
 
       {memoryGameOpen && (
         <div
@@ -89,6 +93,11 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
           </div>
         </div>
       )}
+
+      <ColorWalkFlowOverlay
+        open={colorWalkOpen}
+        onClose={() => setColorWalkOpen(false)}
+      />
     </PageShell>
   );
 }
