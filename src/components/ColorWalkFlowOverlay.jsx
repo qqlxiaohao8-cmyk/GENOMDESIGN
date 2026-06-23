@@ -36,7 +36,12 @@ function makeToneScale(hex, count) {
   return out;
 }
 
-function PhotoSlot({ fileUrl, fallbackHex, fallbackName }) {
+function PhotoSlot({
+  fileUrl,
+  fallbackHex,
+  fallbackName,
+  onPick,
+}) {
   if (fileUrl) {
     return (
       <div className="relative h-full w-full overflow-hidden rounded-2xl bg-white/50">
@@ -45,6 +50,17 @@ function PhotoSlot({ fileUrl, fallbackHex, fallbackName }) {
           alt="uploaded"
           className="h-full w-full object-cover"
         />
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPick?.();
+          }}
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-black/35 text-white backdrop-blur transition-colors hover:bg-black/50"
+          aria-label="替换该色块照片"
+        >
+          <Camera size={14} strokeWidth={2} aria-hidden />
+        </button>
       </div>
     );
   }
@@ -54,6 +70,17 @@ function PhotoSlot({ fileUrl, fallbackHex, fallbackName }) {
       className="relative h-full w-full overflow-hidden rounded-2xl"
       style={{ backgroundColor: fallbackHex }}
     >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onPick?.();
+        }}
+        className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-black/20 bg-white/70 text-black/70 transition-colors hover:bg-white"
+        aria-label="上传该色块照片"
+      >
+        <Camera size={16} strokeWidth={2} aria-hidden />
+      </button>
       <div className="absolute bottom-3 left-3 right-3">
         <p className="type-h4 text-black">{fallbackName}</p>
         <p className="type-note text-black/70 font-mono">{fallbackHex}</p>
@@ -62,46 +89,46 @@ function PhotoSlot({ fileUrl, fallbackHex, fallbackName }) {
   );
 }
 
-function PaletteMosaic({ files, tones }) {
+function PaletteMosaic({ files, tones, onPickAt }) {
   return (
     <div className="grid grid-cols-3 gap-3">
       <div className="col-span-1 row-span-2 min-h-[18rem]">
-        <PhotoSlot fileUrl={files[0]} fallbackHex={tones[0]} fallbackName={getPoeticColorName(tones[0])} />
+        <PhotoSlot fileUrl={files[0]} fallbackHex={tones[0]} fallbackName={getPoeticColorName(tones[0])} onPick={() => onPickAt(0)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[1]} fallbackHex={tones[1]} fallbackName={getPoeticColorName(tones[1])} />
+        <PhotoSlot fileUrl={files[1]} fallbackHex={tones[1]} fallbackName={getPoeticColorName(tones[1])} onPick={() => onPickAt(1)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[2]} fallbackHex={tones[2]} fallbackName={getPoeticColorName(tones[2])} />
+        <PhotoSlot fileUrl={files[2]} fallbackHex={tones[2]} fallbackName={getPoeticColorName(tones[2])} onPick={() => onPickAt(2)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[3]} fallbackHex={tones[3]} fallbackName={getPoeticColorName(tones[3])} />
+        <PhotoSlot fileUrl={files[3]} fallbackHex={tones[3]} fallbackName={getPoeticColorName(tones[3])} onPick={() => onPickAt(3)} />
       </div>
       <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[4]} fallbackHex={tones[4]} fallbackName={getPoeticColorName(tones[4])} />
+        <PhotoSlot fileUrl={files[4]} fallbackHex={tones[4]} fallbackName={getPoeticColorName(tones[4])} onPick={() => onPickAt(4)} />
       </div>
     </div>
   );
 }
 
-function PaletteColumns({ files, tones }) {
+function PaletteColumns({ files, tones, onPickAt }) {
   return (
     <div className="grid grid-cols-5 gap-3">
       {tones.map((hex, i) => (
-        <div key={hex} className="min-h-[18rem]">
-          <PhotoSlot fileUrl={files[i]} fallbackHex={hex} fallbackName={getPoeticColorName(hex)} />
+        <div key={`${hex}-${i}`} className="min-h-[18rem]">
+          <PhotoSlot fileUrl={files[i]} fallbackHex={hex} fallbackName={getPoeticColorName(hex)} onPick={() => onPickAt(i)} />
         </div>
       ))}
     </div>
   );
 }
 
-function PaletteStrip({ files, tones }) {
+function PaletteStrip({ files, tones, onPickAt }) {
   return (
     <div className="grid grid-cols-1 gap-3">
       {tones.map((hex, i) => (
-        <div key={hex} className="min-h-[8.5rem]">
-          <PhotoSlot fileUrl={files[i]} fallbackHex={hex} fallbackName={getPoeticColorName(hex)} />
+        <div key={`${hex}-${i}`} className="min-h-[8.5rem]">
+          <PhotoSlot fileUrl={files[i]} fallbackHex={hex} fallbackName={getPoeticColorName(hex)} onPick={() => onPickAt(i)} />
         </div>
       ))}
     </div>
@@ -109,32 +136,46 @@ function PaletteStrip({ files, tones }) {
 }
 
 export default function ColorWalkFlowOverlay({ open, onClose }) {
-  const fileInputRef = useRef(null);
+  const multiFileInputRef = useRef(null);
+  const singleFileInputRef = useRef(null);
   const rafRef = useRef(null);
-  const prevUrlsRef = useRef([]);
+  const fileUrlsRef = useRef(Array(MAX_PHOTOS).fill(null));
   const hueRef = useRef(null);
 
   const [phase, setPhase] = useState('spin'); // spin | ready | layout
   const [currentHex, setCurrentHex] = useState('#D89A80');
   const [finalHex, setFinalHex] = useState('#D89A80');
   const [spinNonce, setSpinNonce] = useState(0);
-  const [files, setFiles] = useState([]);
+  const [pendingUploadAfterSpin, setPendingUploadAfterSpin] = useState(false);
+  const [files, setFiles] = useState(() => Array(MAX_PHOTOS).fill(null));
+  const [slotPickIdx, setSlotPickIdx] = useState(null);
   const [layoutId, setLayoutId] = useState('mosaic');
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
   const tones = useMemo(() => makeToneScale(finalHex, 5), [finalHex]);
 
+  const clearSlotUrl = (idx) => {
+    const cur = fileUrlsRef.current[idx];
+    if (cur) URL.revokeObjectURL(cur);
+    fileUrlsRef.current[idx] = null;
+  };
+
   const cleanupUrls = () => {
-    prevUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
-    prevUrlsRef.current = [];
+    fileUrlsRef.current.forEach((u) => {
+      if (u) URL.revokeObjectURL(u);
+    });
+    fileUrlsRef.current = Array(MAX_PHOTOS).fill(null);
   };
 
   useEffect(() => () => cleanupUrls(), []);
 
   useEffect(() => {
     if (!open) return undefined;
-    setFiles([]);
+    setFiles(Array(MAX_PHOTOS).fill(null));
+    cleanupUrls();
     setLayoutId('mosaic');
+    setSlotPickIdx(null);
+    setPendingUploadAfterSpin(false);
     setSpinNonce((n) => n + 1);
     return undefined;
   }, [open]);
@@ -177,6 +218,14 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
     };
   }, [open, spinNonce]);
 
+  useEffect(() => {
+    if (!open) return;
+    if (phase !== 'ready') return;
+    if (!pendingUploadAfterSpin) return;
+    setPendingUploadAfterSpin(false);
+    multiFileInputRef.current?.click();
+  }, [open, phase, pendingUploadAfterSpin]);
+
   if (!open) return null;
 
   const reroll = () => {
@@ -193,11 +242,40 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
       .filter((f) => /^image\//i.test(f.type || ''))
       .slice(0, MAX_PHOTOS);
 
-    cleanupUrls();
-    const urls = picked.map((f) => URL.createObjectURL(f));
-    prevUrlsRef.current = urls;
-    setFiles(urls);
+    setFiles((prev) => {
+      const next = [...prev];
+      for (let i = 0; i < MAX_PHOTOS; i += 1) clearSlotUrl(i);
+      picked.forEach((f, i) => {
+        const url = URL.createObjectURL(f);
+        fileUrlsRef.current[i] = url;
+        next[i] = url;
+      });
+      return next;
+    });
     setPhase('layout');
+  };
+
+  const onPickSinglePhoto = (e) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file || slotPickIdx == null) return;
+    if (!/^image\//i.test(file.type || '')) return;
+    const idx = Math.max(0, Math.min(MAX_PHOTOS - 1, slotPickIdx));
+    const url = URL.createObjectURL(file);
+    setFiles((prev) => {
+      const next = [...prev];
+      clearSlotUrl(idx);
+      fileUrlsRef.current[idx] = url;
+      next[idx] = url;
+      return next;
+    });
+    setPhase('layout');
+    setSlotPickIdx(null);
+  };
+
+  const pickSlotPhoto = (idx) => {
+    setSlotPickIdx(idx);
+    singleFileInputRef.current?.click();
   };
 
   return (
@@ -278,7 +356,8 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               className="flex h-20 w-20 items-center justify-center rounded-full border border-white/70 bg-black/25 text-white shadow-xl backdrop-blur-md transition-transform hover:scale-105"
               onClick={(e) => {
                 e.stopPropagation();
-                fileInputRef.current?.click();
+                setPendingUploadAfterSpin(true);
+                setSpinNonce((n) => n + 1);
               }}
               aria-label="上传照片开始排版"
             >
@@ -298,7 +377,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                fileInputRef.current?.click();
+                multiFileInputRef.current?.click();
               }}
               className="inline-flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-4 py-2 text-sm font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
             >
@@ -312,9 +391,9 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               className="rounded-3xl border border-black/10 p-4 md:p-6"
               style={{ backgroundColor: finalHex }}
             >
-              {layoutId === 'mosaic' && <PaletteMosaic files={files} tones={tones} />}
-              {layoutId === 'columns' && <PaletteColumns files={files} tones={tones} />}
-              {layoutId === 'strip' && <PaletteStrip files={files} tones={tones} />}
+              {layoutId === 'mosaic' && <PaletteMosaic files={files} tones={tones} onPickAt={pickSlotPhoto} />}
+              {layoutId === 'columns' && <PaletteColumns files={files} tones={tones} onPickAt={pickSlotPhoto} />}
+              {layoutId === 'strip' && <PaletteStrip files={files} tones={tones} onPickAt={pickSlotPhoto} />}
 
               <div className="mt-5 border-t border-zen-ink/10 pt-3">
                 <div className="mb-2 flex items-center justify-between">
@@ -351,12 +430,19 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
       )}
 
       <input
-        ref={fileInputRef}
+        ref={multiFileInputRef}
         type="file"
         accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
         multiple
         className="hidden"
         onChange={onPickPhotos}
+      />
+      <input
+        ref={singleFileInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+        className="hidden"
+        onChange={onPickSinglePhoto}
       />
     </div>
   );
