@@ -6,22 +6,119 @@ import { getPoeticColorName } from '../lib/poeticColorNaming';
 const MAX_PHOTOS = 5;
 const SPIN_MS = 2000;
 
-function randomWalkHex(prevHue = null) {
-  let h = Math.random() * 360;
-  if (typeof prevHue === 'number') {
-    let tries = 0;
-    // 强制色相大跳变，避免连续颜色过于接近
-    while (tries < 8) {
-      h = (prevHue + 80 + Math.random() * 200) % 360;
-      const delta = Math.abs(h - prevHue);
-      const shortest = Math.min(delta, 360 - delta);
-      if (shortest >= 70) break;
-      tries += 1;
-    }
+const TONE_PRESETS = [
+  // 浅淡色调：高明度、低彩
+  { id: 'lightSoft', labelZh: '浅淡色调', lRange: [0.8, 0.94], cRange: [0.022, 0.078], weight: 22 },
+  // 明亮色调：高明度、中高彩
+  { id: 'bright', labelZh: '明亮色调', lRange: [0.68, 0.86], cRange: [0.09, 0.17], weight: 24 },
+  // 灰色调：中明度、低彩
+  { id: 'grayish', labelZh: '灰色调', lRange: [0.44, 0.72], cRange: [0.016, 0.072], weight: 20 },
+  // 深/暗色调：低明度、中低彩
+  { id: 'deep', labelZh: '深暗色调', lRange: [0.16, 0.44], cRange: [0.024, 0.12], weight: 18 },
+  // 鲜艳色调：中明度、高彩
+  { id: 'vivid', labelZh: '鲜艳色调', lRange: [0.42, 0.74], cRange: [0.14, 0.24], weight: 16 },
+];
+
+const TEMP_GROUPS = [
+  { id: 'warm', labelZh: '暖色', ranges: [[352, 360], [0, 72]], weight: 36 },
+  { id: 'cool', labelZh: '冷色', ranges: [[155, 248]], weight: 36 },
+  { id: 'neutral', labelZh: '中性色相', ranges: [[88, 155], [275, 350]], weight: 28 },
+];
+
+const ACHROMATIC_STYLES = [
+  { id: 'white', labelZh: '白', lRange: [0.9, 0.98], cRange: [0.003, 0.015], weight: 24 },
+  { id: 'gray', labelZh: '灰', lRange: [0.42, 0.78], cRange: [0.003, 0.02], weight: 56 },
+  { id: 'black', labelZh: '黑', lRange: [0.08, 0.22], cRange: [0.003, 0.014], weight: 20 },
+];
+
+function rand(a, b) {
+  return a + Math.random() * (b - a);
+}
+
+function pickWeighted(items) {
+  const total = items.reduce((sum, item) => sum + item.weight, 0);
+  let r = Math.random() * total;
+  for (const item of items) {
+    r -= item.weight;
+    if (r <= 0) return item;
   }
-  const l = 0.34 + Math.random() * 0.52;
-  const c = 0.08 + Math.random() * 0.2;
-  return lchToHexClamped(l, c, h);
+  return items[items.length - 1];
+}
+
+function shortestHueDelta(a, b) {
+  const raw = Math.abs(a - b) % 360;
+  return Math.min(raw, 360 - raw);
+}
+
+function sampleHueByRanges(ranges) {
+  const [a, b] = ranges[Math.floor(Math.random() * ranges.length)];
+  return rand(a, b);
+}
+
+function sampleHueWithHarmony(prevHue, preferredRanges) {
+  if (typeof prevHue !== 'number') return sampleHueByRanges(preferredRanges);
+
+  // 用类似/对比/互补的跳转去控制“随机感”与“设计感”的平衡
+  const strategy = pickWeighted([
+    { id: 'analogous', weight: 24 },
+    { id: 'contrast', weight: 40 },
+    { id: 'complementary', weight: 36 },
+  ]);
+
+  let tries = 0;
+  while (tries < 10) {
+    let candidate;
+    if (strategy.id === 'analogous') {
+      candidate = (prevHue + rand(-38, 38) + 360) % 360;
+    } else if (strategy.id === 'complementary') {
+      candidate = (prevHue + 180 + rand(-24, 24) + 360) % 360;
+    } else {
+      const sign = Math.random() < 0.5 ? 1 : -1;
+      candidate = (prevHue + sign * rand(85, 145) + 360) % 360;
+    }
+
+    const inPreferred = preferredRanges.some(([a, b]) => candidate >= a && candidate <= b);
+    const minDelta = strategy.id === 'analogous' ? 18 : 52;
+    if (inPreferred && shortestHueDelta(candidate, prevHue) >= minDelta) return candidate;
+    tries += 1;
+  }
+
+  return sampleHueByRanges(preferredRanges);
+}
+
+function randomWalkColor(prevHue = null) {
+  // 12% 无彩色：黑白灰，强调明度结构；88% 有彩色：由色相+明度+彩度共同决定
+  if (Math.random() < 0.12) {
+    const achromatic = pickWeighted(ACHROMATIC_STYLES);
+    const l = rand(achromatic.lRange[0], achromatic.lRange[1]);
+    const c = rand(achromatic.cRange[0], achromatic.cRange[1]);
+    const h = typeof prevHue === 'number' ? prevHue : rand(0, 360);
+    return { hex: lchToHexClamped(l, c, h), hue: h };
+  }
+
+  const tone = pickWeighted(TONE_PRESETS);
+  const temp = pickWeighted(TEMP_GROUPS);
+  const h = sampleHueWithHarmony(prevHue, temp.ranges);
+  const l = rand(tone.lRange[0], tone.lRange[1]);
+  const c = rand(tone.cRange[0], tone.cRange[1]);
+  return { hex: lchToHexClamped(l, c, h), hue: h };
+}
+
+function describeColorKnowledge(hex) {
+  const { l, c, h } = hexToOklch(hex);
+  const category = c < 0.028 ? '无彩色' : '有彩色';
+
+  let temp = '中性色相';
+  if (h >= 352 || h < 72) temp = '暖色';
+  else if (h >= 155 && h < 248) temp = '冷色';
+
+  let tone = '灰色调';
+  if (l >= 0.8 && c < 0.09) tone = '浅淡色调';
+  else if (l >= 0.66 && c >= 0.09) tone = '明亮色调';
+  else if (l < 0.44) tone = '深暗色调';
+  else if (c >= 0.14) tone = '鲜艳色调';
+
+  return `${category} · ${temp} · ${tone}`;
 }
 
 function PhotoSlot({ fileUrl, onPick }) {
@@ -128,6 +225,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
   const [layoutId, setLayoutId] = useState('mosaic');
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
+  const finalKnowledge = useMemo(() => describeColorKnowledge(finalHex), [finalHex]);
 
   const clearSlotUrl = (idx) => {
     const cur = fileUrlsRef.current[idx];
@@ -161,9 +259,9 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
     setPhase('spin');
     const start = performance.now();
     let lastSwitch = start;
-    let latest = randomWalkHex(hueRef.current);
-    hueRef.current = hexToOklch(latest).h;
-    setCurrentHex(latest);
+    let latest = randomWalkColor(hueRef.current);
+    hueRef.current = latest.hue;
+    setCurrentHex(latest.hex);
 
     const frame = (now) => {
       const elapsed = now - start;
@@ -171,17 +269,17 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
       const interval = 28 + (t ** 2.2) * 260;
 
       if (now - lastSwitch >= interval) {
-        latest = randomWalkHex(hueRef.current);
-        hueRef.current = hexToOklch(latest).h;
-        setCurrentHex(latest);
+        latest = randomWalkColor(hueRef.current);
+        hueRef.current = latest.hue;
+        setCurrentHex(latest.hex);
         lastSwitch = now;
       }
 
       if (elapsed < SPIN_MS) {
         rafRef.current = requestAnimationFrame(frame);
       } else {
-        setFinalHex(latest);
-        setCurrentHex(latest);
+        setFinalHex(latest.hex);
+        setCurrentHex(latest.hex);
         setPhase('ready');
       }
     };
@@ -324,6 +422,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
                 <p className="type-overline text-white/75">Color Walk</p>
                 <p className="mt-2 text-4xl font-zenSerif font-medium">{finalName}</p>
                 <p className="mt-1 font-mono text-lg tracking-wide">{finalHex}</p>
+                <p className="mt-1 text-xs font-extralight tracking-[0.08em] text-white/85">{finalKnowledge}</p>
                 <p className="mt-2 text-sm font-extralight text-white/80">点击空白可重抽颜色</p>
               </>
             )}
