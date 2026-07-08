@@ -206,7 +206,7 @@ function CategorizedTagPanel({
 }
 
 /**
- * 色海页：搜索栏 + 标签 + 色卡瀑布流（移动 2 列 / 桌面 4 列）。
+ * 色海页：搜索栏 + 标签 + 色卡网格（移动 2 列 / 桌面 4 列，从左到右、从上到下）。
  */
 export default function ColorSeaPage({
   user,
