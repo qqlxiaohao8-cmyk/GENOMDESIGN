@@ -61,7 +61,7 @@ export default function App() {
     toggleVaultFavoriteFromExplore, persistColorCardVaultRow, deleteVaultItem, removeFromVault,
     publishColorCard, publishDailyPaletteCard, downloadColorCardPng, copyShareLink,
     flowStack, pushFlow, popFlow, clearFlows, updateFlowTop, advanceShengSeToPublish,
-    exploreFeed, personalLibrary, fetchStyleById,
+    exploreFeed, personalLibrary, fetchStyleById, patchExploreFeedLikeCount,
   } = app;
 
   const [activeTab, setActiveTab] = useState('favorites');
@@ -69,6 +69,8 @@ export default function App() {
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   // Shared style preview overlay (deep-link or card detail)
   const [previewOverlay, setPreviewOverlay] = useState(null);
+  const [colorSeaSimilarHex, setColorSeaSimilarHex] = useState(null);
+  const [colorSeaSimilarMeta, setColorSeaSimilarMeta] = useState(null);
   const pendingReturnRef = useRef(null);
   const [profileSetupDone, setProfileSetupDone] = useState(false);
   const [desktopLandingOpen, setDesktopLandingOpen] = useState(false);
@@ -222,6 +224,15 @@ export default function App() {
     pushFlow({ type: 'paletteAnalysis', itemId: vaultItem.id });
   };
 
+  const openColorSeaSimilarTo = (hex, meta = null) => {
+    const norm = normalizeHex(hex);
+    if (!norm) return;
+    clearFlows();
+    setColorSeaSimilarHex(norm);
+    setColorSeaSimilarMeta(meta ? { name: meta.name || null } : null);
+    handleTabChange('colorSea');
+  };
+
   const currentFlow = flowStack[flowStack.length - 1] ?? null;
 
   // ── Render active flow (full-screen overlay) ──────────────────────────
@@ -307,6 +318,8 @@ export default function App() {
           exploreFeed={colorPaletteExploreFeed}
           onBack={popFlow}
           onUnfavorite={() => removeFromVault(item.id)}
+          onFindSimilarPalettes={openColorSeaSimilarTo}
+          onLikeCountUpdate={patchExploreFeedLikeCount}
         />
       );
     }
@@ -389,6 +402,12 @@ export default function App() {
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onCopyLink={(id) => copyShareLink(id, 'analysis')}
                 onOpenAuth={() => setAuthModalOpen(true)}
+            similarHexFilter={colorSeaSimilarHex}
+            similarHexMeta={colorSeaSimilarMeta}
+            onClearSimilarHexFilter={() => {
+              setColorSeaSimilarHex(null);
+              setColorSeaSimilarMeta(null);
+            }}
           />
         );
       case 'dailyOneColor':

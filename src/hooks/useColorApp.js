@@ -197,39 +197,75 @@ export default function useColorApp() {
   }, [vaultColorPaletteItems]);
 
   // ── Toggle like ───────────────────────────────────────────────────────
+  const patchExploreFeedLikeCount = useCallback((itemId, likeCount) => {
+    if (!itemId) return;
+    const n = Math.max(0, Number(likeCount) || 0);
+    setExploreFeed((prev) =>
+      prev.map((it) => (it.id === itemId ? { ...it, likeCount: n } : it)),
+    );
+  }, []);
+
+  const syncCommunityLikeForStyle = useCallback(
+    async (styleId, shouldLike) => {
+      if (!user?.id || !styleId) return null;
+      const alreadyLiked = likedStyleIds.has(styleId);
+      if (shouldLike === alreadyLiked) {
+        const existing = exploreFeed.find((it) => it.id === styleId);
+        return typeof existing?.likeCount === 'number' ? existing.likeCount : null;
+      }
+      try {
+        if (shouldLike) {
+          await apiFetch(`/styles/${styleId}/like`, { method: 'POST' });
+          setLikedStyleIds((prev) => new Set([...prev, styleId]));
+          setExploreFeed((prev) =>
+            prev.map((it) =>
+              it.id === styleId ? { ...it, likeCount: (it.likeCount ?? 0) + 1 } : it,
+            ),
+          );
+        } else {
+          await apiFetch(`/styles/${styleId}/like`, { method: 'DELETE' });
+          setLikedStyleIds((prev) => {
+            const n = new Set(prev);
+            n.delete(styleId);
+            return n;
+          });
+          setExploreFeed((prev) =>
+            prev.map((it) =>
+              it.id === styleId
+                ? { ...it, likeCount: Math.max(0, (it.likeCount ?? 0) - 1) }
+                : it,
+            ),
+          );
+        }
+        try {
+          const res = await apiFetch(`/styles/${styleId}`);
+          if (typeof res?.data?.like_count === 'number') {
+            patchExploreFeedLikeCount(styleId, res.data.like_count);
+            return res.data.like_count;
+          }
+        } catch {
+          /* ignore */
+        }
+      } catch (e) {
+        console.warn('sync community like failed', e);
+      }
+      return null;
+    },
+    [user?.id, likedStyleIds, exploreFeed, patchExploreFeedLikeCount],
+  );
+
   const toggleCommunityLike = useCallback(
     async (itemId) => {
       if (!user?.id || communityLikeBusyId) return;
       setCommunityLikeBusyId(itemId);
       const wasLiked = likedStyleIds.has(itemId);
       try {
-        if (wasLiked) {
-          await apiFetch(`/styles/${itemId}/like`, { method: 'DELETE' });
-          setLikedStyleIds((prev) => {
-            const n = new Set(prev);
-            n.delete(itemId);
-            return n;
-          });
-          setExploreFeed((prev) =>
-            prev.map((it) =>
-              it.id === itemId ? { ...it, likeCount: Math.max(0, (it.likeCount ?? 0) - 1) } : it
-            )
-          );
-        } else {
-          await apiFetch(`/styles/${itemId}/like`, { method: 'POST' });
-          setLikedStyleIds((prev) => new Set([...prev, itemId]));
-          setExploreFeed((prev) =>
-            prev.map((it) =>
-              it.id === itemId ? { ...it, likeCount: (it.likeCount ?? 0) + 1 } : it
-            )
-          );
-        }
-      } catch (e) {
-        console.warn('like toggle failed', e);
+        await syncCommunityLikeForStyle(itemId, !wasLiked);
+      } finally {
+        setCommunityLikeBusyId(null);
       }
-      setCommunityLikeBusyId(null);
     },
-    [user?.id, likedStyleIds, communityLikeBusyId]
+    [user?.id, likedStyleIds, communityLikeBusyId, syncCommunityLikeForStyle]
   );
 
   // ── Save to vault ─────────────────────────────────────────────────────
@@ -316,12 +352,18 @@ export default function useColorApp() {
    * 收藏页「取消收藏」：仅从用户收藏列表移除，不删除色海公开记录。
    * - 私人副本（含从色海收藏的副本）：删除该行
    * - 已发布到色海的色卡：仅标记 hiddenFromVault，保留 is_public
+   * Also syncs community like_count when a public source style can be resolved.
    */
   const removeFromVault = useCallback(
     async (itemId) => {
       if (!user || !itemId) return { error: new Error('无法移除。') };
       const item = personalLibrary.find((i) => i.id === itemId);
       if (!item) return { error: new Error('未找到色卡。') };
+
+      const publicStyleId =
+        item.extractionSnapshot?.sourceStyleId
+        ?? item.extractionSnapshot?.favoritedFrom
+        ?? (item.isPublic ? item.id : null);
 
       if (item.isPublic) {
         const base =
@@ -335,15 +377,20 @@ export default function useColorApp() {
             body: { extraction_snapshot },
           });
           await refreshStyles();
+          if (publicStyleId) await syncCommunityLikeForStyle(publicStyleId, false);
           return { error: null };
         } catch (e) {
           return { error: e };
         }
       }
 
-      return deleteVaultItem(itemId);
+      const result = await deleteVaultItem(itemId);
+      if (!result.error && publicStyleId) {
+        await syncCommunityLikeForStyle(publicStyleId, false);
+      }
+      return result;
     },
-    [user, personalLibrary, deleteVaultItem, refreshStyles]
+    [user, personalLibrary, deleteVaultItem, refreshStyles, syncCommunityLikeForStyle]
   );
 
   // ── 色海 → 私人收藏库 ─────────────────────────────────────────────────
@@ -356,6 +403,11 @@ export default function useColorApp() {
       setVaultFavoriteBusyId(item.id);
       const ownedDirect = vaultColorPaletteItems.find((v) => v.id === item.id);
       const existingCopy = vaultItemForSourceStyle(vaultColorPaletteItems, item.id);
+      const publicStyleId = item.isPublic ? item.id : (
+        item.extractionSnapshot?.sourceStyleId
+        ?? item.extractionSnapshot?.favoritedFrom
+        ?? item.id
+      );
       try {
         if (ownedDirect) {
           await removeFromVault(item.id);
@@ -364,6 +416,7 @@ export default function useColorApp() {
             await removeFromVault(existingCopy.id);
           } else {
             await deleteVaultItem(existingCopy.id);
+            await syncCommunityLikeForStyle(publicStyleId, false);
           }
         } else {
           const imageSrc =
@@ -378,12 +431,13 @@ export default function useColorApp() {
             sourceStyleId: item.id,
             extraKeywords: item.keywords,
           });
+          await syncCommunityLikeForStyle(publicStyleId, true);
         }
       } finally {
         setVaultFavoriteBusyId(null);
       }
     },
-    [user, vaultFavoriteBusyId, vaultColorPaletteItems, deleteVaultItem, persistColorCardVaultRow, removeFromVault]
+    [user, vaultFavoriteBusyId, vaultColorPaletteItems, deleteVaultItem, persistColorCardVaultRow, removeFromVault, syncCommunityLikeForStyle]
   );
 
   // ── 投稿到每日一色（不公开到色海，进入当日投票池）────────────────────────
@@ -706,6 +760,7 @@ export default function useColorApp() {
     downloadColorCardPng,
     copyShareLink,
     fetchStyleById,
+    patchExploreFeedLikeCount,
     // Flow
     flowStack, pushFlow, popFlow, clearFlows, updateFlowTop, advanceShengSeToPublish,
   };

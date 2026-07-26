@@ -11,10 +11,14 @@ import paletteTitleRoutes from './routes/paletteTitle';
 import profilesRoutes from './routes/profiles';
 import stylesRoutes from './routes/styles';
 import uploadRoutes from './routes/upload';
+import { StyleLikeRoom } from './durableObjects/StyleLikeRoom';
+
+export { StyleLikeRoom };
 
 type Env = WorkerEnv & {
   ASSETS: Fetcher;
   STYLE_IMAGES: R2Bucket;
+  STYLE_LIKE_ROOM: DurableObjectNamespace;
   AI?: Ai;
 };
 

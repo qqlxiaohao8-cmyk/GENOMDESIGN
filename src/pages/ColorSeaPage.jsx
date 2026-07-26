@@ -16,6 +16,8 @@ import {
   COLOR_SEA_MASONRY_CLASS,
   PALETTE_FEED_MASONRY_GAP,
 } from '../lib/paletteFeedLayout';
+import { filterFeedBySimilarColor } from '../lib/paletteColorMatch';
+import { getPoeticColorName } from '../lib/poeticColorNaming';
 
 const tagPill = (active) =>
   `zen-tag shrink-0 whitespace-nowrap${active ? ' zen-tag-active' : ''}`;
@@ -220,6 +222,9 @@ export default function ColorSeaPage({
   onCopyLink,
   onOpenAuth,
   onTagClick: onTagClickTrack,
+  similarHexFilter = null,
+  similarHexMeta = null,
+  onClearSimilarHexFilter,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTag, setActiveTag] = useState('All');
@@ -269,8 +274,13 @@ export default function ColorSeaPage({
       }
       return true;
     };
-    const list = colorPaletteExploreFeed.filter(matchesFilters);
-    if (sort === 'popular') {
+    let list = colorPaletteExploreFeed.filter(matchesFilters);
+    if (similarHexFilter) {
+      list = filterFeedBySimilarColor(list, similarHexFilter, (item) => {
+        const cd = itemColorCardData(item);
+        return (cd?.colors || []).map((c) => c?.hex).filter(Boolean);
+      });
+    } else if (sort === 'popular') {
       list.sort((a, b) => {
         const da = (b.likeCount ?? 0) - (a.likeCount ?? 0);
         if (da !== 0) return da;
@@ -288,7 +298,7 @@ export default function ColorSeaPage({
       seen.add(sig);
       return true;
     });
-  }, [colorPaletteExploreFeed, searchQuery, activeTag, sort]);
+  }, [colorPaletteExploreFeed, searchQuery, activeTag, sort, similarHexFilter]);
 
   const renderableFeed = useMemo(
     () => filteredFeed
@@ -305,9 +315,17 @@ export default function ColorSeaPage({
       setActiveTag(tag);
       setSearchQuery('');
     }
+    onClearSimilarHexFilter?.();
     onTagClickTrack?.(tag);
     setSearchExpanded(false);
   };
+
+  const similarLabel = similarHexFilter
+    ? (similarHexMeta?.name || getPoeticColorName(similarHexFilter))
+    : '';
+  const similarHexLabel = similarHexFilter
+    ? String(similarHexFilter).replace(/^#/, '').toUpperCase()
+    : '';
 
   return (
     <PageShell
@@ -330,7 +348,10 @@ export default function ColorSeaPage({
                 onClick={() => setSearchExpanded(true)}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
-                  if (e.target.value.trim()) setActiveTag('All');
+                  if (e.target.value.trim()) {
+                    setActiveTag('All');
+                    onClearSimilarHexFilter?.();
+                  }
                 }}
                 placeholder="搜索色票、标签、名称…"
                 className={`zen-input py-2.5 pl-10 pr-9 ${
@@ -364,6 +385,28 @@ export default function ColorSeaPage({
               />
             )}
           </div>
+
+          {similarHexFilter && (
+            <div className="mt-2 flex items-center gap-2 rounded-full border border-zen-ink/10 bg-white px-2.5 py-1.5 shadow-sm">
+              <span
+                className="h-4 w-4 shrink-0 rounded-full border border-zen-ink/10"
+                style={{ backgroundColor: similarHexFilter }}
+                aria-hidden
+              />
+              <span className="min-w-0 flex-1 truncate text-[12px] font-extralight text-zen-ink/70">
+                相近于 {similarLabel}
+                <span className="ml-1 font-mono text-[11px] text-zen-ink/40">#{similarHexLabel}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => onClearSimilarHexFilter?.()}
+                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-zen-ink/45 hover:bg-zen-mist hover:text-zen-ink"
+                aria-label="清除相近色筛选"
+              >
+                <X size={12} strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+          )}
 
           {!searchExpanded && (
             <CommunityTagBar
@@ -399,7 +442,11 @@ export default function ColorSeaPage({
       ) : (
         <div className="py-16 text-center">
           <p className="type-body text-zen-ink/40">
-            {searchQuery || activeTag !== 'All' ? '没有找到匹配的色卡。' : '色海里还没有色卡。'}
+            {similarHexFilter
+              ? '没有找到包含相近颜色的色卡。'
+              : searchQuery || activeTag !== 'All'
+                ? '没有找到匹配的色卡。'
+                : '色海里还没有色卡。'}
           </p>
         </div>
       )}

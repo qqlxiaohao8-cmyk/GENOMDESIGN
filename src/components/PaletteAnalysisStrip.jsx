@@ -21,27 +21,36 @@ function prepareColors(colors) {
 }
 
 /**
- * 分析页大型横条色卡：每色显示名称 + HEX（参考 Coolors 式布局）
+ * 分析页大型横条色卡：每色显示名称 + HEX；可点击打开单色色卡。
  */
-export default function PaletteAnalysisStrip({ colors, className = '' }) {
+export default function PaletteAnalysisStrip({ colors, className = '', onColorClick }) {
   const list = useMemo(() => prepareColors(colors), [colors]);
   const hexList = useMemo(() => list.map((c) => c.hex), [list]);
+  const interactive = typeof onColorClick === 'function';
 
   return (
     <div
       className={`flex w-full min-h-[9.5rem] overflow-hidden rounded-[1.5rem] shadow-sm md:min-h-[12.5rem] ${className}`}
-      role="img"
+      role={interactive ? 'group' : 'img'}
       aria-label="色卡预览"
     >
       {list.map((c, i) => {
         const hexLabel = String(c.hex || '').replace(/^#/, '').toUpperCase();
         const labelColor =
           pickPaletteAccentTextColor(c.hex, hexList) || pickReadableTextOnHex(c.hex);
+        const Tag = interactive ? 'button' : 'div';
         return (
-          <div
+          <Tag
             key={`${c.hex}-${i}`}
-            className="relative min-w-0 flex-1"
+            type={interactive ? 'button' : undefined}
+            className={`relative min-w-0 flex-1 ${
+              interactive
+                ? 'cursor-pointer outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/80'
+                : ''
+            }`}
             style={{ backgroundColor: c.hex }}
+            onClick={interactive ? () => onColorClick(c, i) : undefined}
+            aria-label={interactive ? `查看 ${c.name} 色卡` : undefined}
           >
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col items-center gap-0.5 px-1 pb-3 pt-8 text-center">
               <span
@@ -57,7 +66,7 @@ export default function PaletteAnalysisStrip({ colors, className = '' }) {
                 {hexLabel}
               </span>
             </div>
-          </div>
+          </Tag>
         );
       })}
     </div>

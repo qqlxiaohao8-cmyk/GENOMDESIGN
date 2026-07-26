@@ -28,3 +28,11 @@ BETTER_AUTH_URL = "http://localhost:5173"
 
 [triggers]
 crons = ["0 16 * * *"]
+
+[[durable_objects.bindings]]
+name = "STYLE_LIKE_ROOM"
+class_name = "StyleLikeRoom"
+
+[[migrations]]
+tag = "v1-style-like-room"
+new_sqlite_classes = ["StyleLikeRoom"]

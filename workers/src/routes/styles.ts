@@ -5,9 +5,34 @@ import { ensureProfile } from '../lib/profiles';
 import { formatStyleRow, type StyleRow } from '../lib/styles';
 import { getSessionUser, requireUser } from '../middleware/session';
 
-type Env = WorkerEnv & { STYLE_IMAGES: R2Bucket };
+type Env = WorkerEnv & {
+  STYLE_IMAGES: R2Bucket;
+  STYLE_LIKE_ROOM: DurableObjectNamespace;
+};
 
 const styles = new Hono<{ Bindings: Env }>();
+
+async function broadcastLikeCount(env: Env, styleId: string, likeCount: number) {
+  try {
+    const id = env.STYLE_LIKE_ROOM.idFromName(styleId);
+    const stub = env.STYLE_LIKE_ROOM.get(id);
+    await stub.fetch('https://style-like-room/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ likeCount }),
+    });
+  } catch (e) {
+    console.warn('broadcast like count failed', e);
+  }
+}
+
+async function readLikeCount(db: D1Database, styleId: string) {
+  const row = await db
+    .prepare(`SELECT like_count FROM styles WHERE id = ?`)
+    .bind(styleId)
+    .first<{ like_count: number }>();
+  return typeof row?.like_count === 'number' ? row.like_count : 0;
+}
 
 async function findDuplicatePublicTitle(
   db: D1Database,
@@ -24,6 +49,26 @@ async function findDuplicatePublicTitle(
     : db.prepare(sql).bind(norm);
   return stmt.first<{ id: string }>();
 }
+
+styles.get('/styles/:id/likes/ws', async (c) => {
+  const styleId = c.req.param('id');
+  const row = await c.env.DB.prepare(
+    `SELECT id FROM styles WHERE id = ? AND is_public = 1`,
+  )
+    .bind(styleId)
+    .first();
+  if (!row) return c.json({ error: 'not found' }, 404);
+
+  if (!c.env.STYLE_LIKE_ROOM) {
+    return c.json({ error: 'realtime unavailable' }, 503);
+  }
+
+  const id = c.env.STYLE_LIKE_ROOM.idFromName(styleId);
+  const stub = c.env.STYLE_LIKE_ROOM.get(id);
+  const url = new URL(c.req.url);
+  url.searchParams.set('styleId', styleId);
+  return stub.fetch(new Request(url.toString(), c.req.raw));
+});
 
 styles.get('/styles/:id', async (c) => {
   const id = c.req.param('id');
@@ -210,7 +255,10 @@ styles.post('/styles/:id/like', async (c) => {
   )
     .bind(styleId, user.id)
     .first();
-  if (existing) return c.json({ ok: true });
+  if (existing) {
+    const likeCount = await readLikeCount(c.env.DB, styleId);
+    return c.json({ ok: true, like_count: likeCount });
+  }
 
   await c.env.DB.batch([
     c.env.DB.prepare(
@@ -220,7 +268,9 @@ styles.post('/styles/:id/like', async (c) => {
       `UPDATE styles SET like_count = like_count + 1 WHERE id = ?`,
     ).bind(styleId),
   ]);
-  return c.json({ ok: true });
+  const likeCount = await readLikeCount(c.env.DB, styleId);
+  await broadcastLikeCount(c.env, styleId, likeCount);
+  return c.json({ ok: true, like_count: likeCount });
 });
 
 styles.delete('/styles/:id/like', async (c) => {
@@ -240,7 +290,9 @@ styles.delete('/styles/:id/like', async (c) => {
       .bind(styleId)
       .run();
   }
-  return c.json({ ok: true });
+  const likeCount = await readLikeCount(c.env.DB, styleId);
+  await broadcastLikeCount(c.env, styleId, likeCount);
+  return c.json({ ok: true, like_count: likeCount });
 });
 
 export default styles;
