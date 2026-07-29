@@ -34,11 +34,6 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
   };
 
   const openColorWalkSaved = () => {
-    if (!user) {
-      setPendingOpenSaved(true);
-      onOpenAuth?.();
-      return;
-    }
     setPendingOpenSaved(false);
     setColorWalkInitialPhase('saved');
     setColorWalkOpen(true);

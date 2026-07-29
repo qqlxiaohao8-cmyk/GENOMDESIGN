@@ -241,6 +241,7 @@ export default function ColorWalkFlowOverlay({
   const [fullAlertOpen, setFullAlertOpen] = useState(false);
 
   const userId = user?.id || null;
+  const vaultUserId = userId || 'guest';
   const {
     slots: savedSlots,
     full: savedFull,
@@ -250,7 +251,7 @@ export default function ColorWalkFlowOverlay({
     saveHex,
     removeById,
     hasHex,
-  } = useColorWalkSavedColors({ userId, enabled: Boolean(userId) });
+  } = useColorWalkSavedColors({ userId: vaultUserId, enabled: true });
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
   const finalKnowledge = useMemo(() => describeColorKnowledge(finalHex), [finalHex]);
@@ -352,11 +353,6 @@ export default function ColorWalkFlowOverlay({
 
   const performSave = useCallback(async (hex) => {
     if (!hex) return;
-    if (!userId) {
-      pendingSaveHexRef.current = hex;
-      onOpenAuth?.();
-      return;
-    }
 
     // Already in vault → open saved page (no new slot)
     if (isHexAlreadySaved(hex)) {
@@ -371,13 +367,8 @@ export default function ColorWalkFlowOverlay({
       return;
     }
 
-    // Optimistic save + navigate: saveHex updates local slots first
+    // Local-first save returns immediately with updated slots
     const result = await saveHex(hex);
-    if (result.unauthorized && !result.ok) {
-      pendingSaveHexRef.current = hex;
-      onOpenAuth?.();
-      return;
-    }
     if (result.full) {
       setFullAlertOpen(true);
       return;
@@ -386,7 +377,7 @@ export default function ColorWalkFlowOverlay({
       setOpenedAsSavedEntry(false);
       goToSavedPage();
     }
-  }, [userId, onOpenAuth, saveHex, goToSavedPage, savedFull, isHexAlreadySaved]);
+  }, [saveHex, goToSavedPage, savedFull, isHexAlreadySaved]);
 
   // Resume pending save after login
   useEffect(() => {
