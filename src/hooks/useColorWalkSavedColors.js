@@ -16,6 +16,15 @@ function mapRow(row) {
   };
 }
 
+function sortRows(rows) {
+  return [...rows].sort((a, b) => {
+    const ao = typeof a.sortOrder === 'number' ? a.sortOrder : 0;
+    const bo = typeof b.sortOrder === 'number' ? b.sortOrder : 0;
+    if (ao !== bo) return ao - bo;
+    return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+  });
+}
+
 /**
  * Account-backed Color Walk saved colors (max 5).
  * @param {{ userId?: string | null, enabled?: boolean }} opts
@@ -26,6 +35,12 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState(null);
+
+  const applyRows = useCallback((next) => {
+    const mapped = sortRows((next || []).map(mapRow).filter(Boolean));
+    setRows(mapped);
+    return mapped;
+  }, []);
 
   const reload = useCallback(async () => {
     if (!enabled || !userId) {
@@ -43,11 +58,10 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
       setLoading(false);
       return [];
     }
-    const mapped = (next || []).map(mapRow).filter(Boolean);
-    setRows(mapped);
+    const mapped = applyRows(next);
     setLoading(false);
     return mapped;
-  }, [enabled, userId]);
+  }, [enabled, userId, applyRows]);
 
   useEffect(() => {
     void reload();
@@ -67,21 +81,49 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
       setSaving(true);
       setError(null);
       const res = await saveColorWalkColor({ hex });
+
+      // Quiet refresh: update ordered slots without flipping into "加载中"
+      const { rows: next, error: fetchErr } = await fetchColorWalkSavedColors();
+      let latest = [];
+      if (!fetchErr) {
+        latest = applyRows(next);
+      }
+
+      const isFull = latest.length >= COLOR_WALK_SAVED_MAX || Boolean(res.full);
+
       if (res.full) {
-        await reload();
         setSaving(false);
-        return { ok: false, unauthorized: false, full: true, error: res.error };
+        return {
+          ok: false,
+          unauthorized: false,
+          full: true,
+          error: res.error,
+          rows: latest,
+        };
       }
       if (res.error) {
         setError(res.error);
         setSaving(false);
-        return { ok: false, unauthorized: false, full: false, error: res.error };
+        return {
+          ok: false,
+          unauthorized: false,
+          full: isFull,
+          error: res.error,
+          rows: latest,
+        };
       }
-      await reload();
+
       setSaving(false);
-      return { ok: true, unauthorized: false, full: false, existing: res.existing, id: res.id };
+      return {
+        ok: true,
+        unauthorized: false,
+        full: isFull,
+        existing: Boolean(res.existing),
+        id: res.id,
+        rows: latest,
+      };
     },
-    [userId, reload],
+    [userId, applyRows],
   );
 
   const removeById = useCallback(

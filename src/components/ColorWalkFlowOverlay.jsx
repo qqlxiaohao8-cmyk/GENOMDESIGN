@@ -236,7 +236,6 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
     loading: savedLoading,
     saving: savedSaving,
     deletingId,
-    reload: reloadSaved,
     saveHex,
     removeById,
   } = useColorWalkSavedColors({ userId, enabled: open && Boolean(userId) });
@@ -312,10 +311,9 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
     };
   }, [open, spinNonce]);
 
-  const goToSavedPage = useCallback(async () => {
-    await reloadSaved();
+  const goToSavedPage = useCallback(() => {
     setPhase('saved');
-  }, [reloadSaved]);
+  }, []);
 
   const performSave = useCallback(async (hex) => {
     if (!hex) return;
@@ -330,8 +328,11 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
       onOpenAuth?.();
       return;
     }
-    // Always enter saved page after clicking save (new / duplicate / full)
-    await goToSavedPage();
+    // Enter saved page after state is synced: new, duplicate, or full vault.
+    // Generic API failures stay on the current screen.
+    if (result.ok || result.full) {
+      goToSavedPage();
+    }
   }, [userId, onOpenAuth, saveHex, goToSavedPage]);
 
   // Resume pending save after login
