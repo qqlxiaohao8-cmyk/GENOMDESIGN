@@ -5,6 +5,7 @@ import {
   fetchColorWalkSavedColors,
   saveColorWalkColor,
 } from '../lib/colorWalkApi';
+import { ApiError } from '../lib/apiClient';
 
 function mapRow(row) {
   if (!row) return null;
@@ -35,7 +36,32 @@ function hexKey(raw) {
   return n ? n.slice(1) : '';
 }
 
-/** Ensure a mapped row for hex exists at the end (max 5). */
+function cacheKey(userId) {
+  return `genom:color-walk-saved:${userId}`;
+}
+
+function readCache(userId) {
+  if (!userId || typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(cacheKey(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return sortRows(parsed.map(mapRow).filter(Boolean)).slice(0, COLOR_WALK_SAVED_MAX);
+  } catch {
+    return [];
+  }
+}
+
+function writeCache(userId, rows) {
+  if (!userId || typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(cacheKey(userId), JSON.stringify(rows.slice(0, COLOR_WALK_SAVED_MAX)));
+  } catch {
+    // ignore quota
+  }
+}
+
 function ensureHexRow(list, hex, id) {
   const norm = normalizeHex(hex);
   if (!norm) return list;
@@ -45,7 +71,7 @@ function ensureHexRow(list, hex, id) {
   return sortRows([
     ...list,
     {
-      id: id || `local-${norm}-${list.length}`,
+      id: id || `local-${norm}-${Date.now()}`,
       hex: norm,
       createdAt: new Date().toISOString(),
       sortOrder: list.length,
@@ -54,21 +80,30 @@ function ensureHexRow(list, hex, id) {
 }
 
 /**
- * Account-backed Color Walk saved colors (max 5).
+ * Account-backed Color Walk saved colors (max 5), with local cache for instant UI.
  * @param {{ userId?: string | null, enabled?: boolean }} opts
  */
 export default function useColorWalkSavedColors({ userId = null, enabled = true } = {}) {
-  const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState(() => (enabled && userId ? readCache(userId) : []));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState(null);
 
-  const applyRows = useCallback((next) => {
-    const mapped = sortRows((next || []).map(mapRow).filter(Boolean));
+  const commitRows = useCallback((next, uid = userId) => {
+    const mapped = sortRows((next || []).map((r) => (r?.hex ? r : mapRow(r))).filter(Boolean))
+      .slice(0, COLOR_WALK_SAVED_MAX);
     setRows(mapped);
+    if (uid) writeCache(uid, mapped);
     return mapped;
-  }, []);
+  }, [userId]);
+
+  const applyServerRows = useCallback((next, uid = userId) => {
+    const mapped = sortRows((next || []).map(mapRow).filter(Boolean)).slice(0, COLOR_WALK_SAVED_MAX);
+    setRows(mapped);
+    if (uid) writeCache(uid, mapped);
+    return mapped;
+  }, [userId]);
 
   const reload = useCallback(async () => {
     if (!enabled || !userId) {
@@ -77,19 +112,22 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
       setError(null);
       return [];
     }
+    // Seed from cache immediately
+    const cached = readCache(userId);
+    if (cached.length) setRows(cached);
+
     setLoading(true);
     setError(null);
     const { rows: next, error: err } = await fetchColorWalkSavedColors();
     if (err) {
       setError(err);
       setLoading(false);
-      // Do not wipe existing rows on transient fetch failure
-      return null;
+      return cached;
     }
-    const mapped = applyRows(next);
+    const mapped = applyServerRows(next, userId);
     setLoading(false);
     return mapped;
-  }, [enabled, userId, applyRows]);
+  }, [enabled, userId, applyServerRows]);
 
   useEffect(() => {
     void reload();
@@ -103,76 +141,110 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
     return list.slice(0, COLOR_WALK_SAVED_MAX);
   }, [rows]);
 
+  const hasHex = useCallback((hex) => {
+    const key = hexKey(hex);
+    if (!key) return false;
+    return rows.some((r) => hexKey(r.hex) === key);
+  }, [rows]);
+
+  /**
+   * Save hex: update local slots immediately, then sync to API.
+   * Returns { ok, full, unauthorized, existing, rows }.
+   */
   const saveHex = useCallback(
     async (hex) => {
-      if (!userId) return { ok: false, unauthorized: true, full: false };
+      if (!userId) return { ok: false, unauthorized: true, full: false, rows };
       const norm = normalizeHex(hex);
       if (!norm) {
-        return { ok: false, unauthorized: false, full: false, error: new Error('invalid_hex') };
+        return { ok: false, unauthorized: false, full: false, error: new Error('invalid_hex'), rows };
+      }
+
+      if (hasHex(norm)) {
+        return { ok: true, unauthorized: false, full, existing: true, rows };
+      }
+
+      if (rows.length >= COLOR_WALK_SAVED_MAX) {
+        return { ok: false, unauthorized: false, full: true, rows };
       }
 
       setSaving(true);
       setError(null);
+
+      // 1) Optimistic local write so UI can navigate immediately
+      const optimistic = ensureHexRow(rows, norm, `local-${norm}-${Date.now()}`);
+      commitRows(optimistic, userId);
+
+      // 2) Sync to server
       const res = await saveColorWalkColor({ hex: norm });
 
-      // Quiet refresh: update ordered slots without flipping into "加载中".
-      const { rows: next, error: fetchErr } = await fetchColorWalkSavedColors();
-      let latest = null;
-      if (!fetchErr) {
-        latest = applyRows(next);
-      } else {
-        setError(fetchErr);
+      if (res.error instanceof ApiError && (res.error.status === 401 || res.error.code === 'unauthorized')) {
+        // Keep optimistic local so user still sees it; flag unauthorized for login
+        setSaving(false);
+        return {
+          ok: true,
+          unauthorized: true,
+          full: optimistic.length >= COLOR_WALK_SAVED_MAX,
+          existing: false,
+          rows: optimistic,
+          error: res.error,
+        };
       }
 
       if (res.full) {
+        // Roll back optimistic add
+        commitRows(rows, userId);
         setSaving(false);
-        return {
-          ok: false,
-          unauthorized: false,
-          full: true,
-          error: res.error,
-          rows: latest,
-        };
+        return { ok: false, unauthorized: false, full: true, error: res.error, rows };
       }
+
       if (res.error) {
+        // Keep local optimistic row so the page still shows the color
         setError(res.error);
         setSaving(false);
         return {
-          ok: false,
+          ok: true,
           unauthorized: false,
-          full: (latest?.length ?? 0) >= COLOR_WALK_SAVED_MAX,
+          full: optimistic.length >= COLOR_WALK_SAVED_MAX,
+          existing: false,
+          rows: optimistic,
           error: res.error,
-          rows: latest,
+          offline: true,
         };
       }
 
-      // POST succeeded: guarantee the hex appears in local slots
-      if (!latest) {
-        setRows((prev) => {
-          latest = ensureHexRow(prev, norm, res.id);
-          return latest;
-        });
-      } else if (!res.existing) {
-        const ensured = ensureHexRow(latest, norm, res.id);
-        if (ensured !== latest) {
-          latest = ensured;
-          setRows(ensured);
+      // Refresh from server when possible; fall back to optimistic
+      const { rows: next, error: fetchErr } = await fetchColorWalkSavedColors();
+      let latest = optimistic;
+      if (!fetchErr) {
+        latest = applyServerRows(next, userId);
+        // Ensure hex present even if replication lag
+        if (!latest.some((r) => hexKey(r.hex) === hexKey(norm))) {
+          latest = commitRows(ensureHexRow(latest, norm, res.id), userId);
+        } else if (res.id) {
+          // Prefer server id for the matching hex
+          latest = commitRows(
+            latest.map((r) => (hexKey(r.hex) === hexKey(norm) ? { ...r, id: res.id } : r)),
+            userId,
+          );
         }
+      } else if (res.id) {
+        latest = commitRows(
+          optimistic.map((r) => (hexKey(r.hex) === hexKey(norm) ? { ...r, id: res.id } : r)),
+          userId,
+        );
       }
 
-      const isFull = (latest?.length ?? 0) >= COLOR_WALK_SAVED_MAX;
       setSaving(false);
       return {
         ok: true,
         unauthorized: false,
-        full: isFull,
+        full: latest.length >= COLOR_WALK_SAVED_MAX,
         existing: Boolean(res.existing),
         id: res.id,
         rows: latest,
-        refreshError: fetchErr || null,
       };
     },
-    [userId, applyRows],
+    [userId, rows, full, hasHex, commitRows, applyServerRows],
   );
 
   const removeById = useCallback(
@@ -180,17 +252,31 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
       if (!userId || !id) return { ok: false };
       setDeletingId(id);
       setError(null);
+
+      const prev = rows;
+      const nextLocal = prev.filter((r) => r.id !== id);
+      commitRows(nextLocal, userId);
+
       const { error: err } = await deleteColorWalkSavedColor(id);
       if (err) {
+        // Keep local delete if offline; only restore on hard auth failure
+        if (err instanceof ApiError && err.status === 401) {
+          commitRows(prev, userId);
+          setError(err);
+          setDeletingId(null);
+          return { ok: false, error: err };
+        }
         setError(err);
         setDeletingId(null);
-        return { ok: false, error: err };
+        return { ok: true, offline: true };
       }
-      await reload();
+
+      const refreshed = await fetchColorWalkSavedColors();
+      if (!refreshed.error) applyServerRows(refreshed.rows, userId);
       setDeletingId(null);
       return { ok: true };
     },
-    [userId, reload],
+    [userId, rows, commitRows, applyServerRows],
   );
 
   return {
@@ -206,5 +292,6 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
     reload,
     saveHex,
     removeById,
+    hasHex,
   };
 }

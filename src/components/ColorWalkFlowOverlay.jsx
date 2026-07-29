@@ -249,19 +249,13 @@ export default function ColorWalkFlowOverlay({
     deletingId,
     saveHex,
     removeById,
-  } = useColorWalkSavedColors({ userId, enabled: open && Boolean(userId) });
+    hasHex,
+  } = useColorWalkSavedColors({ userId, enabled: Boolean(userId) });
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
   const finalKnowledge = useMemo(() => describeColorKnowledge(finalHex), [finalHex]);
 
-  const isHexAlreadySaved = useCallback((hex) => {
-    const key = String(hex || '').replace(/^#/, '').toUpperCase();
-    if (!key) return false;
-    return savedSlots.some((slot) => {
-      if (!slot?.hex) return false;
-      return String(slot.hex).replace(/^#/, '').toUpperCase() === key;
-    });
-  }, [savedSlots]);
+  const isHexAlreadySaved = useCallback((hex) => hasHex(hex), [hasHex]);
 
   const clearSlotUrl = (idx) => {
     const cur = fileUrlsRef.current[idx];
@@ -377,8 +371,9 @@ export default function ColorWalkFlowOverlay({
       return;
     }
 
+    // Optimistic save + navigate: saveHex updates local slots first
     const result = await saveHex(hex);
-    if (result.unauthorized) {
+    if (result.unauthorized && !result.ok) {
       pendingSaveHexRef.current = hex;
       onOpenAuth?.();
       return;
@@ -387,7 +382,6 @@ export default function ColorWalkFlowOverlay({
       setFullAlertOpen(true);
       return;
     }
-    // New color saved: jump to saved page with refreshed slots
     if (result.ok) {
       setOpenedAsSavedEntry(false);
       goToSavedPage();
