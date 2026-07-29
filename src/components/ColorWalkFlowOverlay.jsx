@@ -210,7 +210,13 @@ function PaletteStrip({ files, onPickAt }) {
   );
 }
 
-export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpenAuth }) {
+export default function ColorWalkFlowOverlay({
+  open,
+  onClose,
+  user = null,
+  onOpenAuth,
+  initialPhase = 'spin',
+}) {
   const multiFileInputRef = useRef(null);
   const singleFileInputRef = useRef(null);
   const rafRef = useRef(null);
@@ -218,6 +224,7 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
   const hueRef = useRef(null);
   const suppressRerollRef = useRef(false);
   const pendingSaveHexRef = useRef(null);
+  const skipSpinRef = useRef(false);
 
   const [phase, setPhase] = useState('spin'); // spin | ready | layout | saved
   const [currentHex, setCurrentHex] = useState('#D89A80');
@@ -228,6 +235,8 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
   const [layoutId, setLayoutId] = useState('mosaic');
   const [hexLocked, setHexLocked] = useState(false);
   const [returnPhase, setReturnPhase] = useState('ready');
+  // true when opened from game-page saved-colors entry (back closes overlay)
+  const [openedAsSavedEntry, setOpenedAsSavedEntry] = useState(false);
 
   const userId = user?.id || null;
   const {
@@ -261,20 +270,38 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
   useEffect(() => {
     if (!open) {
       pendingSaveHexRef.current = null;
+      skipSpinRef.current = false;
+      setOpenedAsSavedEntry(false);
       return undefined;
     }
+
     setFiles(Array(MAX_PHOTOS).fill(null));
     cleanupUrls();
     setLayoutId('mosaic');
     setSlotPickIdx(null);
     setHexLocked(false);
+
+    if (initialPhase === 'saved') {
+      skipSpinRef.current = true;
+      setOpenedAsSavedEntry(true);
+      setReturnPhase('saved');
+      setPhase('saved');
+      return undefined;
+    }
+
+    skipSpinRef.current = false;
+    setOpenedAsSavedEntry(false);
     setReturnPhase('ready');
     setSpinNonce((n) => n + 1);
     return undefined;
-  }, [open]);
+  }, [open, initialPhase]);
 
   useEffect(() => {
     if (!open) return undefined;
+    if (skipSpinRef.current) {
+      skipSpinRef.current = false;
+      return undefined;
+    }
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
     setPhase('spin');
@@ -328,9 +355,9 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
       onOpenAuth?.();
       return;
     }
-    // Enter saved page after state is synced: new, duplicate, or full vault.
-    // Generic API failures stay on the current screen.
+    // Enter saved page only after vault state is synced (new / duplicate / full)
     if (result.ok || result.full) {
+      setOpenedAsSavedEntry(false);
       goToSavedPage();
     }
   }, [userId, onOpenAuth, saveHex, goToSavedPage]);
@@ -346,11 +373,22 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
 
   if (!open) return null;
 
+  const leaveSavedPage = () => {
+    if (openedAsSavedEntry) {
+      onClose?.();
+      return;
+    }
+    setHexLocked(false);
+    setReturnPhase('ready');
+    setPhase('ready');
+  };
+
   const reroll = () => {
     if (phase !== 'ready') return;
     if (suppressRerollRef.current) return;
     setHexLocked(false);
     setReturnPhase('ready');
+    setOpenedAsSavedEntry(false);
     setSpinNonce((n) => n + 1);
   };
 
@@ -427,9 +465,7 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
       return;
     }
     if (phase === 'saved') {
-      setHexLocked(false);
-      setReturnPhase('ready');
-      setPhase('ready');
+      leaveSavedPage();
       return;
     }
     onClose?.();
@@ -529,11 +565,7 @@ export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpe
           loading={savedLoading}
           saving={savedSaving}
           deletingId={deletingId}
-          onBack={() => {
-            setHexLocked(false);
-            setReturnPhase('ready');
-            setPhase('ready');
-          }}
+          onBack={leaveSavedPage}
           onClose={() => onClose?.()}
           onDelete={(id) => {
             void removeById(id);

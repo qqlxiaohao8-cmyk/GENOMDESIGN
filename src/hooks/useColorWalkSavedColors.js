@@ -82,14 +82,18 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
       setError(null);
       const res = await saveColorWalkColor({ hex });
 
-      // Quiet refresh: update ordered slots without flipping into "加载中"
+      // Quiet refresh: update ordered slots without flipping into "加载中".
+      // Never wipe existing rows if the follow-up GET fails.
       const { rows: next, error: fetchErr } = await fetchColorWalkSavedColors();
-      let latest = [];
+      let latest = null;
       if (!fetchErr) {
         latest = applyRows(next);
+      } else {
+        setError(fetchErr);
       }
 
-      const isFull = latest.length >= COLOR_WALK_SAVED_MAX || Boolean(res.full);
+      const count = latest?.length ?? 0;
+      const isFull = count >= COLOR_WALK_SAVED_MAX || Boolean(res.full);
 
       if (res.full) {
         setSaving(false);
@@ -110,6 +114,20 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
           full: isFull,
           error: res.error,
           rows: latest,
+        };
+      }
+      // POST succeeded but GET failed — still treat as ok so UI can navigate;
+      // slots may lag until next reload, but we do not clear them.
+      if (fetchErr) {
+        setSaving(false);
+        return {
+          ok: true,
+          unauthorized: false,
+          full: isFull,
+          existing: Boolean(res.existing),
+          id: res.id,
+          rows: latest,
+          refreshError: fetchErr,
         };
       }
 

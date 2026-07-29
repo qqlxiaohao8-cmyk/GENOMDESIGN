@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, ThumbsUp, X } from 'lucide-react';
+import { ArrowRight, Bookmark, ThumbsUp, X } from 'lucide-react';
 import DailyColorChallengeCard from '../components/DailyColorChallengeCard';
 import ColorMemoryChallengeCard from '../components/ColorMemoryChallengeCard';
 import ColorWalkChallengeCard from '../components/ColorWalkChallengeCard';
@@ -19,11 +19,44 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
   const [memoryGameOpen, setMemoryGameOpen] = useState(false);
   const [memorySession, setMemorySession] = useState(0);
   const [colorWalkOpen, setColorWalkOpen] = useState(false);
+  const [colorWalkInitialPhase, setColorWalkInitialPhase] = useState('spin');
+  const [pendingOpenSaved, setPendingOpenSaved] = useState(false);
 
   const openMemoryGame = () => {
     setMemorySession((n) => n + 1);
     setMemoryGameOpen(true);
   };
+
+  const openColorWalk = () => {
+    setPendingOpenSaved(false);
+    setColorWalkInitialPhase('spin');
+    setColorWalkOpen(true);
+  };
+
+  const openColorWalkSaved = () => {
+    if (!user) {
+      setPendingOpenSaved(true);
+      onOpenAuth?.();
+      return;
+    }
+    setPendingOpenSaved(false);
+    setColorWalkInitialPhase('saved');
+    setColorWalkOpen(true);
+  };
+
+  const closeColorWalk = () => {
+    setColorWalkOpen(false);
+    setColorWalkInitialPhase('spin');
+  };
+
+  // After login, resume opening the saved-colors page
+  useEffect(() => {
+    if (!user || !pendingOpenSaved) return undefined;
+    setPendingOpenSaved(false);
+    setColorWalkInitialPhase('saved');
+    setColorWalkOpen(true);
+    return undefined;
+  }, [user, pendingOpenSaved]);
 
   useEffect(() => {
     if (!memoryGameOpen && !colorWalkOpen) return undefined;
@@ -32,7 +65,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setMemoryGameOpen(false);
-        setColorWalkOpen(false);
+        closeColorWalk();
       }
     };
     document.addEventListener('keydown', onKey);
@@ -69,7 +102,27 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
       </button>
 
       <ColorMemoryChallengeCard onOpen={openMemoryGame} />
-      <ColorWalkChallengeCard onOpen={() => setColorWalkOpen(true)} />
+      <ColorWalkChallengeCard onOpen={openColorWalk} />
+
+      <button
+        type="button"
+        onClick={openColorWalkSaved}
+        className="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
+        aria-label="打开 Color Walk 收藏"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-ink/[0.06] text-zen-ink">
+            <Bookmark size={18} strokeWidth={2} aria-hidden />
+          </div>
+          <div>
+            <p className="type-h4">Color Walk 收藏</p>
+            <p className="type-note">
+              查看已存的五个颜色，随时拍照排版
+            </p>
+          </div>
+        </div>
+        <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
+      </button>
 
       {memoryGameOpen && (
         <div
@@ -101,9 +154,10 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
 
       <ColorWalkFlowOverlay
         open={colorWalkOpen}
-        onClose={() => setColorWalkOpen(false)}
+        onClose={closeColorWalk}
         user={user}
         onOpenAuth={onOpenAuth}
+        initialPhase={colorWalkInitialPhase}
       />
     </PageShell>
   );
