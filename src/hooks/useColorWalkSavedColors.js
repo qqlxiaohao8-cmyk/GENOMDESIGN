@@ -25,6 +25,34 @@ function sortRows(rows) {
   });
 }
 
+function normalizeHex(raw) {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(String(raw || '').trim());
+  return m ? `#${m[1].toUpperCase()}` : null;
+}
+
+function hexKey(raw) {
+  const n = normalizeHex(raw);
+  return n ? n.slice(1) : '';
+}
+
+/** Ensure a mapped row for hex exists at the end (max 5). */
+function ensureHexRow(list, hex, id) {
+  const norm = normalizeHex(hex);
+  if (!norm) return list;
+  const key = hexKey(norm);
+  if (list.some((r) => hexKey(r.hex) === key)) return list;
+  if (list.length >= COLOR_WALK_SAVED_MAX) return list;
+  return sortRows([
+    ...list,
+    {
+      id: id || `local-${norm}-${list.length}`,
+      hex: norm,
+      createdAt: new Date().toISOString(),
+      sortOrder: list.length,
+    },
+  ]);
+}
+
 /**
  * Account-backed Color Walk saved colors (max 5).
  * @param {{ userId?: string | null, enabled?: boolean }} opts
@@ -54,9 +82,9 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
     const { rows: next, error: err } = await fetchColorWalkSavedColors();
     if (err) {
       setError(err);
-      setRows([]);
       setLoading(false);
-      return [];
+      // Do not wipe existing rows on transient fetch failure
+      return null;
     }
     const mapped = applyRows(next);
     setLoading(false);
@@ -78,12 +106,16 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
   const saveHex = useCallback(
     async (hex) => {
       if (!userId) return { ok: false, unauthorized: true, full: false };
+      const norm = normalizeHex(hex);
+      if (!norm) {
+        return { ok: false, unauthorized: false, full: false, error: new Error('invalid_hex') };
+      }
+
       setSaving(true);
       setError(null);
-      const res = await saveColorWalkColor({ hex });
+      const res = await saveColorWalkColor({ hex: norm });
 
       // Quiet refresh: update ordered slots without flipping into "加载中".
-      // Never wipe existing rows if the follow-up GET fails.
       const { rows: next, error: fetchErr } = await fetchColorWalkSavedColors();
       let latest = null;
       if (!fetchErr) {
@@ -91,9 +123,6 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
       } else {
         setError(fetchErr);
       }
-
-      const count = latest?.length ?? 0;
-      const isFull = count >= COLOR_WALK_SAVED_MAX || Boolean(res.full);
 
       if (res.full) {
         setSaving(false);
@@ -111,26 +140,27 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
         return {
           ok: false,
           unauthorized: false,
-          full: isFull,
+          full: (latest?.length ?? 0) >= COLOR_WALK_SAVED_MAX,
           error: res.error,
           rows: latest,
         };
       }
-      // POST succeeded but GET failed — still treat as ok so UI can navigate;
-      // slots may lag until next reload, but we do not clear them.
-      if (fetchErr) {
-        setSaving(false);
-        return {
-          ok: true,
-          unauthorized: false,
-          full: isFull,
-          existing: Boolean(res.existing),
-          id: res.id,
-          rows: latest,
-          refreshError: fetchErr,
-        };
+
+      // POST succeeded: guarantee the hex appears in local slots
+      if (!latest) {
+        setRows((prev) => {
+          latest = ensureHexRow(prev, norm, res.id);
+          return latest;
+        });
+      } else if (!res.existing) {
+        const ensured = ensureHexRow(latest, norm, res.id);
+        if (ensured !== latest) {
+          latest = ensured;
+          setRows(ensured);
+        }
       }
 
+      const isFull = (latest?.length ?? 0) >= COLOR_WALK_SAVED_MAX;
       setSaving(false);
       return {
         ok: true,
@@ -139,6 +169,7 @@ export default function useColorWalkSavedColors({ userId = null, enabled = true 
         existing: Boolean(res.existing),
         id: res.id,
         rows: latest,
+        refreshError: fetchErr || null,
       };
     },
     [userId, applyRows],

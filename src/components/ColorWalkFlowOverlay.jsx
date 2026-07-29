@@ -364,8 +364,15 @@ export default function ColorWalkFlowOverlay({
       return;
     }
 
-    // Vault already full and this hex is new → show alert, do not write / navigate
-    if (savedFull && !isHexAlreadySaved(hex)) {
+    // Already in vault → open saved page (no new slot)
+    if (isHexAlreadySaved(hex)) {
+      setOpenedAsSavedEntry(false);
+      goToSavedPage();
+      return;
+    }
+
+    // Vault full and hex is new → alert, stay on current screen
+    if (savedFull) {
       setFullAlertOpen(true);
       return;
     }
@@ -380,7 +387,7 @@ export default function ColorWalkFlowOverlay({
       setFullAlertOpen(true);
       return;
     }
-    // New or duplicate: jump to saved page with refreshed slots
+    // New color saved: jump to saved page with refreshed slots
     if (result.ok) {
       setOpenedAsSavedEntry(false);
       goToSavedPage();
