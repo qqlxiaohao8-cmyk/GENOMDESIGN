@@ -423,6 +423,8 @@ export default function App() {
       case 'game':
         return (
           <GamePage
+            user={user}
+            onOpenAuth={() => setAuthModalOpen(true)}
             onStartChallenge={(dailyData) => {
               pushFlow({ type: 'dailyChallenge', dailyData, source: 'game' });
             }}

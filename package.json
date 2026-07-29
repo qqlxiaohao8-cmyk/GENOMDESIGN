@@ -16,6 +16,8 @@
     "auth:schema": "npx @better-auth/cli generate --config workers/auth.cli.ts --output migrations/d1/0002_better_auth.sql -y",
     "d1:migrate:auth:local": "wrangler d1 execute genom-db --local --file=./migrations/d1/0002_better_auth.sql",
     "d1:migrate:auth:remote": "wrangler d1 execute genom-db --remote --file=./migrations/d1/0002_better_auth.sql",
+    "d1:migrate:color-walk:local": "wrangler d1 execute genom-db --local --file=./migrations/d1/0003_color_walk_saved.sql",
+    "d1:migrate:color-walk:remote": "wrangler d1 execute genom-db --remote --file=./migrations/d1/0003_color_walk_saved.sql",
     "migrate:supabase:dry": "node scripts/migrate-supabase-to-d1.mjs --dry-run",
     "migrate:supabase:local": "node scripts/migrate-supabase-to-d1.mjs --target local",
     "migrate:supabase:remote": "node scripts/migrate-supabase-to-d1.mjs --target remote",

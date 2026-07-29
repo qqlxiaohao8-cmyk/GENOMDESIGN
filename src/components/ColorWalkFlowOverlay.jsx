@@ -1,7 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Camera, RefreshCw, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Bookmark, Camera, Loader2, RefreshCw, X } from 'lucide-react';
 import { hexToOklch, lchToHexClamped } from '../lib/oklch';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
+import useColorWalkSavedColors from '../hooks/useColorWalkSavedColors';
+import ColorWalkSavedColorsPage from './ColorWalkSavedColorsPage';
 
 const MAX_PHOTOS = 5;
 const SPIN_MS = 2000;
@@ -208,21 +210,36 @@ function PaletteStrip({ files, onPickAt }) {
   );
 }
 
-export default function ColorWalkFlowOverlay({ open, onClose }) {
+export default function ColorWalkFlowOverlay({ open, onClose, user = null, onOpenAuth }) {
   const multiFileInputRef = useRef(null);
   const singleFileInputRef = useRef(null);
   const rafRef = useRef(null);
   const fileUrlsRef = useRef(Array(MAX_PHOTOS).fill(null));
   const hueRef = useRef(null);
   const suppressRerollRef = useRef(false);
+  const pendingSaveHexRef = useRef(null);
 
-  const [phase, setPhase] = useState('spin'); // spin | ready | layout
+  const [phase, setPhase] = useState('spin'); // spin | ready | layout | saved
   const [currentHex, setCurrentHex] = useState('#D89A80');
   const [finalHex, setFinalHex] = useState('#D89A80');
   const [spinNonce, setSpinNonce] = useState(0);
   const [files, setFiles] = useState(() => Array(MAX_PHOTOS).fill(null));
   const [slotPickIdx, setSlotPickIdx] = useState(null);
   const [layoutId, setLayoutId] = useState('mosaic');
+  const [hexLocked, setHexLocked] = useState(false);
+  const [returnPhase, setReturnPhase] = useState('ready');
+
+  const userId = user?.id || null;
+  const {
+    slots: savedSlots,
+    full: savedFull,
+    loading: savedLoading,
+    saving: savedSaving,
+    deletingId,
+    reload: reloadSaved,
+    saveHex,
+    removeById,
+  } = useColorWalkSavedColors({ userId, enabled: open && Boolean(userId) });
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
   const finalKnowledge = useMemo(() => describeColorKnowledge(finalHex), [finalHex]);
@@ -243,11 +260,16 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
   useEffect(() => () => cleanupUrls(), []);
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) {
+      pendingSaveHexRef.current = null;
+      return undefined;
+    }
     setFiles(Array(MAX_PHOTOS).fill(null));
     cleanupUrls();
     setLayoutId('mosaic');
     setSlotPickIdx(null);
+    setHexLocked(false);
+    setReturnPhase('ready');
     setSpinNonce((n) => n + 1);
     return undefined;
   }, [open]);
@@ -290,11 +312,44 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
     };
   }, [open, spinNonce]);
 
+  const goToSavedPage = useCallback(async () => {
+    await reloadSaved();
+    setPhase('saved');
+  }, [reloadSaved]);
+
+  const performSave = useCallback(async (hex) => {
+    if (!hex) return;
+    if (!userId) {
+      pendingSaveHexRef.current = hex;
+      onOpenAuth?.();
+      return;
+    }
+    const result = await saveHex(hex);
+    if (result.unauthorized) {
+      pendingSaveHexRef.current = hex;
+      onOpenAuth?.();
+      return;
+    }
+    // Always enter saved page after clicking save (new / duplicate / full)
+    await goToSavedPage();
+  }, [userId, onOpenAuth, saveHex, goToSavedPage]);
+
+  // Resume pending save after login
+  useEffect(() => {
+    if (!open || !userId || !pendingSaveHexRef.current) return undefined;
+    const hex = pendingSaveHexRef.current;
+    pendingSaveHexRef.current = null;
+    void performSave(hex);
+    return undefined;
+  }, [open, userId, performSave]);
+
   if (!open) return null;
 
   const reroll = () => {
     if (phase !== 'ready') return;
     if (suppressRerollRef.current) return;
+    setHexLocked(false);
+    setReturnPhase('ready');
     setSpinNonce((n) => n + 1);
   };
 
@@ -351,7 +406,38 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
     singleFileInputRef.current?.click();
   };
 
+  const startCameraForSavedColor = (item) => {
+    if (!item?.hex) return;
+    setFinalHex(item.hex);
+    setCurrentHex(item.hex);
+    setHexLocked(true);
+    setReturnPhase('saved');
+    setLayoutId('mosaic');
+    openMultiPicker();
+  };
+
+  const handleHeaderBack = () => {
+    if (phase === 'layout') {
+      setPhase(returnPhase === 'saved' ? 'saved' : 'ready');
+      if (returnPhase === 'saved') {
+        setFiles(Array(MAX_PHOTOS).fill(null));
+        cleanupUrls();
+      }
+      return;
+    }
+    if (phase === 'saved') {
+      setHexLocked(false);
+      setReturnPhase('ready');
+      setPhase('ready');
+      return;
+    }
+    onClose?.();
+  };
+
+  const canSave = phase === 'ready' || phase === 'layout';
   const displayHex = phase === 'spin' ? currentHex : finalHex;
+  const showColorBackdrop = phase === 'spin' || phase === 'ready';
+  const showPaperBackdrop = phase === 'layout' || phase === 'saved';
 
   return (
     <div
@@ -360,7 +446,7 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
       aria-modal="true"
       aria-label="Color Walk"
     >
-      {phase !== 'layout' && (
+      {showColorBackdrop && (
         <div
           className="absolute inset-0 transition-colors duration-300"
           style={{ backgroundColor: displayHex }}
@@ -368,44 +454,92 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
         />
       )}
 
-      {phase === 'layout' && <div className="absolute inset-0 bg-zen-paper" aria-hidden />}
-      {phase !== 'layout' && <div className="absolute inset-0 bg-black/18" aria-hidden />}
+      {showPaperBackdrop && <div className="absolute inset-0 bg-zen-paper" aria-hidden />}
+      {showColorBackdrop && <div className="absolute inset-0 bg-black/18" aria-hidden />}
 
-      <div className="relative z-10 flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            if (phase === 'layout') {
-              setPhase('ready');
-              return;
-            }
-            onClose?.();
+      {phase !== 'saved' && (
+        <div className="relative z-10 flex items-center justify-between gap-2 px-4 pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleHeaderBack();
+              }}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
+                showPaperBackdrop
+                  ? 'border-zen-ink/15 bg-white text-zen-ink hover:bg-zen-mist'
+                  : 'border-white/35 bg-black/20 text-white hover:bg-black/30'
+              }`}
+              aria-label={phase === 'layout' ? '返回上一步' : '关闭 Color Walk'}
+            >
+              {phase === 'layout' ? <ArrowLeft size={18} strokeWidth={2} aria-hidden /> : <X size={18} strokeWidth={2} aria-hidden />}
+            </button>
+
+            {canSave && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void performSave(finalHex);
+                }}
+                disabled={savedSaving}
+                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-[12px] font-extralight backdrop-blur-md transition-colors disabled:opacity-50 ${
+                  showPaperBackdrop
+                    ? 'border-zen-ink/15 bg-white text-zen-ink hover:bg-zen-mist'
+                    : 'border-white/35 bg-black/20 text-white hover:bg-black/30'
+                }`}
+                aria-label="储存当前颜色"
+              >
+                {savedSaving ? (
+                  <Loader2 size={14} className="animate-spin" aria-hidden />
+                ) : (
+                  <Bookmark size={14} strokeWidth={2} aria-hidden />
+                )}
+                储存
+              </button>
+            )}
+          </div>
+
+          {phase === 'layout' && !hexLocked ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setHexLocked(false);
+                setReturnPhase('ready');
+                setSpinNonce((n) => n + 1);
+              }}
+              className="flex items-center gap-1.5 rounded-full border border-zen-ink/15 bg-white px-3 py-2 text-[12px] font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
+            >
+              <RefreshCw size={14} strokeWidth={2} aria-hidden />
+              换颜色
+            </button>
+          ) : (
+            <div className="w-10" aria-hidden />
+          )}
+        </div>
+      )}
+
+      {phase === 'saved' ? (
+        <ColorWalkSavedColorsPage
+          slots={savedSlots}
+          full={savedFull}
+          loading={savedLoading}
+          saving={savedSaving}
+          deletingId={deletingId}
+          onBack={() => {
+            setHexLocked(false);
+            setReturnPhase('ready');
+            setPhase('ready');
           }}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/35 bg-black/20 text-white backdrop-blur-md transition-colors hover:bg-black/30"
-          aria-label={phase === 'layout' ? '返回上一步' : '关闭 Color Walk'}
-        >
-          {phase === 'layout' ? <ArrowLeft size={18} strokeWidth={2} aria-hidden /> : <X size={18} strokeWidth={2} aria-hidden />}
-        </button>
-
-        {phase === 'layout' ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setSpinNonce((n) => n + 1);
-            }}
-            className="flex items-center gap-1.5 rounded-full border border-zen-ink/15 bg-white px-3 py-2 text-[12px] font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
-          >
-            <RefreshCw size={14} strokeWidth={2} aria-hidden />
-            换颜色
-          </button>
-        ) : (
-          <div className="w-10" aria-hidden />
-        )}
-      </div>
-
-      {phase !== 'layout' ? (
+          onClose={() => onClose?.()}
+          onDelete={(id) => {
+            void removeById(id);
+          }}
+          onCamera={startCameraForSavedColor}
+        />
+      ) : phase !== 'layout' ? (
         <div
           className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center px-6"
           onClick={phase === 'ready' ? reroll : undefined}
@@ -435,6 +569,8 @@ export default function ColorWalkFlowOverlay({ open, onClose }) {
               onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
+                setHexLocked(false);
+                setReturnPhase('ready');
                 openMultiPicker();
               }}
               aria-label="上传照片开始排版"

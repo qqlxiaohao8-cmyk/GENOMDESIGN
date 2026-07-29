@@ -6,6 +6,7 @@ import { cors } from 'hono/cors';
 import { createAuth, type WorkerEnv } from './auth';
 import { tallyDailyWinners, yesterdayDateKey } from './lib/tally';
 import { todayChallengeDateKey } from './lib/dailyDate';
+import colorWalkRoutes from './routes/colorWalk';
 import dailyRoutes from './routes/dailyOneColor';
 import paletteTitleRoutes from './routes/paletteTitle';
 import profilesRoutes from './routes/profiles';
@@ -45,6 +46,7 @@ app.on(['GET', 'POST'], '/api/auth/*', async (c) => {
 app.route('/api/v1', stylesRoutes);
 app.route('/api/v1', uploadRoutes);
 app.route('/api/v1', dailyRoutes);
+app.route('/api/v1', colorWalkRoutes);
 app.route('/api/v1', profilesRoutes);
 app.route('/api/v1', paletteTitleRoutes);
 

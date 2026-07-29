@@ -8,9 +8,14 @@ import ColorMemoryGame from '../components/ColorMemoryGame';
 import PageShell from '../components/layout/PageShell';
 
 /**
- * @param {{ onStartChallenge?: (dailyData: object) => void, onOpenDailyPool?: () => void }} props
+ * @param {{
+ *   onStartChallenge?: (dailyData: object) => void,
+ *   onOpenDailyPool?: () => void,
+ *   user?: object | null,
+ *   onOpenAuth?: () => void,
+ * }} props
  */
-export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
+export default function GamePage({ onStartChallenge, onOpenDailyPool, user = null, onOpenAuth }) {
   const [memoryGameOpen, setMemoryGameOpen] = useState(false);
   const [memorySession, setMemorySession] = useState(0);
   const [colorWalkOpen, setColorWalkOpen] = useState(false);
@@ -97,6 +102,8 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool }) {
       <ColorWalkFlowOverlay
         open={colorWalkOpen}
         onClose={() => setColorWalkOpen(false)}
+        user={user}
+        onOpenAuth={onOpenAuth}
       />
     </PageShell>
   );
