@@ -3,6 +3,7 @@ import { ArrowLeft, Bookmark, Camera, Loader2, RefreshCw, X } from 'lucide-react
 import { hexToOklch, lchToHexClamped } from '../lib/oklch';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 import useColorWalkSavedColors from '../hooks/useColorWalkSavedColors';
+import { COLOR_WALK_SAVED_MAX } from '../lib/colorWalkApi';
 import ColorWalkSavedColorsPage from './ColorWalkSavedColorsPage';
 
 const MAX_PHOTOS = 5;
@@ -237,6 +238,7 @@ export default function ColorWalkFlowOverlay({
   const [returnPhase, setReturnPhase] = useState('ready');
   // true when opened from game-page saved-colors entry (back closes overlay)
   const [openedAsSavedEntry, setOpenedAsSavedEntry] = useState(false);
+  const [fullAlertOpen, setFullAlertOpen] = useState(false);
 
   const userId = user?.id || null;
   const {
@@ -251,6 +253,15 @@ export default function ColorWalkFlowOverlay({
 
   const finalName = useMemo(() => getPoeticColorName(finalHex), [finalHex]);
   const finalKnowledge = useMemo(() => describeColorKnowledge(finalHex), [finalHex]);
+
+  const isHexAlreadySaved = useCallback((hex) => {
+    const key = String(hex || '').replace(/^#/, '').toUpperCase();
+    if (!key) return false;
+    return savedSlots.some((slot) => {
+      if (!slot?.hex) return false;
+      return String(slot.hex).replace(/^#/, '').toUpperCase() === key;
+    });
+  }, [savedSlots]);
 
   const clearSlotUrl = (idx) => {
     const cur = fileUrlsRef.current[idx];
@@ -272,6 +283,7 @@ export default function ColorWalkFlowOverlay({
       pendingSaveHexRef.current = null;
       skipSpinRef.current = false;
       setOpenedAsSavedEntry(false);
+      setFullAlertOpen(false);
       return undefined;
     }
 
@@ -280,6 +292,7 @@ export default function ColorWalkFlowOverlay({
     setLayoutId('mosaic');
     setSlotPickIdx(null);
     setHexLocked(false);
+    setFullAlertOpen(false);
 
     if (initialPhase === 'saved') {
       skipSpinRef.current = true;
@@ -339,6 +352,7 @@ export default function ColorWalkFlowOverlay({
   }, [open, spinNonce]);
 
   const goToSavedPage = useCallback(() => {
+    setFullAlertOpen(false);
     setPhase('saved');
   }, []);
 
@@ -349,18 +363,29 @@ export default function ColorWalkFlowOverlay({
       onOpenAuth?.();
       return;
     }
+
+    // Vault already full and this hex is new → show alert, do not write / navigate
+    if (savedFull && !isHexAlreadySaved(hex)) {
+      setFullAlertOpen(true);
+      return;
+    }
+
     const result = await saveHex(hex);
     if (result.unauthorized) {
       pendingSaveHexRef.current = hex;
       onOpenAuth?.();
       return;
     }
-    // Enter saved page only after vault state is synced (new / duplicate / full)
-    if (result.ok || result.full) {
+    if (result.full) {
+      setFullAlertOpen(true);
+      return;
+    }
+    // New or duplicate: jump to saved page with refreshed slots
+    if (result.ok) {
       setOpenedAsSavedEntry(false);
       goToSavedPage();
     }
-  }, [userId, onOpenAuth, saveHex, goToSavedPage]);
+  }, [userId, onOpenAuth, saveHex, goToSavedPage, savedFull, isHexAlreadySaved]);
 
   // Resume pending save after login
   useEffect(() => {
@@ -691,6 +716,51 @@ export default function ColorWalkFlowOverlay({
         className="hidden"
         onChange={onPickSinglePhoto}
       />
+
+      {fullAlertOpen && (
+        <div
+          className="absolute inset-0 z-[30] flex items-center justify-center bg-zen-ink/40 p-4 backdrop-blur-sm"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="color-walk-full-title"
+          aria-describedby="color-walk-full-desc"
+          onClick={(e) => {
+            e.stopPropagation();
+            setFullAlertOpen(false);
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-zen-ink/10 bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 id="color-walk-full-title" className="type-h3 text-zen-vermilion">
+              储存已满
+            </h3>
+            <p id="color-walk-full-desc" className="mt-2 text-sm font-extralight text-zen-ink/70">
+              最多保存 {COLOR_WALK_SAVED_MAX} 个颜色，请先删除后再储存。
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpenedAsSavedEntry(false);
+                  goToSavedPage();
+                }}
+                className="rounded-full border border-zen-ink/15 bg-white px-4 py-2.5 text-[13px] font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
+              >
+                查看收藏
+              </button>
+              <button
+                type="button"
+                onClick={() => setFullAlertOpen(false)}
+                className="rounded-full border border-zen-ink bg-zen-ink px-4 py-2.5 text-[13px] font-extralight text-white transition-opacity hover:opacity-90"
+              >
+                知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
