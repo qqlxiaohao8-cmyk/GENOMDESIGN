@@ -1,12 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Bookmark, Camera, Loader2, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Camera, Download, Loader2, RefreshCw, X } from 'lucide-react';
 import { hexToOklch, lchToHexClamped } from '../lib/oklch';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 import useColorWalkSavedColors from '../hooks/useColorWalkSavedColors';
 import { COLOR_WALK_SAVED_MAX } from '../lib/colorWalkApi';
+import { downloadColorWalkLayoutPng, renderColorWalkLayoutPng } from '../lib/renderColorWalkLayoutPng';
+import { DEFAULT_PHOTO_TRANSFORM } from './colorWalk/ColorWalkPhotoCell';
+import ColorWalkLayoutCanvas from './colorWalk/ColorWalkLayoutCanvas';
 import ColorWalkSavedColorsPage from './ColorWalkSavedColorsPage';
 
-const MAX_PHOTOS = 5;
+const MAX_PHOTOS = 10;
 const SPIN_MS = 2000;
 
 const TONE_PRESETS = [
@@ -124,91 +127,8 @@ function describeColorKnowledge(hex) {
   return `${category} · ${temp} · ${tone}`;
 }
 
-function PhotoSlot({ fileUrl, onPick }) {
-  if (fileUrl) {
-    return (
-      <div className="relative h-full w-full overflow-hidden rounded-2xl bg-white">
-        <img
-          src={fileUrl}
-          alt="uploaded"
-          className="h-full w-full object-cover"
-        />
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPick?.();
-          }}
-          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/70 bg-black/35 text-white backdrop-blur transition-colors hover:bg-black/50"
-          aria-label="替换该色块照片"
-        >
-          <Camera size={14} strokeWidth={2} aria-hidden />
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-black/10 bg-white">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onPick?.();
-        }}
-        className="absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-black/15 bg-white text-black/55 shadow-sm transition-colors hover:bg-zen-mist hover:text-black/75"
-        aria-label="上传该色块照片"
-      >
-        <Camera size={16} strokeWidth={2} aria-hidden />
-      </button>
-    </div>
-  );
-}
-
-function PaletteMosaic({ files, onPickAt }) {
-  return (
-    <div className="grid grid-cols-3 gap-3">
-      <div className="col-span-1 row-span-2 min-h-[18rem]">
-        <PhotoSlot fileUrl={files[0]} onPick={() => onPickAt(0)} />
-      </div>
-      <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[1]} onPick={() => onPickAt(1)} />
-      </div>
-      <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[2]} onPick={() => onPickAt(2)} />
-      </div>
-      <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[3]} onPick={() => onPickAt(3)} />
-      </div>
-      <div className="min-h-[8.6rem]">
-        <PhotoSlot fileUrl={files[4]} onPick={() => onPickAt(4)} />
-      </div>
-    </div>
-  );
-}
-
-function PaletteColumns({ files, onPickAt }) {
-  return (
-    <div className="grid grid-cols-5 gap-3">
-      {Array.from({ length: MAX_PHOTOS }, (_, i) => (
-        <div key={i} className="min-h-[18rem]">
-          <PhotoSlot fileUrl={files[i]} onPick={() => onPickAt(i)} />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PaletteStrip({ files, onPickAt }) {
-  return (
-    <div className="grid grid-cols-1 gap-3">
-      {Array.from({ length: MAX_PHOTOS }, (_, i) => (
-        <div key={i} className="min-h-[8.5rem]">
-          <PhotoSlot fileUrl={files[i]} onPick={() => onPickAt(i)} />
-        </div>
-      ))}
-    </div>
-  );
+function emptyTransforms() {
+  return Array(MAX_PHOTOS).fill(null);
 }
 
 export default function ColorWalkFlowOverlay({
@@ -232,8 +152,10 @@ export default function ColorWalkFlowOverlay({
   const [finalHex, setFinalHex] = useState('#D89A80');
   const [spinNonce, setSpinNonce] = useState(0);
   const [files, setFiles] = useState(() => Array(MAX_PHOTOS).fill(null));
+  const [photoTransforms, setPhotoTransforms] = useState(emptyTransforms);
   const [slotPickIdx, setSlotPickIdx] = useState(null);
-  const [layoutId, setLayoutId] = useState('mosaic');
+  const [downloadBusy, setDownloadBusy] = useState(false);
+  const [swapSelectSlot, setSwapSelectSlot] = useState(null);
   const [hexLocked, setHexLocked] = useState(false);
   const [returnPhase, setReturnPhase] = useState('ready');
   // true when opened from game-page saved-colors entry (back closes overlay)
@@ -283,9 +205,10 @@ export default function ColorWalkFlowOverlay({
     }
 
     setFiles(Array(MAX_PHOTOS).fill(null));
+    setPhotoTransforms(emptyTransforms());
     cleanupUrls();
-    setLayoutId('mosaic');
     setSlotPickIdx(null);
+    setSwapSelectSlot(null);
     setHexLocked(false);
     setFullAlertOpen(false);
 
@@ -388,6 +311,57 @@ export default function ColorWalkFlowOverlay({
     return undefined;
   }, [open, userId, performSave]);
 
+  const handleTransformChange = useCallback((slotIdx, t) => {
+    setPhotoTransforms((prev) => {
+      const next = [...prev];
+      next[slotIdx] = t;
+      return next;
+    });
+  }, []);
+
+  const handleCellTap = useCallback((slotIdx) => {
+    setSwapSelectSlot((prev) => {
+      if (prev == null) return slotIdx;
+      if (prev === slotIdx) return null;
+      setFiles((files) => {
+        const next = [...files];
+        const tmp = next[prev];
+        next[prev] = next[slotIdx];
+        next[slotIdx] = tmp;
+        const tmpUrl = fileUrlsRef.current[prev];
+        fileUrlsRef.current[prev] = fileUrlsRef.current[slotIdx];
+        fileUrlsRef.current[slotIdx] = tmpUrl;
+        return next;
+      });
+      setPhotoTransforms((transforms) => {
+        const next = [...transforms];
+        const tmp = next[prev];
+        next[prev] = next[slotIdx];
+        next[slotIdx] = tmp;
+        return next;
+      });
+      return null;
+    });
+  }, []);
+
+  const handleDownloadLayout = useCallback(async () => {
+    if (downloadBusy) return;
+    setDownloadBusy(true);
+    try {
+      const blob = await renderColorWalkLayoutPng({
+        hex: finalHex,
+        files,
+        transforms: photoTransforms,
+      });
+      const safeName = getPoeticColorName(finalHex).replace(/[^\w\u4e00-\u9fff-]+/g, '-');
+      downloadColorWalkLayoutPng(blob, `color-walk-${safeName || 'layout'}.png`);
+    } catch {
+      /* export failed silently */
+    } finally {
+      setDownloadBusy(false);
+    }
+  }, [downloadBusy, finalHex, files, photoTransforms]);
+
   if (!open) return null;
 
   const leaveSavedPage = () => {
@@ -436,6 +410,13 @@ export default function ColorWalkFlowOverlay({
       });
       return next;
     });
+    setPhotoTransforms(() => {
+      const t = emptyTransforms();
+      picked.forEach((_, i) => {
+        t[i] = { ...DEFAULT_PHOTO_TRANSFORM };
+      });
+      return t;
+    });
     setPhase('layout');
   };
 
@@ -453,6 +434,11 @@ export default function ColorWalkFlowOverlay({
       next[idx] = url;
       return next;
     });
+    setPhotoTransforms((prev) => {
+      const next = [...prev];
+      next[idx] = { ...DEFAULT_PHOTO_TRANSFORM };
+      return next;
+    });
     setPhase('layout');
     setSlotPickIdx(null);
   };
@@ -468,7 +454,6 @@ export default function ColorWalkFlowOverlay({
     setCurrentHex(item.hex);
     setHexLocked(true);
     setReturnPhase('saved');
-    setLayoutId('mosaic');
     openMultiPicker();
   };
 
@@ -477,6 +462,7 @@ export default function ColorWalkFlowOverlay({
       setPhase(returnPhase === 'saved' ? 'saved' : 'ready');
       if (returnPhase === 'saved') {
         setFiles(Array(MAX_PHOTOS).fill(null));
+        setPhotoTransforms(emptyTransforms());
         cleanupUrls();
       }
       return;
@@ -637,58 +623,50 @@ export default function ColorWalkFlowOverlay({
               <h2 className="type-h2">{finalName}</h2>
               <p className="type-note font-mono">{finalHex}</p>
             </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openMultiPicker();
-              }}
-              className="inline-flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-4 py-2 text-sm font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
-            >
-              <Camera size={16} strokeWidth={2} aria-hidden />
-              重新选择照片
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openMultiPicker();
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-4 py-2 text-sm font-extralight text-zen-ink transition-colors hover:bg-zen-mist"
+              >
+                <Camera size={16} strokeWidth={2} aria-hidden />
+                重新选择照片
+              </button>
+              <button
+                type="button"
+                disabled={downloadBusy}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void handleDownloadLayout();
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-4 py-2 text-sm font-extralight text-zen-ink transition-colors hover:bg-zen-mist disabled:opacity-50"
+              >
+                {downloadBusy ? (
+                  <Loader2 size={16} className="animate-spin" aria-hidden />
+                ) : (
+                  <Download size={16} strokeWidth={2} aria-hidden />
+                )}
+                下载
+              </button>
+            </div>
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            <div
-              className="rounded-3xl border border-black/10 p-4 md:p-6"
-              style={{ backgroundColor: finalHex }}
-            >
-              {layoutId === 'mosaic' && <PaletteMosaic files={files} onPickAt={pickSlotPhoto} />}
-              {layoutId === 'columns' && <PaletteColumns files={files} onPickAt={pickSlotPhoto} />}
-              {layoutId === 'strip' && <PaletteStrip files={files} onPickAt={pickSlotPhoto} />}
-
-              <div className="mt-5 border-t border-zen-ink/10 pt-3">
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="type-overline text-zen-ink/55">Palette</p>
-                  <p className="type-note text-zen-ink/40">color walk</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    ['mosaic', '经典排版'],
-                    ['columns', '五列拼贴'],
-                    ['strip', '竖向连幅'],
-                  ].map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setLayoutId(id);
-                      }}
-                      className={`rounded-full border px-3 py-1.5 text-[12px] font-extralight transition-colors ${
-                        layoutId === id
-                          ? 'border-zen-ink bg-zen-ink text-white'
-                          : 'border-zen-ink/20 bg-white text-zen-ink hover:bg-zen-mist'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <ColorWalkLayoutCanvas
+              files={files}
+              transforms={photoTransforms}
+              finalHex={finalHex}
+              onTransformChange={handleTransformChange}
+              onReplaceAt={pickSlotPhoto}
+              selectedSwapSlot={swapSelectSlot}
+              onCellTap={handleCellTap}
+            />
+            <p className="mt-3 text-center text-[12px] font-extralight text-zen-ink/45">
+              轻点两格可互换照片 · 拖动平移 · 滚轮或双指缩放
+            </p>
           </div>
         </div>
       )}
