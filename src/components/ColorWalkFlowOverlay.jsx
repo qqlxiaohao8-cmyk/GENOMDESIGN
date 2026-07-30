@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Bookmark, Camera, Download, Loader2, RefreshCw, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Camera, Check, Loader2, RefreshCw, X } from 'lucide-react';
 import { hexToOklch, lchToHexClamped } from '../lib/oklch';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 import useColorWalkSavedColors from '../hooks/useColorWalkSavedColors';
@@ -158,6 +158,8 @@ export default function ColorWalkFlowOverlay({
   const [swapSelectSlot, setSwapSelectSlot] = useState(null);
   const [hexLocked, setHexLocked] = useState(false);
   const [returnPhase, setReturnPhase] = useState('ready');
+  // ID of the saved-color row being completed from 收藏 (null for normal challenge)
+  const [activeSavedId, setActiveSavedId] = useState(null);
   // true when opened from game-page saved-colors entry (back closes overlay)
   const [openedAsSavedEntry, setOpenedAsSavedEntry] = useState(false);
   const [fullAlertOpen, setFullAlertOpen] = useState(false);
@@ -210,6 +212,7 @@ export default function ColorWalkFlowOverlay({
     setSlotPickIdx(null);
     setSwapSelectSlot(null);
     setHexLocked(false);
+    setActiveSavedId(null);
     setFullAlertOpen(false);
 
     if (initialPhase === 'saved') {
@@ -344,7 +347,7 @@ export default function ColorWalkFlowOverlay({
     });
   }, []);
 
-  const handleDownloadLayout = useCallback(async () => {
+  const handleCompleteChallenge = useCallback(async () => {
     if (downloadBusy) return;
     setDownloadBusy(true);
     try {
@@ -355,12 +358,31 @@ export default function ColorWalkFlowOverlay({
       });
       const safeName = getPoeticColorName(finalHex).replace(/[^\w\u4e00-\u9fff-]+/g, '-');
       downloadColorWalkLayoutPng(blob, `color-walk-${safeName || 'layout'}.png`);
+
+      // From 收藏: consume the saved color and return to the collection page
+      if (returnPhase === 'saved') {
+        const savedId = activeSavedId;
+        if (savedId) {
+          await removeById(savedId);
+        }
+        setFiles(Array(MAX_PHOTOS).fill(null));
+        setPhotoTransforms(emptyTransforms());
+        cleanupUrls();
+        setSwapSelectSlot(null);
+        setActiveSavedId(null);
+        setHexLocked(false);
+        setPhase('saved');
+        return;
+      }
+
+      // Normal challenge: close overlay → game page
+      onClose?.();
     } catch {
-      /* export failed silently */
+      /* export failed — stay on editor so user can retry */
     } finally {
       setDownloadBusy(false);
     }
-  }, [downloadBusy, finalHex, files, photoTransforms]);
+  }, [downloadBusy, finalHex, files, photoTransforms, returnPhase, activeSavedId, removeById, onClose]);
 
   if (!open) return null;
 
@@ -378,6 +400,7 @@ export default function ColorWalkFlowOverlay({
     if (phase !== 'ready') return;
     if (suppressRerollRef.current) return;
     setHexLocked(false);
+    setActiveSavedId(null);
     setReturnPhase('ready');
     setOpenedAsSavedEntry(false);
     setSpinNonce((n) => n + 1);
@@ -453,6 +476,7 @@ export default function ColorWalkFlowOverlay({
     setFinalHex(item.hex);
     setCurrentHex(item.hex);
     setHexLocked(true);
+    setActiveSavedId(item.id || null);
     setReturnPhase('saved');
     openMultiPicker();
   };
@@ -464,6 +488,7 @@ export default function ColorWalkFlowOverlay({
         setFiles(Array(MAX_PHOTOS).fill(null));
         setPhotoTransforms(emptyTransforms());
         cleanupUrls();
+        setActiveSavedId(null);
       }
       return;
     }
@@ -547,6 +572,7 @@ export default function ColorWalkFlowOverlay({
               onClick={(e) => {
                 e.stopPropagation();
                 setHexLocked(false);
+                setActiveSavedId(null);
                 setReturnPhase('ready');
                 setSpinNonce((n) => n + 1);
               }}
@@ -606,6 +632,7 @@ export default function ColorWalkFlowOverlay({
               onClick={(e) => {
                 e.stopPropagation();
                 setHexLocked(false);
+                setActiveSavedId(null);
                 setReturnPhase('ready');
                 openMultiPicker();
               }}
@@ -640,16 +667,16 @@ export default function ColorWalkFlowOverlay({
                 disabled={downloadBusy}
                 onClick={(e) => {
                   e.stopPropagation();
-                  void handleDownloadLayout();
+                  void handleCompleteChallenge();
                 }}
-                className="inline-flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-4 py-2 text-sm font-extralight text-zen-ink transition-colors hover:bg-zen-mist disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-zen-ink bg-zen-ink px-4 py-2 text-sm font-extralight text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {downloadBusy ? (
                   <Loader2 size={16} className="animate-spin" aria-hidden />
                 ) : (
-                  <Download size={16} strokeWidth={2} aria-hidden />
+                  <Check size={16} strokeWidth={2} aria-hidden />
                 )}
-                下载
+                完成
               </button>
             </div>
           </div>
