@@ -28,6 +28,19 @@ import { normalizeHex } from './lib/randomInspiration';
 import { authClient } from './lib/authClient';
 
 const LANDING_DISMISSED_KEY = 'genom-landing-dismissed';
+const ACTIVE_TAB_KEY = 'genom-active-tab';
+const VALID_TABS = new Set(['favorites', 'colorSea', 'dailyOneColor', 'game', 'profile']);
+
+function readStoredActiveTab() {
+  if (typeof window === 'undefined') return 'favorites';
+  try {
+    const tab = sessionStorage.getItem(ACTIVE_TAB_KEY);
+    if (tab && VALID_TABS.has(tab)) return tab;
+  } catch {
+    /* private mode */
+  }
+  return 'favorites';
+}
 
 function shouldShowDesktopLanding() {
   if (typeof window === 'undefined') return false;
@@ -64,7 +77,7 @@ export default function App() {
     exploreFeed, personalLibrary, fetchStyleById, patchExploreFeedLikeCount,
   } = app;
 
-  const [activeTab, setActiveTab] = useState('favorites');
+  const [activeTab, setActiveTab] = useState(readStoredActiveTab);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   // Shared style preview overlay (deep-link or card detail)
@@ -168,6 +181,11 @@ export default function App() {
       return;
     }
     setActiveTab(key);
+    try {
+      sessionStorage.setItem(ACTIVE_TAB_KEY, key);
+    } catch {
+      /* ignore */
+    }
     requestAnimationFrame(() => mainScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
