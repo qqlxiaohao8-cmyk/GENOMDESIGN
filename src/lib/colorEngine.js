@@ -482,13 +482,55 @@ function injectSurprise(specs, themeEntry, satMode) {
 }
 
 /**
- * Principled palette ordering.
+ * Circular (wheel-aware) hue ordering: finds the single largest gap between
+ * consecutive hues around the 360° wheel and "cuts" the circle there, so the
+ * returned sequence sweeps monotonically through the spectrum without a jarring
+ * wrap-around split (e.g. a red at 350° and a red at 10° end up adjacent, not
+ * at opposite ends of the list). Mirrors how curated palette sets (Coolors,
+ * palettd trending) read as a clean left-to-right sweep across hues.
+ * @returns {number[]} original indices in their new order
+ */
+function circularHueOrder(hues) {
+  const n = hues.length;
+  if (n <= 1) return hues.map((_, i) => i);
+  const idx = hues.map((_, i) => i).sort((a, b) => hues[a] - hues[b]);
+  let maxGap = -1;
+  let cutAt = 0;
+  for (let k = 0; k < n; k++) {
+    const curH = hues[idx[k]];
+    const nextH = hues[idx[(k + 1) % n]];
+    const gap = k === n - 1 ? 360 - curH + nextH : nextH - curH;
+    if (gap > maxGap) {
+      maxGap = gap;
+      cutAt = (k + 1) % n;
+    }
+  }
+  return [...idx.slice(cutAt), ...idx.slice(0, cutAt)];
+}
+
+/** Circular hue sort with a randomized sweep direction for variety across generations. */
+function circularHueSort(list) {
+  if (list.length <= 1) return [...list];
+  const order = circularHueOrder(list.map((s) => s._h));
+  const seq = order.map((i) => list[i]);
+  return Math.random() < 0.5 ? seq.reverse() : seq;
+}
+
+/**
+ * Principled palette ordering, modeled on curated real-world sets (Coolors,
+ * palettd trending): a clean monotonic read — either a tonal gradient or an
+ * unbroken sweep across the hue wheel — rather than an arbitrary shuffle.
  *
  * Strategy per harmony mode:
- *  - monochromatic / analogous → smooth hue gradient; within same hue, dark→light
- *  - complementary / splitComplementary → narrative: darkest anchor → mid support → brightest accent
- *  - triadic / tetradic → hue gradient (shows the multi-hue spread cleanly)
- *  - default (unknown) → brightness gradient dark→light
+ *  - monochromatic / analogous → tonal gradient (dark→light or light→dark,
+ *    direction randomized per palette); hue only breaks near-identical-L ties.
+ *    Hues are already close together here, so lightness reads more smoothly
+ *    than hue as the primary axis.
+ *  - complementary / splitComplementary → narrative: darkest anchor → mid
+ *    support swept across hues → most saturated (or surprise) accent last,
+ *    matching the common "cool base + one warm pop" curated convention.
+ *  - triadic / tetradic → unbroken hue-wheel sweep (rainbow-style spectrum)
+ *  - default (unknown) → same hue-wheel sweep
  *
  * The surprise/accent color (if any) is always placed last.
  * This produces a visually coherent stripe in ShengSe regardless of harmony mode.
@@ -500,29 +542,30 @@ function assignArchitecture(specs, harmonyId = 'analogous') {
 
   let ordered;
   if (harmonyId === 'monochromatic' || harmonyId === 'analogous') {
-    // Hue gradient, tie-break by lightness dark→light
+    // Tonal gradient, tie-break by hue when lightness is nearly identical
+    const dir = Math.random() < 0.5 ? 1 : -1;
     rest.sort((a, b) => {
-      const hDiff = a._h - b._h;
-      return Math.abs(hDiff) > 12 ? hDiff : a._l - b._l;
+      const lDiff = a._l - b._l;
+      return Math.abs(lDiff) > 0.015 ? dir * lDiff : a._h - b._h;
     });
     ordered = surprise ? [...rest, surprise] : rest;
   } else if (harmonyId === 'complementary' || harmonyId === 'splitComplementary') {
-    // Narrative: darkest → mid-support by hue → most saturated or surprise last
+    // Narrative: darkest → mid-support swept across hues → most saturated or surprise last
     const anchor = rest.reduce((best, s) => (s._l < best._l ? s : best), rest[0]);
     const accentCand = rest.filter((s) => s !== anchor);
-    accentCand.sort((a, b) => a._h - b._h);
+    const sweptSupport = circularHueSort(accentCand);
     if (surprise) {
-      ordered = [anchor, ...accentCand, surprise];
+      ordered = [anchor, ...sweptSupport, surprise];
     } else {
       // Place highest-chroma last as accent
       const accent = accentCand.reduce((best, s) => (s._c > best._c ? s : best), accentCand[0]);
-      const support = accentCand.filter((s) => s !== accent);
+      const support = sweptSupport.filter((s) => s !== accent);
       ordered = [anchor, ...support, accent];
     }
   } else {
-    // triadic / tetradic / default → hue gradient, surprise last
-    rest.sort((a, b) => a._h - b._h);
-    ordered = surprise ? [...rest, surprise] : rest;
+    // triadic / tetradic / default → unbroken hue-wheel sweep, surprise last
+    const swept = circularHueSort(rest);
+    ordered = surprise ? [...swept, surprise] : swept;
   }
 
   return ordered.map((s, i) => ({
