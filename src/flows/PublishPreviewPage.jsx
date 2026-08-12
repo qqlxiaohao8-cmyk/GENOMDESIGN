@@ -252,7 +252,6 @@ export default function PublishPreviewPage({
                 disabled={generatingTitle}
                 className="flex items-center gap-1 rounded-xl border border-zen-ink/15 px-3 py-2.5 text-[11px] font-extralight text-zen-ink/60 hover:bg-zen-ink/[0.04] disabled:opacity-40 transition-colors"
                 aria-label="AI 生成名称，可多次点击换名"
-                title={user ? 'AI 理解配色意境后生成名称，可多次生成' : '登录后生成名称'}
               >
                 {generatingTitle
                   ? <Loader2 size={13} strokeWidth={2} className="animate-spin" />
@@ -308,14 +307,6 @@ export default function PublishPreviewPage({
               {linkCopied ? '已复制' : '拷贝链接'}
             </button>
           </div>
-
-          {!user && (
-            <p className="type-note text-center">
-              {isDailySubmit
-                ? '登录后可命名并投稿到每日一色投票池。'
-                : '登录后可命名色卡并发布到色海。'}
-            </p>
-          )}
         </div>
       </div>
     </div>

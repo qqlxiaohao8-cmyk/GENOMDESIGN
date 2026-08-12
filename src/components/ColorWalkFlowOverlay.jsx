@@ -608,18 +608,13 @@ export default function ColorWalkFlowOverlay({
         >
           <div className="mb-8 text-center text-white drop-shadow-lg">
             {phase === 'spin' ? (
-              <>
-                <p className="type-overline text-white/75">Color Walk</p>
-                <p className="mt-2 text-3xl font-zenSerif font-medium tracking-[0.08em]">随机色彩行走中</p>
-                <p className="mt-2 text-sm font-extralight text-white/80">颜色正在减速，像转盘一样即将停下</p>
-              </>
+              <p className="type-overline text-white/75">Color Walk</p>
             ) : (
               <>
                 <p className="type-overline text-white/75">Color Walk</p>
                 <p className="mt-2 text-4xl font-zenSerif font-medium">{finalName}</p>
                 <p className="mt-1 font-mono text-lg tracking-wide">{finalHex}</p>
                 <p className="mt-1 text-xs font-extralight tracking-[0.08em] text-white/85">{finalKnowledge}</p>
-                <p className="mt-2 text-sm font-extralight text-white/80">点击空白可重抽颜色</p>
               </>
             )}
           </div>
@@ -646,7 +641,6 @@ export default function ColorWalkFlowOverlay({
         <div className="relative z-10 mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 md:px-8">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <p className="type-overline">Color Walk Layout</p>
               <h2 className="type-h2">{finalName}</h2>
               <p className="type-note font-mono">{finalHex}</p>
             </div>
@@ -691,9 +685,6 @@ export default function ColorWalkFlowOverlay({
               selectedSwapSlot={swapSelectSlot}
               onCellTap={handleCellTap}
             />
-            <p className="mt-3 text-center text-[12px] font-extralight text-zen-ink/45">
-              轻点两格可互换照片 · 拖动平移 · 滚轮或双指缩放
-            </p>
           </div>
         </div>
       )}

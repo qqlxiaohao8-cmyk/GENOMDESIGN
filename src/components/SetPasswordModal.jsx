@@ -55,9 +55,6 @@ export default function SetPasswordModal({ onSuccess }) {
         <h2 id="recovery-title" className="type-h2">
           Set new password
         </h2>
-        <p className="text-xs font-extralight text-zen-ink/55">
-          You opened a password reset link. Choose a new password to finish.
-        </p>
         {error && (
           <p className="text-sm font-extralight text-red-700 border border-red-200 bg-red-50/80 rounded-xl p-3">{error}</p>
         )}

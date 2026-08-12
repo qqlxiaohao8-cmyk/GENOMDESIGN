@@ -100,7 +100,7 @@ export const BRIGHTNESS_MODES = [
   { id: 'balanced', lightModeId: 'balanced' },
 ];
 
-export const SURPRISE_PROBABILITY = 0.30;
+export const SURPRISE_PROBABILITY = 0.12;
 
 export const COLOR_FAMILIES = [
   'red', 'orange', 'yellow', 'lime', 'green', 'teal', 'cyan', 'blue',
@@ -454,6 +454,8 @@ function buildPaletteSpec(primary, satMode, themeEntry, lightMode, harmonyId, br
 
 function injectSurprise(specs, themeEntry, satMode) {
   if (Math.random() >= SURPRISE_PROBABILITY || specs.length < 2) return specs;
+  // Do not bolt a vivid accent onto a body that already reads as one muddy mass.
+  if (!bodyHasVisibleSpread(specs)) return specs;
   const hues = specs.map((s) => s._h);
   const avgHue = hues.reduce((a, b) => a + b, 0) / hues.length;
   const delta = themeEntry?.surpriseHueDelta ?? pickWeighted([
@@ -650,12 +652,66 @@ function paletteMetrics(entries) {
   };
 }
 
-function passesQualityGates(entries) {
+function countNearDuplicatePairs(entries, distSqThreshold = 0.0025) {
+  let count = 0;
+  for (let i = 0; i < entries.length; i++) {
+    for (let j = i + 1; j < entries.length; j++) {
+      if (oklabDistSqFromHex(entries[i].hex, entries[j].hex) < distSqThreshold) count += 1;
+    }
+  }
+  return count;
+}
+
+/** True when swatches have enough lightness / separation to read as distinct colors. */
+function bodyHasVisibleSpread(entries) {
+  if (!entries?.length) return false;
+  const ls = entries.map((e) => hexToOklch(e.hex).l);
+  const minL = Math.min(...ls);
+  const maxL = Math.max(...ls);
+  if (maxL - minL < 0.12) return false;
+  if (countNearDuplicatePairs(entries, 0.0025) >= 2) return false;
+  return true;
+}
+
+/**
+ * Reject palettes where several swatches collapse into one muddy mass, or where
+ * a lone surprise accent sits on top of near-identical dark supports.
+ */
+function passesDiversityGates(entries, harmonyId = 'analogous') {
+  const n = entries.length;
+  if (n < 2) return true;
+
+  const body = entries.filter((e) => !e._surprise);
+  const core = body.length >= 3 ? body : entries;
+  const m = paletteMetrics(core);
+  const nearDupPairs = countNearDuplicatePairs(core, 0.0025);
+  const lightnessSpan = m.maxL - m.minL;
+
+  // Several pairs look identical on screen (e.g. four near-blacks).
+  const maxNearDupPairs = harmonyId === 'monochromatic' ? 2 : 1;
+  if (nearDupPairs > maxNearDupPairs) return false;
+
+  // Non-mono palettes need visible tonal separation across the set.
+  if (harmonyId !== 'monochromatic' && n >= 3 && lightnessSpan < 0.14) return false;
+  if (harmonyId === 'monochromatic' && n >= 4 && lightnessSpan < 0.16) return false;
+
+  // Surprise accent trap: one pop color + clustered, indistinguishable body.
+  const hasSurprise = entries.some((e) => e._surprise);
+  if (hasSurprise && core.length >= 3) {
+    if (nearDupPairs >= 2 || lightnessSpan < 0.12 || m.minDist < 0.0018) return false;
+  }
+
+  return true;
+}
+
+function passesQualityGates(entries, harmonyId = 'analogous') {
   const m = paletteMetrics(entries);
-  if (m.minDist < 0.00015) return false;
+  const minDistFloor = harmonyId === 'monochromatic' ? 0.00018 : 0.00045;
+  if (m.minDist < minDistFloor) return false;
   if (m.spreadL < 0.05) return false;
   if (hasFluorescentClash(entries)) return false;
   if (m.spreadL < 0.025 && m.spreadC < 0.008) return false;
+  if (!passesDiversityGates(entries, harmonyId)) return false;
   return true;
 }
 
@@ -905,7 +961,7 @@ export function generateEnginePalette(options = {}) {
       _discovery,
     }));
 
-    if (!passesQualityGates(entries)) continue;
+    if (!passesQualityGates(entries, harmonyId)) continue;
 
     const fingerprint = extendedFingerprint({
       primaryHue: primary.h,

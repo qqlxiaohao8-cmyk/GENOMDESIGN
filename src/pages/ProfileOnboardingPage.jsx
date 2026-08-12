@@ -64,18 +64,12 @@ export default function ProfileOnboardingPage({ user, onComplete }) {
     <div className="fixed inset-0 z-[310] flex flex-col overflow-y-auto bg-zen-paper">
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] pt-[max(2.5rem,env(safe-area-inset-top,0px))]">
         <header className="mb-8 text-center">
-          <p className="type-overline tracking-[0.35em] text-zen-ink/35">
-            欢迎来到色空
-          </p>
           <h1
-            className={`type-h1 mt-3 ${activeFont.tailwindClass}`}
+            className={`type-h1 ${activeFont.tailwindClass}`}
             style={{ fontFamily: activeFont.cssFamily }}
           >
             设置你的色彩身份
           </h1>
-          <p className="type-body-sm mt-2 text-zen-ink/50">
-            选择代表色与字体，它们会出现在你的个人页与全站阅读体验中。
-          </p>
         </header>
 
         {/* 预览卡 */}
@@ -178,7 +172,6 @@ export default function ProfileOnboardingPage({ user, onComplete }) {
                     {f.sample}
                   </p>
                   <p className="mt-2 text-[12px] font-extralight text-zen-ink">{f.label}</p>
-                  <p className="text-[10px] font-extralight text-zen-ink/40">{f.desc}</p>
                 </button>
               );
             })}

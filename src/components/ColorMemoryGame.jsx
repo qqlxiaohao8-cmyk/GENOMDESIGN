@@ -363,9 +363,6 @@ export default function ColorMemoryGame({ mobileFill = false }) {
           <p className="text-white text-2xl md:text-4xl font-extralight tracking-wide leading-snug">
             色彩记忆
           </p>
-          <p className="text-white/35 text-xs md:text-sm font-extralight mt-1.5 tracking-widest">
-            点击开始
-          </p>
         </div>
         <div className="absolute inset-0 rounded-2xl bg-white/0 transition-colors duration-300 group-hover:bg-white/[0.04]" />
       </button>

@@ -35,9 +35,6 @@ export default function ColorMemoryChallengeCard({ onOpen }) {
 
         <div>
           <h2 className="type-h2">色彩记忆</h2>
-          <p className="type-body-sm mt-1.5 line-clamp-2 text-zen-ink/65">
-            记住目标色，再用滑条还原 — 共 5 轮，满分 50
-          </p>
         </div>
 
         <span className="type-caption inline-flex items-center gap-1 text-zen-vermilion group-hover:opacity-80">

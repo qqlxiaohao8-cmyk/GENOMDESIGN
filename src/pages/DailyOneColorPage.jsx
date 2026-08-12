@@ -43,7 +43,6 @@ export default function DailyOneColorPage({
   return (
     <PageShell
       title="每日一色"
-      description="今日投稿 · 投票 · 前三入选色海「每日色卡」"
       overline={(
         <span className="flex items-center gap-1.5">
           <CalendarSync size={12} strokeWidth={2} aria-hidden />
@@ -78,11 +77,6 @@ export default function DailyOneColorPage({
               你已投稿今日色卡，可邀请他人为你投票。
             </p>
           ) : null}
-          {!user ? (
-            <p className="type-note">
-              登录后可投票；完成游戏页「每日一色」挑战即可投稿。
-            </p>
-          ) : null}
         </>
       )}
     >
@@ -98,7 +92,7 @@ export default function DailyOneColorPage({
             <div className="py-16 text-center">
               <ThumbsUp size={28} className="mx-auto mb-3 text-zen-ink/20" strokeWidth={1.5} />
               <p className="type-body text-zen-ink/40">
-                今日还没有投稿，完成挑战后点击「投稿到每日一色」。
+                今日还没有投稿
               </p>
             </div>
           )}

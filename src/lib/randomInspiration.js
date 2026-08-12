@@ -1,5 +1,6 @@
 import { getPoeticColorName } from './poeticColorNaming';
 import { generateAestheticPalette, AESTHETIC_STYLES, pickPaletteCount, clearPaletteHistory, getDomainStats } from './colorAestheticEngine.js';
+import { generateMatrixPalette } from './matrixPaletteEngine.js';
 import {
   wrapHueDeg,
   hexToRgb255,
@@ -665,28 +666,22 @@ export function randomPaletteHarmonyWithMeta(count, options = {}) {
   const n =
     count != null && Number.isFinite(count)
       ? Math.max(2, Math.min(10, Math.round(count)))
-      : undefined;
-
-  const aestheticStyleId =
-    options.styleId && LEGACY_MOOD_TO_AESTHETIC[options.styleId]
-      ? LEGACY_MOOD_TO_AESTHETIC[options.styleId]
-      : options.styleId || null;
+      : 5;
 
   try {
-    const result = generateAestheticPalette({
+    // 生色 / 空生色：10 主题 × 8 调和矩阵引擎
+    const result = generateMatrixPalette({
       count: n,
-      styleId: aestheticStyleId,
+      styleId: options.styleId || null,
+      themeName: options.themeName || null,
       harmonyId: options.harmonyId || null,
       lockedColors: options.lockedColors || null,
-      minBeauty: options.minBeauty ?? 70,
-      maxAttempts: options.maxAttempts ?? 28,
-      skipHistory: options.skipHistory ?? false,
     });
     if (Array.isArray(result.colors) && result.colors.length >= 2) {
       return { colors: result.colors, meta: result.meta ?? null };
     }
   } catch (e) {
-    console.warn('randomPaletteHarmonyWithMeta failed, using fallback', e);
+    console.warn('randomPaletteHarmonyWithMeta matrix engine failed, using fallback', e);
   }
   return { colors: quickFallbackPalette(n ?? 5), meta: null };
 }

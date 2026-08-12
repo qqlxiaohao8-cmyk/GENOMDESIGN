@@ -312,42 +312,27 @@ export default function KongShengSePage({
               <button
                 type="button"
                 onClick={handleRegen}
-                className="flex flex-col items-start gap-1 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-2.5 text-left transition-colors hover:border-zen-ink/35"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-2.5 text-[12px] font-medium text-zen-ink transition-colors hover:border-zen-ink/35"
               >
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zen-ink">
-                  <Shuffle size={14} aria-hidden /> 再生成
-                </span>
-                <span className="text-[10px] font-extralight text-zen-ink/55">
-                  按空格亦可 · 保留锁定列
-                </span>
+                <Shuffle size={14} aria-hidden /> 再生成
               </button>
 
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={!onSaveToVault || saveBusy}
-                className="flex flex-col items-start gap-1 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-2.5 text-left transition-colors hover:border-zen-ink/35 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-2.5 text-[12px] font-medium text-zen-ink transition-colors hover:border-zen-ink/35 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zen-ink">
-                  <Bookmark size={14} aria-hidden /> {saveBusy ? '保存中…' : '存入色卡藏品'}
-                </span>
-                <span className="text-[10px] font-extralight text-zen-ink/55">
-                  把现在这组色卡加入「藏」
-                </span>
+                <Bookmark size={14} aria-hidden /> {saveBusy ? '保存中…' : '存入色卡藏品'}
               </button>
 
               <button
                 type="button"
                 onClick={() => onPublishPalette?.(paletteHexes)}
                 disabled={!onPublishPalette}
-                className="flex flex-col items-start gap-1 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-2.5 text-left transition-colors hover:border-zen-ink/35 disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-2.5 text-[12px] font-medium text-zen-ink transition-colors hover:border-zen-ink/35 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zen-ink">
-                  <Send size={14} aria-hidden /> 发布到色海
-                </span>
-                <span className="text-[10px] font-extralight text-zen-ink/55">
-                  取一张参考图 · 进入发布编辑页
-                </span>
+                <Send size={14} aria-hidden /> 发布到色海
               </button>
             </div>
             {saveToast ? (
@@ -362,10 +347,6 @@ export default function KongShengSePage({
             ) : null}
           </div>
         </div>
-
-        <p className="pointer-events-none shrink-0 select-none px-2 py-1 text-center text-[9px] font-extralight uppercase tracking-[0.28em] text-zen-ink/38 leading-snug">
-          空格 · 新一卡 · {harmonyHint} · 明暗饱和度每次随机
-        </p>
       </div>
     </div>
   );

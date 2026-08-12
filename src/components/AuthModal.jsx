@@ -201,14 +201,9 @@ export default function AuthModal({ open, onClose }) {
         </button>
 
         <div className="p-8 pt-12">
-          <h2 id="auth-modal-title" className="type-h1 mb-1">
+          <h2 id="auth-modal-title" className="type-h1 mb-6">
             {panel === 'signup' ? 'Create account' : 'Sign in'}
           </h2>
-          <p className="text-xs font-extralight text-zen-ink/50 uppercase tracking-[0.2em] mb-6">
-            {panel === 'signup'
-              ? 'New here? Choose email or Google.'
-              : 'Welcome back — Google or your email and password.'}
-          </p>
 
           {!authConfigured && (
             <p className="text-sm font-extralight text-red-700 border border-red-200 bg-red-50/80 rounded-xl p-3 mb-4">
@@ -287,15 +282,6 @@ export default function AuthModal({ open, onClose }) {
                   Forgot password?
                 </button>
               </form>
-
-              <div className="pt-2 border-t border-dashed border-zen-ink/10">
-                <p className="text-[9px] font-extralight text-zen-ink/45 px-1 leading-snug text-center">
-                  Google OAuth redirect:{' '}
-                  <span className="font-mono break-all">
-                    {typeof window !== 'undefined' ? window.location.origin : ''}/api/auth/callback/google
-                  </span>
-                </p>
-              </div>
 
               <p className="text-center text-sm font-extralight text-zen-ink/60 pt-2">
                 Don&apos;t have an account?{' '}

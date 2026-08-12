@@ -35,9 +35,6 @@ export default function ColorWalkChallengeCard({ onOpen }) {
 
         <div>
           <h2 className="type-h2">Color Walk</h2>
-          <p className="type-body-sm mt-1.5 line-clamp-2 text-zen-ink/65">
-            随机色彩转盘停在一个颜色，再用照片走一段色彩旅程
-          </p>
         </div>
 
         <span className="type-caption inline-flex items-center gap-1 text-zen-vermilion group-hover:opacity-80">

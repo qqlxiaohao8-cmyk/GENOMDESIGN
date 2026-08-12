@@ -71,10 +71,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
   }, [memoryGameOpen, colorWalkOpen]);
 
   return (
-    <PageShell
-      title="游戏"
-      description="色彩训练与每日挑战"
-    >
+    <PageShell title="游戏">
       <DailyColorChallengeCard onStart={onStartChallenge} />
 
       <button
@@ -86,12 +83,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-vermilion/10 text-zen-vermilion">
             <ThumbsUp size={18} strokeWidth={2} aria-hidden />
           </div>
-          <div>
-            <p className="type-h4">今日投稿 · 投票</p>
-            <p className="type-note">
-              浏览挑战色卡，每日 5 票 · 前三入选色海
-            </p>
-          </div>
+          <p className="type-h4">今日投稿 · 投票</p>
         </div>
         <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
       </button>
@@ -109,12 +101,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-ink/[0.06] text-zen-ink">
             <Bookmark size={18} strokeWidth={2} aria-hidden />
           </div>
-          <div>
-            <p className="type-h4">Color Walk 收藏</p>
-            <p className="type-note">
-              查看已存的五个颜色，随时拍照排版
-            </p>
-          </div>
+          <p className="type-h4">Color Walk 收藏</p>
         </div>
         <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
       </button>

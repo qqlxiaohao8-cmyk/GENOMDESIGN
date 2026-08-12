@@ -413,9 +413,6 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
             <span className="type-micro shrink-0">→</span>
           </div>
         </div>
-        <p className="type-note pb-3 text-center text-zen-ink/25">
-          点击色块切换 · 拖动或点击图片上的圆圈取色 · 滑动扫描另一组色彩
-        </p>
       </div>
     </div>
   );

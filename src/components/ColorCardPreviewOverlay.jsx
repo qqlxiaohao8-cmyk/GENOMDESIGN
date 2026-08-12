@@ -131,43 +131,33 @@ export default function ColorCardPreviewOverlay({
           type="button"
           onClick={onToggleFavorite}
           disabled={!onToggleFavorite || favoriteBusy}
-          className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+          className={`flex items-center justify-center gap-1.5 rounded-xl border px-3 py-3 text-[12px] font-medium text-zen-ink transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
             isFavorite
               ? 'border-zen-vermilion/70 bg-zen-vermilion/[0.08] ring-2 ring-zen-vermilion/20'
               : 'border-zen-ink/15 bg-white/80 hover:border-zen-ink/35'
           }`}
           aria-pressed={isFavorite}
         >
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zen-ink">
-            {favoriteBusy ? (
-              <Loader2 className="animate-spin" size={14} aria-hidden />
-            ) : (
-              <Heart
-                size={14}
-                aria-hidden
-                className={isFavorite ? 'fill-zen-vermilion text-zen-vermilion' : ''}
-              />
-            )}
-            {isFavorite ? '已收藏色卡' : '收藏色卡'}
-          </span>
-          <span className="text-[10px] font-extralight text-zen-ink/55">
-            {isFavorite ? '再次点击取消收藏' : '加入你的心选，方便日后查看'}
-          </span>
+          {favoriteBusy ? (
+            <Loader2 className="animate-spin" size={14} aria-hidden />
+          ) : (
+            <Heart
+              size={14}
+              aria-hidden
+              className={isFavorite ? 'fill-zen-vermilion text-zen-vermilion' : ''}
+            />
+          )}
+          {isFavorite ? '已收藏色卡' : '收藏色卡'}
         </button>
 
         <button
           type="button"
           onClick={onGenerateSimilar}
           disabled={!onGenerateSimilar}
-          className="flex flex-col items-start gap-1 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-3 text-left transition-colors hover:border-zen-ink/35 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center justify-center gap-1.5 rounded-xl border border-zen-ink/15 bg-white/80 px-3 py-3 text-[12px] font-medium text-zen-ink transition-colors hover:border-zen-ink/35 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-zen-ink">
-            <Shuffle size={14} aria-hidden />
-            生成相似
-          </span>
-          <span className="text-[10px] font-extralight text-zen-ink/55">
-            以此组为种子，在「空生色」中调配
-          </span>
+          <Shuffle size={14} aria-hidden />
+          生成相似
         </button>
       </div>
     </div>

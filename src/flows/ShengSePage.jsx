@@ -339,7 +339,7 @@ function ColorStripeRow({
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onToggleLock(); }}
-        className="ml-auto mr-4 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all"
+        className="absolute top-2 right-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all"
         style={{ backgroundColor: `${textColor}18`, color: textColor }}
         aria-label={locked ? '解锁' : '锁定'}
       >
@@ -545,12 +545,12 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   useEffect(() => { stripeIdsRef.current = stripeIds; }, [stripeIds]);
   useEffect(() => { paletteMetaRef.current = paletteMeta; }, [paletteMeta]);
 
-  const findDropIndex = useCallback((clientY) => {
+  const findDropIndex = useCallback((clientX) => {
     for (let i = 0; i < stripeRefs.current.length; i++) {
       const el = stripeRefs.current[i];
       if (!el) continue;
       const rect = el.getBoundingClientRect();
-      if (clientY >= rect.top && clientY <= rect.bottom) return i;
+      if (clientX >= rect.left && clientX <= rect.right) return i;
     }
     return null;
   }, []);
@@ -583,14 +583,14 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
 
   const handleGripPointerMove = useCallback((e) => {
     if (dragFromRef.current === null) return;
-    const over = findDropIndex(e.clientY);
+    const over = findDropIndex(e.clientX);
     if (over !== null) setDragOverIdx(over);
   }, [findDropIndex]);
 
   const handleGripPointerUp = useCallback((e) => {
     const from = dragFromRef.current;
     dragFromRef.current = null;
-    const to = findDropIndex(e.clientY);
+    const to = findDropIndex(e.clientX);
     setDragFromIdx(null);
     setDragOverIdx(null);
     try {
@@ -754,7 +754,6 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
             onClick={handleGoNext}
             disabled={!canGoNext}
             className="type-flow-action flex items-center gap-1 text-zen-vermilion hover:opacity-75 transition-opacity disabled:pointer-events-none disabled:opacity-40"
-            title={canGoNext ? '进入预览发布' : (paletteBusy ? '生色加载中…' : '至少需要 2 种有效颜色')}
             aria-label="进入预览发布"
           >
             下一页
@@ -764,7 +763,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
       </div>
 
       {/* Color stripes */}
-      <div className="relative flex flex-1 flex-col min-h-0">
+      <div className="relative flex flex-1 flex-row items-stretch min-h-0">
         {paletteBusy && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-zen-paper/60 backdrop-blur-[2px]">
             <div className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow-sm">
@@ -805,7 +804,6 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
             disabled={!canUndo}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-zen-ink/15 text-zen-ink/50 hover:bg-zen-ink/[0.04] transition-colors disabled:opacity-30 disabled:pointer-events-none"
             aria-label="上一张色卡"
-            title="上一张色卡 (←)"
           >
             <ChevronLeft size={17} strokeWidth={2} aria-hidden />
           </button>
@@ -815,7 +813,6 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
             onClick={doRegenerate}
             disabled={paletteBusy}
             className="flex items-center gap-2 rounded-full border border-zen-ink/15 bg-white px-6 py-2.5 text-[13px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] active:scale-95 transition-all shadow-sm disabled:opacity-40"
-            title="生色 (Space)"
           >
             <RefreshCw size={14} strokeWidth={2} aria-hidden />
             生色
@@ -827,14 +824,10 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
             disabled={!canRedo}
             className="flex h-9 w-9 items-center justify-center rounded-full border border-zen-ink/15 text-zen-ink/50 hover:bg-zen-ink/[0.04] transition-colors disabled:opacity-30 disabled:pointer-events-none"
             aria-label="下一张色卡"
-            title="下一张色卡 (→)"
           >
             <ChevronRight size={17} strokeWidth={2} aria-hidden />
           </button>
         </div>
-        <p className="pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] text-center text-[9px] font-extralight tracking-widest text-zen-ink/20 select-none">
-          拖动左侧把手排序 · 空格键生色 · ← → 切换历史色卡
-        </p>
       </div>
 
       {/* HSL color picker overlay */}

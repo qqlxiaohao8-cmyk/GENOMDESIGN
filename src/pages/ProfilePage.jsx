@@ -243,10 +243,7 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
 
   return (
     <>
-      <PageShell
-        title="我"
-        description="你的色彩身份与账号设置"
-      >
+      <PageShell title="我">
         <div className="mb-5">
           <ProfileHeroCard
             user={user}
@@ -260,12 +257,11 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
           <MenuRow
             icon={BookOpen}
             label="使用手册"
-            sub="了解 GENOM 的功能"
             onClick={() => {/* TODO: open manual */}}
           />
           {/* Placeholder items */}
-          <MenuRow icon={BookOpen} label="更多功能" sub="即将开放" disabled />
-          <MenuRow icon={BookOpen} label="关于 GENOM" sub="即将开放" disabled />
+          <MenuRow icon={BookOpen} label="更多功能" disabled />
+          <MenuRow icon={BookOpen} label="关于 GENOM" disabled />
         </div>
 
         {user && (
