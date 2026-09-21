@@ -243,7 +243,7 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
 
   return (
     <>
-      <PageShell title="我">
+      <PageShell title="我" index="04">
         <div className="mb-5">
           <ProfileHeroCard
             user={user}

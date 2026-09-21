@@ -25,7 +25,7 @@ export default function FavoritesPage({
 }) {
   if (!authReady) {
     return (
-      <PageShell title={PAGE_TITLE} bodyClassName="zen-page-body-feed">
+      <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
         <div className="flex flex-1 items-center justify-center p-8">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-zen-ink/20 border-t-zen-ink/60" />
         </div>
@@ -35,7 +35,7 @@ export default function FavoritesPage({
 
   if (!user) {
     return (
-      <PageShell title={PAGE_TITLE} bodyClassName="zen-page-body-feed">
+      <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
         <div className="flex flex-1 items-center justify-center p-6">
           <div className="w-full max-w-xs text-center">
             <div className="zen-panel mx-auto mb-5 flex h-16 w-16 items-center justify-center p-0">
@@ -59,7 +59,7 @@ export default function FavoritesPage({
 
   if (vaultColorPaletteItems.length === 0) {
     return (
-      <PageShell title={PAGE_TITLE} bodyClassName="zen-page-body-feed">
+      <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
         <div className="flex flex-1 items-center justify-center p-6">
           <div className="w-full max-w-xs text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-zen-ink/20 bg-transparent">
@@ -75,7 +75,7 @@ export default function FavoritesPage({
   }
 
   return (
-    <PageShell title={PAGE_TITLE} bodyClassName="zen-page-body-feed">
+    <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
       <MasonryColumns className={FAVORITES_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
         {vaultColorPaletteItems.map((item) => {
           const cd = itemColorCardData(item);

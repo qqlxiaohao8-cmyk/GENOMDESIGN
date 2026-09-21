@@ -71,7 +71,7 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
   }, [memoryGameOpen, colorWalkOpen]);
 
   return (
-    <PageShell title="游戏">
+    <PageShell title="游戏" index="03">
       <DailyColorChallengeCard onStart={onStartChallenge} />
 
       <button

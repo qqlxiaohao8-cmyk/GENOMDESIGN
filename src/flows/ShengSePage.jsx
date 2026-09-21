@@ -729,7 +729,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   return (
     <div className="fixed inset-0 z-[200] flex flex-col overflow-hidden bg-zen-paper">
       {/* Top bar */}
-      <div className="zen-glass shrink-0 flex items-center justify-between border-b border-zen-clay/50 px-4 py-3 md:px-6">
+      <div className="zen-glass shrink-0 flex items-center justify-between border-b border-zen-clay/35 px-4 py-3 md:px-6">
         <button
           type="button"
           onClick={onBack}
@@ -796,7 +796,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
       </div>
 
       {/* Bottom regenerate bar */}
-      <div className="zen-glass shrink-0 border-t border-zen-clay/50">
+      <div className="zen-glass shrink-0 border-t border-zen-clay/35">
         <div className="flex items-center justify-between px-4 py-3">
           <button
             type="button"

@@ -7,6 +7,7 @@ export default function PageHeader({
   title,
   description,
   overline,
+  index,
   children,
   className = '',
 }) {
@@ -17,7 +18,14 @@ export default function PageHeader({
       ) : null}
       <div className="flex items-start justify-between gap-4 md:gap-6">
         <div className="zen-page-heading__text">
-          <h1 className="type-h1">{title}</h1>
+          <div className="flex items-baseline gap-3">
+            {index ? (
+              <span className="type-index shrink-0" aria-hidden>
+                {index}
+              </span>
+            ) : null}
+            <h1 className="type-h1">{title}</h1>
+          </div>
           {description ? (
             <p className="type-caption max-w-lg leading-relaxed">{description}</p>
           ) : null}

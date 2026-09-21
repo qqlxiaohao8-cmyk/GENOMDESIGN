@@ -45,9 +45,12 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
       className="fixed inset-0 z-[180] flex items-end justify-center bg-black/40 backdrop-blur-sm md:items-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-t-3xl bg-white p-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-2xl md:rounded-3xl">
+      <div className="w-full max-w-sm rounded-t-[1.85rem_2rem_0_0] border border-zen-clay/40 bg-zen-paper p-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-zen-lg md:rounded-[1.6rem_1.85rem_1.45rem_1.9rem]">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="type-h3">创作</h3>
+          <div className="flex items-baseline gap-2.5">
+            <span className="type-index" aria-hidden>+</span>
+            <h3 className="type-h3">创作</h3>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -63,9 +66,9 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
           <button
             type="button"
             onClick={() => { onClose(); onShengSe(); }}
-            className="group flex flex-col items-center gap-2 rounded-2xl border border-zen-ink/10 bg-zen-mist/40 p-5 text-center transition-all hover:border-zen-vermilion/30 hover:bg-zen-vermilion/[0.04]"
+            className="zen-scrap group flex flex-col items-center gap-2 bg-zen-sand/50 p-5 text-center hover:border-zen-vermilion/30 hover:bg-zen-vermilion/[0.04]"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zen-ink text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[0.85rem_1rem_0.75rem_1.05rem] bg-zen-ink text-white">
               <Sparkles size={20} strokeWidth={2} aria-hidden />
             </div>
             <p className="type-h4">生色</p>
@@ -75,9 +78,9 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
           <button
             type="button"
             onClick={handleExtractClick}
-            className="group flex flex-col items-center gap-2 rounded-2xl border border-zen-ink/10 bg-zen-mist/40 p-5 text-center transition-all hover:border-zen-vermilion/30 hover:bg-zen-vermilion/[0.04]"
+            className="zen-scrap zen-scrap--pos group flex flex-col items-center gap-2 bg-zen-sand/50 p-5 text-center hover:border-zen-vermilion/30 hover:bg-zen-vermilion/[0.04]"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zen-vermilion text-white">
+            <div className="flex h-11 w-11 items-center justify-center rounded-[0.85rem_1rem_0.75rem_1.05rem] bg-zen-vermilion text-white">
               <Camera size={20} strokeWidth={2} aria-hidden />
             </div>
             <p className="type-h4">析色</p>

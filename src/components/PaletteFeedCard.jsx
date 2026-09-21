@@ -142,7 +142,7 @@ export default function PaletteFeedCard({
     ? createPortal(
       <div
         ref={menuRef}
-        className="fixed z-[500] min-w-[9rem] rounded-2xl border border-zen-clay/60 bg-white/95 py-1 shadow-zen-lg ring-1 ring-zen-clay/30 backdrop-blur-md"
+        className="fixed z-[500] min-w-[9rem] rounded-[1rem_1.2rem_0.9rem_1.25rem] border border-zen-clay/50 bg-zen-paper/95 py-1 shadow-zen-lg ring-1 ring-zen-clay/25 backdrop-blur-md"
         style={{ bottom: menuPos.bottom, right: menuPos.right }}
       >
         {menuItems}
@@ -158,8 +158,8 @@ export default function PaletteFeedCard({
         className="!rounded-none"
       />
 
-      <div className="relative flex min-h-[2.25rem] items-center gap-2 border-t border-zen-clay/40 bg-white px-2.5 py-2">
-        <p className="min-w-0 flex-1 truncate font-zenSerif text-[11px] font-medium tracking-[0.2em] text-zen-ink">
+      <div className="relative flex min-h-[2.25rem] items-center gap-2 border-t border-zen-clay/35 bg-zen-paper/90 px-2.5 py-2">
+        <p className="min-w-0 flex-1 truncate font-zenSerif text-[11px] font-medium tracking-[0.1em] text-zen-ink">
           {displayTitle}
         </p>
         <div className="relative flex shrink-0 items-center gap-0.5">

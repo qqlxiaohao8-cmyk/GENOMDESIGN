@@ -43,6 +43,7 @@ export default function DailyOneColorPage({
   return (
     <PageShell
       title="每日一色"
+      index="03"
       overline={(
         <span className="flex items-center gap-1.5">
           <CalendarSync size={12} strokeWidth={2} aria-hidden />
@@ -51,7 +52,7 @@ export default function DailyOneColorPage({
       )}
       bodyClassName="zen-page-body-feed"
       headerAside={(
-        <div className="rounded-xl border border-zen-ink/10 bg-white px-3 py-2 text-right">
+        <div className="rounded-[0.9rem_1.1rem_0.85rem_1.15rem] border border-zen-clay/50 bg-zen-paper/90 px-3 py-2 text-right">
           <p className="type-overline text-zen-ink/40">今日剩余票数</p>
           <p className="type-stat text-zen-vermilion">
             {user ? remainingVotes : '—'}

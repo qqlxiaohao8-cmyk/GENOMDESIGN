@@ -10,7 +10,7 @@ export default function ColorWalkChallengeCard({ onOpen }) {
     <button
       type="button"
       onClick={() => onOpen?.()}
-      className="group mb-4 flex w-full overflow-hidden rounded-2xl border border-zen-ink/10 bg-white text-left shadow-sm transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-zen-vermilion/40"
+      className="zen-scrap group mb-4 flex w-full overflow-hidden text-left shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-zen-vermilion/40"
       aria-label="打开 Color Walk"
     >
       <div className="relative w-[min(38%,9rem)] shrink-0 self-stretch min-h-[7.5rem] bg-black">
@@ -22,7 +22,7 @@ export default function ColorWalkChallengeCard({ onOpen }) {
           aria-hidden
         />
         <div className="absolute inset-0 bg-black/30" aria-hidden />
-        <span className="absolute bottom-2 left-2 text-[10px] font-mono font-extralight tracking-wider text-white/75">
+        <span className="absolute bottom-2 left-2 font-zenTypewriter text-[10px] font-normal tracking-wider text-white/75">
           随机定色
         </span>
       </div>

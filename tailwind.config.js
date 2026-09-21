@@ -9,25 +9,34 @@ export default {
         zenSerif: ['"Noto Serif SC"', '"Songti SC"', 'STSong', 'SimSun', 'serif'],
         /** UI / 正文 / 元数据：黑体 */
         zenSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+        /** 数字 / 英文短注：打字机旁注 */
+        zenTypewriter: [
+          '"IBM Plex Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Consolas',
+          'monospace',
+        ],
         profileSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
         profileKai: ['"KaiTi"', '"STKaiti"', '"楷体"', '"Noto Serif SC"', 'serif'],
       },
       colors: {
         zen: {
-          /** 页面 / 区块背景 — 统一纯白 */
-          paper: '#FFFFFF',
-          /** 与 paper 一致（兼容旧类名） */
-          sand: '#FFFFFF',
+          /** 暖纸底 */
+          paper: '#F6F3EC',
+          /** 略深纸色 — 分隔 / 浅底 */
+          sand: '#EFE9DF',
           /** 浅灰 — borders, inactive */
-          clay: '#E4DFD5',
+          clay: '#E0D9CE',
           /** 苔岩 — muted text, secondary strokes */
           stone: '#A8A297',
           /** 墨黛 — body copy */
           ink: '#5C5750',
           /** 漆黑 — headings, emphasis */
           coal: '#2C2C2C',
-          /** 与 paper 一致（兼容旧类名） */
-          mist: '#FFFFFF',
+          /** 雾纸 — 半透明叠层基色 */
+          mist: '#F3EFE6',
           vermilion: '#BC2026',
         },
       },

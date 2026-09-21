@@ -68,7 +68,7 @@ function InkRevealCanvas() {
       canvas.style.height = `${h}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = '#F6F3EC';
       ctx.fillRect(0, 0, w, h);
     };
     resize();
@@ -76,7 +76,7 @@ function InkRevealCanvas() {
 
     const loop = () => {
       ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = `rgba(255,255,255,${HEAL_ALPHA})`;
+      ctx.fillStyle = `rgba(246,243,236,${HEAL_ALPHA})`;
       ctx.fillRect(0, 0, w, h);
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -242,7 +242,7 @@ function MobileInkIntro({ onDone }) {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#F6F3EC';
     ctx.fillRect(0, 0, w, h);
 
     /* Origin: center of the man-on-stone figure (bottom-right area) */
@@ -447,7 +447,7 @@ export default function LandingPage({ onGoExplore }) {
        white canvas on top slowly erased by brush stamps ── */
   if (isMobile) {
     return (
-      <div className="relative flex h-screen max-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-white">
+      <div className="relative flex h-screen max-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-zen-paper">
         {/* Background: main-page.png (revealed as white is erased) */}
         <img
           src="/main-page.png"
@@ -460,10 +460,10 @@ export default function LandingPage({ onGoExplore }) {
           className="absolute inset-0 z-[2] pointer-events-none"
           style={{
             background: [
-              'linear-gradient(to bottom, rgba(255,255,255,0.85) 0%, transparent 18%)',
-              'linear-gradient(to top, rgba(255,255,255,0.7) 0%, transparent 14%)',
-              'linear-gradient(to right, rgba(255,255,255,0.75) 0%, transparent 12%)',
-              'linear-gradient(to left, rgba(255,255,255,0.75) 0%, transparent 12%)',
+              'linear-gradient(to bottom, rgba(246,243,236,0.85) 0%, transparent 18%)',
+              'linear-gradient(to top, rgba(246,243,236,0.7) 0%, transparent 14%)',
+              'linear-gradient(to right, rgba(246,243,236,0.75) 0%, transparent 12%)',
+              'linear-gradient(to left, rgba(246,243,236,0.75) 0%, transparent 12%)',
             ].join(', '),
           }}
           aria-hidden
@@ -473,7 +473,7 @@ export default function LandingPage({ onGoExplore }) {
           className="absolute inset-0 z-[2] pointer-events-none"
           style={{
             background:
-              'radial-gradient(ellipse 110% 100% at 50% 40%, transparent 40%, rgba(255,255,255,0.25) 60%, rgba(255,255,255,0.6) 78%, #fff 100%)',
+              'radial-gradient(ellipse 110% 100% at 50% 40%, transparent 40%, rgba(246,243,236,0.25) 60%, rgba(246,243,236,0.6) 78%, #F6F3EC 100%)',
           }}
           aria-hidden
         />

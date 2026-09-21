@@ -330,6 +330,7 @@ export default function ColorSeaPage({
   return (
     <PageShell
       title="色海"
+      index="02"
       bodyClassName="zen-page-body-feed"
       headerExtra={(
         <>

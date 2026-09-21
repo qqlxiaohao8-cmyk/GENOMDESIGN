@@ -8,6 +8,7 @@ export default function PageShell({
   title,
   description,
   overline,
+  index,
   headerAside,
   headerExtra,
   children,
@@ -15,9 +16,14 @@ export default function PageShell({
   className = '',
 }) {
   return (
-    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-white ${className}`}>
+    <div className={`flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent ${className}`}>
       <div className="zen-page-header z-40 shrink-0">
-        <PageHeader title={title} description={description} overline={overline}>
+        <PageHeader
+          title={title}
+          description={description}
+          overline={overline}
+          index={index}
+        >
           {headerAside}
         </PageHeader>
         {headerExtra ? (
@@ -25,7 +31,7 @@ export default function PageShell({
         ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className={`${bodyClassName} min-h-full`}>{children}</div>
+        <div className={`zen-page-enter ${bodyClassName} min-h-full`}>{children}</div>
       </div>
     </div>
   );

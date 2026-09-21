@@ -373,19 +373,19 @@
 @layer components {
   /** 一级：页面主标题 */
   .type-h1 {
-    @apply font-zenSerif text-2xl font-medium tracking-[0.2em] text-zen-coal md:text-[1.75rem] md:tracking-[0.25em];
+    @apply font-zenSerif text-2xl font-medium tracking-[0.12em] text-zen-coal md:text-[1.75rem] md:tracking-[0.14em];
   }
   /** 二级：区块 / 模块标题 */
   .type-h2 {
-    @apply font-zenSerif text-xl font-medium tracking-[0.18em] text-zen-coal;
+    @apply font-zenSerif text-xl font-medium tracking-[0.1em] text-zen-coal;
   }
   /** 三级：子区块、空态标题 */
   .type-h3 {
-    @apply font-zenSerif text-lg font-medium tracking-[0.15em] text-zen-coal;
+    @apply font-zenSerif text-lg font-medium tracking-[0.08em] text-zen-coal;
   }
   /** 四级：弹层 / 全屏流顶部标题、卡片内主标题 */
   .type-h4 {
-    @apply font-zenSerif text-base font-medium tracking-[0.12em] text-zen-coal;
+    @apply font-zenSerif text-base font-medium tracking-[0.06em] text-zen-coal;
   }
   /** 正文 */
   .type-body {
@@ -403,13 +403,13 @@
   .type-note {
     @apply text-[11px] font-extralight leading-relaxed text-zen-stone/90;
   }
-  /** 顶栏眉题（每日一色、排序等） */
+  /** 顶栏眉题（每日一色、排序等）— 打字机旁注感 */
   .type-overline {
-    @apply text-[10px] font-extralight uppercase tracking-[0.35em] text-zen-stone;
+    @apply font-zenTypewriter text-[10px] font-normal uppercase tracking-[0.28em] text-zen-stone;
   }
   /** 全屏流程顶栏标题（析色 / 生色 / 预览） */
   .type-flow-title {
-    @apply font-zenSerif text-base font-medium tracking-[0.2em] text-zen-coal;
+    @apply font-zenSerif text-base font-medium tracking-[0.12em] text-zen-coal;
   }
   /** 顶栏返回 / 下一步 */
   .type-flow-action {
@@ -417,27 +417,52 @@
   }
   /** 强调数字（票数、统计） */
   .type-stat {
-    @apply font-zenSerif text-2xl font-medium tabular-nums text-zen-ink;
+    @apply font-zenTypewriter text-2xl font-normal tabular-nums tracking-tight text-zen-ink;
+  }
+  /** 页头序号 */
+  .type-index {
+    @apply font-zenTypewriter text-[11px] font-normal tabular-nums tracking-[0.18em] text-zen-stone/80;
   }
   /** 极小 UI（滑条端点、色块数量） */
   .type-micro {
-    @apply text-[9px] font-extralight text-zen-ink/30;
+    @apply font-zenTypewriter text-[9px] font-normal text-zen-ink/35;
   }
 }
 
-/* design.json — Zen minimalist tokens as Tailwind @layer components */
+/* design.json — Zen paper / scrapbook tokens */
 @layer components {
   .zen-eyebrow {
-    @apply type-overline tracking-[0.4em] text-zen-stone;
+    @apply type-overline tracking-[0.32em] text-zen-stone;
   }
   .zen-panel {
-    @apply rounded-2xl border border-zen-clay/60 bg-white p-6 shadow-zen;
+    border-radius: 1.2rem 1.45rem 1.1rem 1.5rem;
+    @apply border border-zen-clay/55 bg-zen-paper/90 p-6 shadow-zen;
   }
   .zen-card {
-    @apply overflow-hidden rounded-2xl border border-zen-clay/50 bg-white shadow-zen smooth-transition;
+    border-radius: 1.15rem 1.4rem 1.05rem 1.35rem;
+    @apply overflow-hidden border border-zen-clay/45 bg-zen-paper/95 shadow-zen;
+    transform: rotate(-0.35deg);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .zen-card:hover {
+    transform: rotate(0deg);
+  }
+  .zen-scrap {
+    border-radius: 1.2rem 1.45rem 1.05rem 1.4rem;
+    @apply border border-zen-clay/50 bg-zen-paper/95 shadow-zen;
+    transform: rotate(-0.4deg);
+    transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .zen-scrap:hover,
+  .group:hover .zen-scrap,
+  button.zen-scrap:hover {
+    transform: rotate(0deg);
+  }
+  .zen-scrap--pos {
+    transform: rotate(0.35deg);
   }
   .zen-glass {
-    @apply border border-zen-clay/40 bg-white;
+    @apply border border-zen-clay/35 bg-zen-paper/80 backdrop-blur-md;
   }
   .zen-page-heading {
     @apply space-y-1.5;
@@ -446,7 +471,7 @@
     @apply min-w-0 flex-1 space-y-1.5;
   }
   .zen-page-header {
-    @apply shrink-0 border-b border-zen-clay/50 bg-white px-4 py-4 md:px-6 md:py-5;
+    @apply shrink-0 border-b border-transparent bg-zen-paper/70 px-4 py-4 backdrop-blur-sm md:px-6 md:py-5;
   }
   .zen-page-header-extra {
     @apply mt-4 space-y-4 md:mt-5 md:space-y-5;
@@ -457,26 +482,47 @@
   .zen-page-body-feed {
     @apply w-full max-w-none px-4 pb-[max(6rem,env(safe-area-inset-bottom,0px))] pt-4 md:px-6 md:pb-8 md:pt-5;
   }
+  .zen-page-enter {
+    animation: zen-page-enter 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
   .xuan-paper {
-    @apply min-h-screen bg-white text-zen-ink selection:bg-zen-clay selection:text-zen-coal;
+    @apply relative min-h-screen bg-zen-paper text-zen-ink selection:bg-zen-clay selection:text-zen-coal;
+  }
+  .xuan-paper::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.45;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 180px 180px;
+    mix-blend-mode: multiply;
   }
   .zen-modal-surface {
-    @apply relative max-h-[90vh] w-full max-w-md overflow-hidden overflow-y-auto rounded-3xl border border-zen-clay/50 bg-white shadow-zen-lg;
+    border-radius: 1.6rem 1.85rem 1.45rem 1.9rem;
+    @apply relative max-h-[90vh] w-full max-w-md overflow-hidden overflow-y-auto border border-zen-clay/45 bg-zen-paper shadow-zen-lg;
   }
   .zen-input {
-    @apply type-body-sm w-full rounded-2xl border border-zen-clay/70 bg-white px-4 py-3 text-zen-ink placeholder:text-zen-stone/80 smooth-transition focus:border-zen-stone/60 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30;
+    border-radius: 1rem 1.15rem 0.95rem 1.2rem;
+    @apply type-body-sm w-full border border-zen-clay/65 bg-zen-paper/90 px-4 py-3 text-zen-ink placeholder:text-zen-stone/80 smooth-transition focus:border-zen-stone/55 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/25;
   }
   .zen-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-coal/20 bg-zen-coal px-5 py-3 text-xs font-extralight tracking-[0.3em] text-zen-paper smooth-transition hover:bg-zen-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/40 disabled:pointer-events-none disabled:opacity-40;
+    border-radius: 0.85rem 1rem 0.8rem 1.05rem;
+    @apply inline-flex items-center justify-center gap-2 border border-zen-coal/20 bg-zen-coal px-5 py-3 text-xs font-extralight tracking-[0.22em] text-zen-paper smooth-transition hover:bg-zen-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/40 disabled:pointer-events-none disabled:opacity-40;
   }
   .zen-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-clay bg-white px-5 py-3 text-xs font-extralight tracking-[0.3em] text-zen-ink smooth-transition hover:bg-zen-ink/[0.04] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30 disabled:opacity-40;
+    border-radius: 0.85rem 1rem 0.8rem 1.05rem;
+    @apply inline-flex items-center justify-center gap-2 border border-zen-clay bg-zen-paper/80 px-5 py-3 text-xs font-extralight tracking-[0.22em] text-zen-ink smooth-transition hover:bg-zen-ink/[0.04] focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-stone/30 disabled:opacity-40;
   }
   .zen-btn-vermilion {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-zen-vermilion/25 bg-zen-vermilion px-5 py-3 text-xs font-extralight tracking-[0.3em] text-white smooth-transition hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40 disabled:pointer-events-none disabled:opacity-40;
+    border-radius: 0.85rem 1rem 0.8rem 1.05rem;
+    @apply inline-flex items-center justify-center gap-2 border border-zen-vermilion/25 bg-zen-vermilion px-5 py-3 text-xs font-extralight tracking-[0.22em] text-white smooth-transition hover:opacity-90 focus:outline-none focus-visible:ring-1 focus-visible:ring-zen-vermilion/40 disabled:pointer-events-none disabled:opacity-40;
   }
   .zen-tag {
-    @apply rounded-full border border-zen-clay/60 bg-white px-3 py-1 text-[11px] font-extralight tracking-widest text-zen-stone smooth-transition hover:border-zen-stone/40 hover:bg-zen-ink/[0.04] hover:text-zen-ink;
+    border-radius: 0.7rem 0.95rem 0.65rem 1rem;
+    @apply border border-zen-clay/55 bg-zen-paper/90 px-3 py-1 text-[11px] font-extralight tracking-widest text-zen-stone smooth-transition hover:border-zen-stone/40 hover:bg-zen-ink/[0.04] hover:text-zen-ink;
   }
   /** 与 .zen-tag 叠用：仅改颜色，不改变圆角/内边距 */
   .zen-tag-active {
@@ -486,20 +532,115 @@
     @apply type-overline tracking-[0.2em] text-zen-ink/45;
   }
   .zen-section-title {
-    @apply text-sm font-extralight uppercase tracking-[0.2em] text-zen-vermilion;
+    @apply text-sm font-extralight uppercase tracking-[0.16em] text-zen-vermilion;
+  }
+  .zen-nav-dot {
+    @apply absolute left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-zen-vermilion;
   }
 }
 
-/* Page backdrop — flat white (no warm mist tint) */
+@keyframes zen-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Page backdrop — warm paper + soft drifting color spots */
 .zen-mist-layer {
   position: fixed;
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-color: #ffffff;
+  overflow: hidden;
+  background-color: #f6f3ec;
+}
+.zen-mist-layer--subtle .zen-paper-blob {
+  opacity: 0.55;
 }
 .zen-mist-c {
   display: none;
+}
+.zen-paper-blob {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  filter: blur(64px);
+  opacity: 0.7;
+}
+.zen-paper-blob--a {
+  width: min(48vw, 340px);
+  height: min(48vw, 340px);
+  top: -10%;
+  left: -8%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(232, 196, 110, 0.55) 0%,
+    rgba(232, 196, 110, 0.18) 45%,
+    transparent 72%
+  );
+  animation: genom-blob-drift-a 26s ease-in-out infinite;
+}
+.zen-paper-blob--b {
+  width: min(40vw, 280px);
+  height: min(40vw, 280px);
+  top: 12%;
+  right: -12%;
+  background: radial-gradient(
+    circle at 60% 40%,
+    rgba(156, 196, 220, 0.5) 0%,
+    rgba(156, 196, 220, 0.16) 48%,
+    transparent 74%
+  );
+  animation: genom-blob-drift-b 30s ease-in-out infinite;
+  animation-delay: -5s;
+}
+.zen-paper-blob--c {
+  width: min(36vw, 240px);
+  height: min(36vw, 240px);
+  bottom: 8%;
+  left: 6%;
+  background: radial-gradient(
+    circle at 45% 55%,
+    rgba(186, 168, 214, 0.48) 0%,
+    rgba(186, 168, 214, 0.14) 50%,
+    transparent 75%
+  );
+  animation: genom-blob-drift-c 22s ease-in-out infinite;
+  animation-delay: -9s;
+}
+.zen-paper-blob--d {
+  width: min(28vw, 200px);
+  height: min(28vw, 200px);
+  bottom: -6%;
+  right: 16%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(232, 196, 110, 0.35) 0%,
+    rgba(186, 168, 214, 0.12) 55%,
+    transparent 78%
+  );
+  animation: genom-blob-drift-a 28s ease-in-out infinite;
+  animation-delay: -14s;
+}
+.zen-paper-blob--e {
+  width: min(22vw, 160px);
+  height: min(22vw, 160px);
+  top: 44%;
+  left: 28%;
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(156, 196, 220, 0.32) 0%,
+    rgba(232, 196, 110, 0.1) 60%,
+    transparent 80%
+  );
+  animation: genom-blob-drift-b 24s ease-in-out infinite;
+  animation-delay: -3s;
 }
 .zen-vertical-nav {
   writing-mode: vertical-rl;
@@ -883,6 +1024,23 @@
     opacity: 1;
   }
 
+  .zen-page-enter {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .zen-card,
+  .zen-scrap {
+    transform: none !important;
+  }
+
+  .zen-paper-blob,
+  .zen-paper-blob--a,
+  .zen-paper-blob--b,
+  .zen-paper-blob--c,
+  .zen-paper-blob--d,
+  .zen-paper-blob--e,
   .genom-neon-bg,
   .genom-float-word,
   .genom-glow-text,

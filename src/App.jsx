@@ -490,8 +490,12 @@ export default function App() {
       aria-hidden={showProfileOnboarding}
     >
       <div className="zen-mist-layer zen-mist-layer--subtle pointer-events-none" aria-hidden>
-        <div className="zen-mist-c" />
-            </div>
+        <div className="zen-paper-blob zen-paper-blob--a" />
+        <div className="zen-paper-blob zen-paper-blob--b" />
+        <div className="zen-paper-blob zen-paper-blob--c" />
+        <div className="zen-paper-blob zen-paper-blob--d" />
+        <div className="zen-paper-blob zen-paper-blob--e" />
+      </div>
 
       <ColorHuntShell
         sidebar={
@@ -505,7 +509,7 @@ export default function App() {
       >
         <main
           ref={mainScrollRef}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-white pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-transparent pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
         >
           {renderTab()}
       </main>

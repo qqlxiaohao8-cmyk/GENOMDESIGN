@@ -27,7 +27,7 @@ export default function DailyColorChallengeCard({ onStart }) {
     <button
       type="button"
       onClick={() => onStart?.(daily)}
-      className="group mb-4 flex w-full overflow-hidden rounded-2xl border border-zen-ink/10 bg-white text-left shadow-sm transition-shadow hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-zen-vermilion/40"
+      className="zen-scrap group mb-4 flex w-full overflow-hidden text-left shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-zen-vermilion/40"
       aria-label={`开始今日挑战：${daily.name}`}
     >
       <div
@@ -35,7 +35,7 @@ export default function DailyColorChallengeCard({ onStart }) {
         style={{ backgroundColor: daily.hex }}
       >
         <span
-          className="absolute bottom-2 left-2 text-[10px] font-mono font-extralight tracking-wider opacity-80"
+          className="absolute bottom-2 left-2 font-zenTypewriter text-[10px] font-normal tracking-wider opacity-80"
           style={{ color: textOnSwatch }}
         >
           {daily.hex}
