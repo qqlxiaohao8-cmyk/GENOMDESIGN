@@ -11,4 +11,4 @@ export const COLOR_SEA_MASONRY_CLASS = 'grid w-full grid-cols-2 md:grid-cols-4';
 /** 收藏 feed：CSS columns 瀑布流，移动 1 列 / sm+ 桌面 2 列 */
 export const FAVORITES_MASONRY_CLASS = 'w-full columns-1 sm:columns-2';
 
-export const PALETTE_FEED_MASONRY_GAP = '0.5rem';
+export const PALETTE_FEED_MASONRY_GAP = '0.85rem';

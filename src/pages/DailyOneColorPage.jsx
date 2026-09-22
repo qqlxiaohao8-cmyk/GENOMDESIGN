@@ -8,7 +8,6 @@ import {
   PALETTE_FEED_MASONRY_GAP,
 } from '../lib/paletteFeedLayout';
 import PageShell from '../components/layout/PageShell';
-import { DAILY_VOTES_PER_USER } from '../lib/dailyOneColorConstants';
 
 /**
  * 每日一色投稿池：布局同色海，收藏改为投票（每人每日 5 票，GMT+8 结算 Top3 → 色海「每日色卡」）
@@ -52,13 +51,10 @@ export default function DailyOneColorPage({
       )}
       bodyClassName="zen-page-body-feed"
       headerAside={(
-        <div className="rounded-[0.9rem_1.1rem_0.85rem_1.15rem] border border-zen-clay/50 bg-zen-paper/90 px-3 py-2 text-right">
-          <p className="type-overline text-zen-ink/40">今日剩余票数</p>
-          <p className="type-stat text-zen-vermilion">
+        <div className="pt-1 text-right">
+          <p className="zen-catalog text-zen-stone">余票</p>
+          <p className="zen-catalog-num mt-1 text-zen-vermilion">
             {user ? remainingVotes : '—'}
-            <span className="type-caption text-zen-ink/35">
-              /{DAILY_VOTES_PER_USER}
-            </span>
           </p>
         </div>
       )}
@@ -102,6 +98,7 @@ export default function DailyOneColorPage({
               {items.map((item) => (
                 <PaletteFeedCard
                   key={item.id}
+                  cardId={item.id}
                   colors={item.colors}
                   title={item.title}
                   mode="dailyVote"

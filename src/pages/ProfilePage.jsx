@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { LogOut, BookOpen, ChevronRight, Check, Pencil } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
@@ -12,48 +12,47 @@ const normalizeHex = normalizeProfileHex;
 
 function ProfileHeroCard({ user, username, accentHex, onEdit }) {
   const hex = accentHex || '#C93756';
-  const textColor = pickReadableTextOnHex(hex);
   const colorName = getPoeticColorName(hex);
 
   if (!user) {
     return (
       <div
-        className="relative w-full cursor-pointer rounded-2xl border border-dashed border-zen-ink/20 bg-zen-mist/30 transition-all hover:border-zen-ink/30"
-        style={{ minHeight: '9rem' }}
+        className="zen-specimen relative flex w-full cursor-pointer items-start gap-5 py-2"
         role="button"
         tabIndex={0}
         onClick={onEdit}
         onKeyDown={(e) => e.key === 'Enter' && onEdit()}
         aria-label="点击登录"
       >
-        <div className="flex h-full min-h-[9rem] items-end p-4">
-          <p className="type-body text-zen-ink/30">点击登录</p>
+        <div className="zen-wash h-[7.5rem] w-[6.25rem] shrink-0 bg-zen-sand" />
+        <div className="min-w-0 flex-1 pt-2">
+          <p className="font-zenTypewriter text-[10px] text-zen-stone">未登录</p>
+          <h2 className="type-h3 mt-2 text-zen-ink/50">你的颜色</h2>
+          <p className="zen-action mt-4">登录</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-2xl"
-      style={{ backgroundColor: hex, minHeight: '9rem' }}
-    >
-      <button
-        type="button"
-        onClick={onEdit}
-        className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full transition-colors"
-        style={{ backgroundColor: `${textColor}18` }}
-        aria-label="编辑资料"
-      >
-        <Pencil size={14} strokeWidth={2} style={{ color: textColor }} aria-hidden />
-      </button>
-      <div className="flex h-full min-h-[9rem] flex-col justify-end p-4">
-        <p className="type-caption tracking-widest" style={{ color: `${textColor}80` }}>
-          {hex} · {colorName}
-        </p>
-        <p className="type-h3" style={{ color: textColor }}>
+    <div className="zen-specimen relative flex items-start gap-5 py-2">
+      <div
+        className="zen-wash h-[7.5rem] w-[6.25rem] shrink-0"
+        style={{ backgroundColor: hex }}
+      />
+      <div className="min-w-0 flex-1 pt-2">
+        <p className="font-zenTypewriter text-[10px] text-zen-stone">{hex}</p>
+        <h2 className="type-h3 mt-2">
           {username || user.email?.split('@')[0] || '用户'}
-        </p>
+        </h2>
+        <p className="zen-catalog mt-2">{colorName}</p>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="zen-action zen-hit mt-3"
+        >
+          编辑
+        </button>
       </div>
     </div>
   );
@@ -84,8 +83,11 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
       className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40 backdrop-blur-sm md:items-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-t-3xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] shadow-2xl md:rounded-3xl">
-        <h3 className="type-h3 mb-5">编辑资料</h3>
+      <div className="w-full max-w-sm bg-zen-paper p-6 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
+        <div className="mb-5">
+          <p className="type-index">04.</p>
+          <h3 className="type-h3 mt-2">编辑资料</h3>
+        </div>
 
         {/* Username */}
         <div className="mb-5">
@@ -99,7 +101,7 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
             onChange={(e) => setName(e.target.value)}
             maxLength={20}
             placeholder="输入你的名称…"
-            className="type-body w-full rounded-xl border border-zen-ink/15 bg-zen-mist/30 px-4 py-3 focus:border-zen-ink/30 focus:outline-none"
+            className="zen-input"
           />
         </div>
 
@@ -114,8 +116,11 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
                 key={c}
                 type="button"
                 onClick={() => { setHex(c); setCustomHex(''); }}
-                className="relative h-8 w-8 rounded-full transition-transform hover:scale-110"
-                style={{ backgroundColor: c }}
+                className="relative h-8 w-8 transition-transform hover:scale-110"
+                style={{
+                  backgroundColor: c,
+                  borderRadius: '0.45rem 0.65rem 0.4rem 0.7rem',
+                }}
                 aria-label={c}
               >
                 {hex === c && !customHex && (
@@ -129,15 +134,16 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
               type="color"
               value={customHex || hex}
               onChange={(e) => setCustomHex(e.target.value)}
-              className="h-8 w-8 cursor-pointer rounded-lg border border-zen-ink/10"
+              className="h-8 w-8 cursor-pointer border border-zen-clay/50"
+              style={{ borderRadius: '0.45rem 0.6rem 0.4rem 0.65rem' }}
               aria-label="自定义颜色"
             />
-            <span className="text-[11px] font-extralight text-zen-ink/40">或自定义颜色</span>
+            <span className="type-caption">或自定义颜色</span>
           </div>
         </div>
 
         <div className="mb-6">
-          <label className="mb-2 block text-[11px] font-extralight uppercase tracking-widest text-zen-ink/50">
+          <label className="type-overline mb-2 block text-zen-ink/50">
             界面字体
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -146,16 +152,16 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
                 key={f.id}
                 type="button"
                 onClick={() => setSelectedFontId(f.id)}
-                className={`rounded-xl border px-3 py-2.5 text-left transition-all ${
+                className={`zen-scrap zen-scrap--flat px-3 py-2.5 text-left ${
                   selectedFontId === f.id
-                    ? 'border-zen-ink ring-1 ring-zen-ink/15'
-                    : 'border-zen-ink/10 hover:border-zen-ink/20'
+                    ? 'border-zen-coal/30 ring-1 ring-zen-ink/15'
+                    : 'hover:border-zen-stone/40'
                 }`}
               >
                 <p className="text-[13px] font-medium" style={{ fontFamily: f.cssFamily }}>
                   {f.sample}
                 </p>
-                <p className="text-[10px] font-extralight text-zen-ink/45">{f.label}</p>
+                <p className="type-caption mt-0.5">{f.label}</p>
               </button>
             ))}
           </div>
@@ -165,7 +171,7 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-full border border-zen-ink/15 py-3 text-[11px] font-extralight uppercase tracking-widest text-zen-ink/60 hover:bg-zen-ink/[0.04] transition-colors"
+            className="zen-btn-ghost flex-1"
           >
             取消
           </button>
@@ -173,7 +179,7 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
             type="button"
             onClick={handleSave}
             disabled={busy}
-            className="flex-1 rounded-full bg-zen-ink py-3 text-[11px] font-extralight uppercase tracking-widest text-white transition-opacity hover:opacity-85 disabled:opacity-40"
+            className="zen-btn-primary flex-1"
           >
             {busy ? '保存中…' : '保存'}
           </button>
@@ -183,22 +189,16 @@ function EditProfileSheet({ user, username, accentHex, fontId, onSave, onClose, 
   );
 }
 
-function MenuRow({ icon: Icon, label, sub, onClick, disabled = false }) {
+function MenuRow({ label, sub, onClick, disabled = false }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex w-full items-center gap-3 rounded-xl px-3 py-3.5 text-left transition-colors hover:bg-zen-ink/[0.04] disabled:opacity-30 disabled:pointer-events-none"
+      className="zen-hit mb-1 flex w-full items-baseline py-2 text-left disabled:pointer-events-none disabled:opacity-30"
     >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zen-mist">
-        <Icon size={17} strokeWidth={1.5} className="text-zen-ink/60" aria-hidden />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-extralight text-zen-ink">{label}</p>
-        {sub && <p className="text-[10px] font-extralight text-zen-ink/40">{sub}</p>}
-      </div>
-      <ChevronRight size={15} strokeWidth={1.5} className="shrink-0 text-zen-ink/25" aria-hidden />
+      <span className="type-h4">{label}</span>
+      {sub ? <span className="zen-catalog ml-3">{sub}</span> : null}
     </button>
   );
 }
@@ -255,13 +255,11 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
 
         <div className="space-y-1">
           <MenuRow
-            icon={BookOpen}
             label="使用手册"
             onClick={() => {/* TODO: open manual */}}
           />
-          {/* Placeholder items */}
-          <MenuRow icon={BookOpen} label="更多功能" disabled />
-          <MenuRow icon={BookOpen} label="关于 GENOM" disabled />
+          <MenuRow label="更多功能" disabled />
+          <MenuRow label="关于色空" disabled />
         </div>
 
         {user && (
@@ -269,10 +267,9 @@ export default function ProfilePage({ user, onOpenAuth, onSignOut }) {
             <button
               type="button"
               onClick={onSignOut}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-3 text-left transition-colors hover:bg-red-50"
+              className="zen-action zen-hit"
             >
-              <LogOut size={16} strokeWidth={1.5} className="text-red-400" aria-hidden />
-              <span className="text-[13px] font-extralight text-red-500">退出登录</span>
+              退出登录
             </button>
           </div>
         )}

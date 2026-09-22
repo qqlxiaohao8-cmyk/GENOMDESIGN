@@ -20,6 +20,7 @@ import { uniquePoeticNamesForSwatches } from '../lib/poeticColorNaming';
 import { generatePaletteTags } from '../lib/paletteTags';
 import { normalizePublicPaletteTitle } from '../lib/palettePublicTitle';
 import { clampPaletteTitle } from '../lib/palettePoeticTitle';
+import { buildLocalSeaPreviewItems } from '../lib/localSeaPreview';
 
 const COMMUNITY_TAG_CLICKS_KEY = 'genom-community-tag-clicks';
 
@@ -123,9 +124,11 @@ export default function useColorApp() {
   const refreshStyles = useCallback(async () => {
     try {
       const pubRes = await apiFetch('/styles?scope=explore');
-      setExploreFeed((pubRes.data || []).map(mapStyleRow));
+      const mapped = (pubRes.data || []).map(mapStyleRow);
+      const hasPalettes = mapped.some((item) => isCommunityPaletteCardItem(item));
+      setExploreFeed(hasPalettes ? mapped : buildLocalSeaPreviewItems());
     } catch {
-      setExploreFeed([]);
+      setExploreFeed(buildLocalSeaPreviewItems());
     }
 
     if (!user?.id) {

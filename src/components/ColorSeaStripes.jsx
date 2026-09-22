@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { pickPaletteAccentTextColor } from '../lib/colorValues';
+import { pickPaletteAccentTextColor, pickReadableTextOnHex } from '../lib/colorValues';
 import { getPoeticColorName } from '../lib/poeticColorNaming';
 import { isChineseDominantText } from '../lib/paletteChineseDisplay';
 
@@ -17,16 +17,17 @@ function stripeLabel(c) {
 
 /** 色海 / 收藏 feed 统一色条高度（列宽变化时高度不变） */
 export const PALETTE_FEED_STRIPE_HEIGHT_CLASS =
-  'h-[5.5rem] min-h-[5.5rem] max-h-[5.5rem]';
+  'h-[7.25rem] min-h-[7.25rem] max-h-[7.25rem] sm:h-[8.5rem] sm:min-h-[8.5rem] sm:max-h-[8.5rem]';
 
 /**
- * 色海色卡条：无描边、等宽竖条；桌面悬停单列显示竖排二字名（字色取自色卡内其他色）。
+ * 色海色卡条：色条即色样。点一下复制 hex，悬停展开并露出二字名。
  */
 export default function ColorSeaStripes({
   colors,
   onCopyHex,
   hexCopyScope = '',
   copiedHexKey = null,
+  onActiveChange,
   className = '',
 }) {
   const [hovered, setHovered] = useState(null);
@@ -40,44 +41,63 @@ export default function ColorSeaStripes({
   const hexList = useMemo(() => list.map((c) => normalizeHex(c.hex)), [list]);
   const scopePrefix = hexCopyScope ? `${hexCopyScope}:` : '';
 
+  const setActive = (index) => {
+    setHovered(index);
+    if (!onActiveChange) return;
+    if (index == null) {
+      onActiveChange(null);
+      return;
+    }
+    const c = list[index];
+    onActiveChange({
+      index,
+      hex: normalizeHex(c?.hex),
+      name: stripeLabel(c),
+    });
+  };
+
   return (
     <div
-      className={`flex w-full overflow-hidden rounded-2xl ${PALETTE_FEED_STRIPE_HEIGHT_CLASS} ${className}`}
-      onMouseLeave={() => setHovered(null)}
+      className={`zen-stripe-row flex w-full overflow-hidden ${PALETTE_FEED_STRIPE_HEIGHT_CLASS} ${className}`}
+      onMouseLeave={() => setActive(null)}
     >
       {list.map((c, i) => {
         const hex = normalizeHex(c.hex);
         const copyKey = `${scopePrefix}${hex}-${i}`;
         const name = stripeLabel(c);
-        const textColor = pickPaletteAccentTextColor(hex, hexList);
-        const showName = hovered === i;
-
-        const Tag = onCopyHex ? 'button' : 'div';
+        const nameColor = pickPaletteAccentTextColor(hex, hexList);
+        const hexColor = pickReadableTextOnHex(hex);
+        const copied = copiedHexKey === copyKey;
+        const showName = hovered === i || copied;
+        const grow = hovered == null ? 1 : hovered === i ? 1.55 : 0.72;
 
         return (
-          <Tag
+          <button
             key={copyKey}
-            {...(onCopyHex
-              ? {
-                  type: 'button',
-                  onClick: (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onCopyHex(hex, copyKey);
-                  },
-                }
-              : {})}
-            onMouseEnter={() => setHovered(i)}
-            className="relative min-h-0 min-w-0 flex-1 border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 focus-visible:z-10"
-            style={{ backgroundColor: hex }}
-            aria-label={onCopyHex ? `复制 ${hex}` : undefined}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setActive(i);
+              onCopyHex?.(hex, copyKey);
+            }}
+            onMouseEnter={() => setActive(i)}
+            onFocus={() => setActive(i)}
+            className="zen-stripe relative min-h-0 min-w-0 border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black/20 focus-visible:z-10"
+            style={{
+              backgroundColor: hex,
+              flexGrow: grow,
+              flexShrink: 1,
+              flexBasis: 0,
+            }}
+            aria-label={`复制 ${name} ${hex}`}
           >
             <span
-              className={`pointer-events-none absolute inset-x-0 top-[18%] bottom-[28%] hidden md:flex items-center justify-center transition-opacity duration-200 ease-out ${
-                showName ? 'opacity-100' : 'opacity-0'
+              className={`pointer-events-none absolute inset-x-0 top-[16%] bottom-[34%] flex items-center justify-center transition-opacity duration-200 ease-out ${
+                showName && !copied ? 'opacity-100' : 'opacity-0'
               }`}
-              style={{ color: textColor }}
-              aria-hidden={!showName}
+              style={{ color: nameColor }}
+              aria-hidden
             >
               <span
                 className="font-zenSerif text-[clamp(13px,2.8vw,17px)] font-medium leading-none tracking-[0.14em]"
@@ -86,10 +106,17 @@ export default function ColorSeaStripes({
                 {name}
               </span>
             </span>
-            {onCopyHex ? (
-              <span className="sr-only">{copiedHexKey === copyKey ? '已复制' : ''}</span>
-            ) : null}
-          </Tag>
+            <span
+              className={`pointer-events-none absolute inset-x-0 bottom-2 flex justify-center px-0.5 font-zenTypewriter text-[9px] tracking-[0.04em] transition-opacity duration-200 ${
+                copied ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{ color: hexColor }}
+              aria-hidden
+            >
+              已复制
+            </span>
+            <span className="sr-only">{copied ? '已复制' : ''}</span>
+          </button>
         );
       })}
     </div>

@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Bookmark, BookmarkX, Sparkles, Download, Link, MoreHorizontal, ThumbsUp, BarChart3 } from 'lucide-react';
 import ColorSeaStripes from './ColorSeaStripes';
 import {
   enrichColorsWithChineseNames,
@@ -14,15 +13,14 @@ export function formatLikeCount(n) {
   return String(x);
 }
 
-const footerBtn =
-  'flex items-center justify-center rounded-full text-zen-stone smooth-transition hover:bg-zen-ink/[0.04] hover:text-zen-ink';
-
 /**
- * 色海 / 收藏 feed 色卡：竖条色盘 + 底部名称与操作（无边框）。
+ * 色海 / 收藏 feed 色卡：
+ * 看色条 → 点色复制 → 标题跟着当前色走 → 收藏 / 打开 是下一步。
  */
 export default function PaletteFeedCard({
   colors = [],
   title,
+  cardId = '',
   favorited = false,
   favoriteBusy = false,
   onToggleFavorite,
@@ -40,8 +38,11 @@ export default function PaletteFeedCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState(null);
+  const [copiedHexKey, setCopiedHexKey] = useState(null);
+  const [activeStripe, setActiveStripe] = useState(null);
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
+  const copyTimer = useRef(null);
 
   const updateMenuPos = useCallback(() => {
     const el = triggerRef.current;
@@ -78,6 +79,10 @@ export default function PaletteFeedCard({
     return () => document.removeEventListener('mousedown', close);
   }, [menuOpen]);
 
+  useEffect(() => () => {
+    if (copyTimer.current) window.clearTimeout(copyTimer.current);
+  }, []);
+
   const isFavorites = mode === 'favorites';
   const isDailyVote = mode === 'dailyVote';
 
@@ -93,45 +98,63 @@ export default function PaletteFeedCard({
     [title, displayColors],
   );
 
+  const handleCopyHex = useCallback((hex, copyKey) => {
+    const value = String(hex || '').trim();
+    if (!value) return;
+    void navigator.clipboard?.writeText(value).catch(() => {});
+    setCopiedHexKey(copyKey);
+    if (copyTimer.current) window.clearTimeout(copyTimer.current);
+    copyTimer.current = window.setTimeout(() => setCopiedHexKey(null), 1400);
+  }, []);
+
+  const liveLine = copiedHexKey && activeStripe
+    ? `已复制 ${activeStripe.hex}`
+    : activeStripe
+      ? `${activeStripe.name}  ${activeStripe.hex}`
+      : displayTitle;
+
+  const hasOverflow = Boolean(
+    onAnalyze
+    || onDownload
+    || onCopyLink
+    || (onOpenInShengSe && isDailyVote),
+  );
+
   const menuItems = (
     <>
       {onAnalyze && (
         <button
           type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
+          className="zen-menu-row"
           onClick={() => { setMenuOpen(false); onAnalyze(); }}
         >
-          <BarChart3 size={13} strokeWidth={2} aria-hidden />
           分析色卡
         </button>
       )}
-      {onOpenInShengSe && (
+      {onOpenInShengSe && isDailyVote && (
         <button
           type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
+          className="zen-menu-row"
           onClick={() => { setMenuOpen(false); onOpenInShengSe(); }}
         >
-          <Sparkles size={13} strokeWidth={2} aria-hidden />
           在生色中打开
         </button>
       )}
       {onDownload && (
         <button
           type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
+          className="zen-menu-row"
           onClick={() => { setMenuOpen(false); onDownload(); }}
         >
-          <Download size={13} strokeWidth={2} aria-hidden />
           导出图片
         </button>
       )}
       {onCopyLink && (
         <button
           type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
+          className="zen-menu-row"
           onClick={() => { setMenuOpen(false); onCopyLink(); }}
         >
-          <Link size={13} strokeWidth={2} aria-hidden />
           拷贝链接
         </button>
       )}
@@ -142,7 +165,7 @@ export default function PaletteFeedCard({
     ? createPortal(
       <div
         ref={menuRef}
-        className="fixed z-[500] min-w-[9rem] rounded-[1rem_1.2rem_0.9rem_1.25rem] border border-zen-clay/50 bg-zen-paper/95 py-1 shadow-zen-lg ring-1 ring-zen-clay/25 backdrop-blur-md"
+        className="fixed z-[500] min-w-[9rem] border-0 bg-zen-paper py-2"
         style={{ bottom: menuPos.bottom, right: menuPos.right }}
       >
         {menuItems}
@@ -152,64 +175,86 @@ export default function PaletteFeedCard({
     : null;
 
   return (
-    <div className="zen-card flex w-full min-w-0 flex-col">
+    <div className="zen-specimen flex w-full min-w-0 flex-col gap-2.5">
       <ColorSeaStripes
         colors={displayColors}
-        className="!rounded-none"
+        className="zen-wash--tile"
+        hexCopyScope={cardId || displayTitle}
+        copiedHexKey={copiedHexKey}
+        onCopyHex={handleCopyHex}
+        onActiveChange={setActiveStripe}
       />
 
-      <div className="relative flex min-h-[2.25rem] items-center gap-2 border-t border-zen-clay/35 bg-zen-paper/90 px-2.5 py-2">
-        <p className="min-w-0 flex-1 truncate font-zenSerif text-[11px] font-medium tracking-[0.1em] text-zen-ink">
-          {displayTitle}
+      <div className="flex min-h-[2.75rem] flex-col gap-1.5 px-0.5">
+        <p
+          className={`min-w-0 truncate tracking-[0.06em] ${
+            activeStripe
+              ? 'font-zenTypewriter text-[11px] text-zen-ink'
+              : 'font-zenSerif text-[13px] text-zen-ink'
+          }`}
+        >
+          {liveLine}
         </p>
-        <div className="relative flex shrink-0 items-center gap-0.5">
+
+        <div className="relative flex min-h-[1.75rem] items-baseline gap-3.5">
           {isDailyVote ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onVote?.(); }}
               disabled={voteBusy || voteDisabled || voted}
-              className={`${footerBtn} h-8 gap-1 px-2 disabled:opacity-40 ${
-                voted ? 'text-zen-vermilion' : 'hover:text-zen-vermilion'
-              }`}
+              className={`zen-hit px-0 ${
+                voted ? 'zen-action' : 'zen-quiet'
+              } disabled:opacity-40`}
               aria-label={voted ? '已投票' : '投票'}
-              title={voted ? '已投票' : '为此色卡投票'}
             >
-              <ThumbsUp size={13} strokeWidth={2} fill={voted ? 'currentColor' : 'none'} aria-hidden />
-              <span className="text-[10px] tabular-nums">{formatLikeCount(voteCount)}</span>
+              {voted ? '已投' : '投票'}
+              <span className="ml-1 tabular-nums opacity-70">{formatLikeCount(voteCount)}</span>
             </button>
           ) : isFavorites ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onUnfavorite?.(); }}
-              className={`${footerBtn} h-8 w-8 hover:text-zen-vermilion`}
+              className="zen-quiet zen-hit px-0"
               aria-label="从收藏中移除"
-              title="从收藏中移除（不影响色海展示）"
             >
-              <BookmarkX size={13} strokeWidth={2} aria-hidden />
+              移除
             </button>
-          ) : (
+          ) : onToggleFavorite ? (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(); }}
+              onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
               disabled={favoriteBusy}
-              className={`${footerBtn} h-8 w-8 disabled:opacity-40 ${favorited ? 'text-zen-vermilion' : 'hover:text-zen-vermilion'}`}
+              className={`zen-hit px-0 disabled:opacity-40 ${
+                favorited ? 'zen-action' : 'zen-quiet'
+              }`}
               aria-label={favorited ? '取消收藏' : '收藏色卡'}
-              title={favorited ? '取消收藏' : '收藏色卡'}
             >
-              <Bookmark size={13} strokeWidth={2} fill={favorited ? 'currentColor' : 'none'} aria-hidden />
+              {favorited ? '已藏' : '收藏'}
             </button>
-          )}
+          ) : null}
 
-          <button
-            ref={triggerRef}
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
-            className={`${footerBtn} h-8 w-8 hover:text-zen-ink`}
-            aria-label="更多选项"
-            aria-expanded={menuOpen}
-          >
-            <MoreHorizontal size={13} strokeWidth={2} aria-hidden />
-          </button>
+          {onOpenInShengSe && !isDailyVote ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onOpenInShengSe(); }}
+              className="zen-action zen-hit px-0"
+            >
+              打开
+            </button>
+          ) : null}
+
+          {hasOverflow ? (
+            <button
+              ref={triggerRef}
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
+              className="zen-quiet zen-hit px-0"
+              aria-label="更多选项"
+              aria-expanded={menuOpen}
+            >
+              更多
+            </button>
+          ) : null}
 
           {menuPanel}
         </div>

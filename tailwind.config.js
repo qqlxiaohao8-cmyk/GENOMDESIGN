@@ -41,8 +41,8 @@ export default {
         },
       },
       boxShadow: {
-        zen: '0 4px 24px -4px rgba(92, 87, 80, 0.08)',
-        'zen-lg': '0 8px 40px -8px rgba(92, 87, 80, 0.12)',
+        zen: '2px 3px 0 rgba(92, 87, 80, 0.04), 0 8px 22px -10px rgba(92, 87, 80, 0.14)',
+        'zen-lg': '3px 5px 0 rgba(92, 87, 80, 0.05), 0 14px 36px -12px rgba(92, 87, 80, 0.18)',
       },
       transitionTimingFunction: {
         zen: 'cubic-bezier(0.16, 1, 0.3, 1)',

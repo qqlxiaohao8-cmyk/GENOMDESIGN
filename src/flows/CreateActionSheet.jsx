@@ -1,10 +1,8 @@
 import React, { useRef } from 'react';
-import { Sparkles, Camera, X } from 'lucide-react';
 import { compressImageDataUrl } from '../lib/styleImageUpload';
 
 /**
  * Action sheet shown when user taps the center "+" button.
- * Presents two choices: 生色 (generate) or 析色 (extract from image).
  */
 export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
   const fileInputRef = useRef(null);
@@ -42,48 +40,52 @@ export default function CreateActionSheet({ onClose, onShengSe, onExtract }) {
 
   return (
     <div
-      className="fixed inset-0 z-[180] flex items-end justify-center bg-black/40 backdrop-blur-sm md:items-center"
+      className="fixed inset-0 z-[180] flex items-end justify-center bg-zen-ink/20 backdrop-blur-[2px] md:items-center"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-sm rounded-t-[1.85rem_2rem_0_0] border border-zen-clay/40 bg-zen-paper p-5 pb-[max(2rem,env(safe-area-inset-bottom,0px))] shadow-zen-lg md:rounded-[1.6rem_1.85rem_1.45rem_1.9rem]">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-baseline gap-2.5">
-            <span className="type-index" aria-hidden>+</span>
-            <h3 className="type-h3">创作</h3>
-          </div>
+      <div className="w-full max-w-sm bg-zen-paper px-6 pt-6 pb-[max(2rem,env(safe-area-inset-bottom,0px))] md:rounded-sm">
+        <div className="mb-8 flex items-start justify-between">
+          <h3 className="type-h3">创作</h3>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-zen-ink/40 hover:bg-zen-ink/[0.06] transition-colors"
+            className="zen-quiet zen-hit px-0"
             aria-label="关闭"
           >
-            <X size={16} strokeWidth={2} aria-hidden />
+            ×
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {/* 生色 */}
+        <div className="flex items-end justify-between gap-6 pb-2">
           <button
             type="button"
             onClick={() => { onClose(); onShengSe(); }}
-            className="zen-scrap group flex flex-col items-center gap-2 bg-zen-sand/50 p-5 text-center hover:border-zen-vermilion/30 hover:bg-zen-vermilion/[0.04]"
+            className="group flex min-h-[7rem] flex-col items-start gap-3 text-left"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-[0.85rem_1rem_0.75rem_1.05rem] bg-zen-ink text-white">
-              <Sparkles size={20} strokeWidth={2} aria-hidden />
+            <div className="zen-wash--tile flex h-[5.75rem] w-[5.5rem] overflow-hidden">
+              {['#2C2C2C', '#8A6B4E', '#C9A882', '#E7DCC8', '#C45A4A'].map((hex) => (
+                <span key={hex} className="h-full min-w-0 flex-1" style={{ backgroundColor: hex }} />
+              ))}
             </div>
-            <p className="type-h4">生色</p>
+            <div>
+              <p className="type-h4">生色</p>
+              <p className="zen-action mt-1">生成</p>
+            </div>
           </button>
 
-          {/* 析色 */}
           <button
             type="button"
             onClick={handleExtractClick}
-            className="zen-scrap zen-scrap--pos group flex flex-col items-center gap-2 bg-zen-sand/50 p-5 text-center hover:border-zen-vermilion/30 hover:bg-zen-vermilion/[0.04]"
+            className="group mt-3 flex min-h-[7rem] flex-col items-start gap-3 text-left"
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-[0.85rem_1rem_0.75rem_1.05rem] bg-zen-vermilion text-white">
-              <Camera size={20} strokeWidth={2} aria-hidden />
+            <div
+              className="zen-wash zen-wash--pear relative h-[6.5rem] w-[4.25rem]"
+              style={{ background: 'linear-gradient(150deg, #E8C9B4 0%, #C45A4A 55%, #5C3A32 100%)' }}
+            />
+            <div>
+              <p className="type-h4">析色</p>
+              <p className="zen-quiet mt-1">从照片</p>
             </div>
-            <p className="type-h4">析色</p>
           </button>
         </div>
 

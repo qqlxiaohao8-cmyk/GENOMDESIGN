@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Search, X } from 'lucide-react';
 import MasonryColumns from '../components/MasonryColumns';
 import PageShell from '../components/layout/PageShell';
 import PaletteFeedCard from '../components/PaletteFeedCard';
@@ -123,14 +122,12 @@ function CategorizedTagPanel({
 
   return (
     <div
-      className="mt-2 rounded-2xl border border-zen-ink/10 bg-white px-3 py-2.5 shadow-sm"
+      className="mt-3"
       role="region"
       aria-label="标签筛选"
     >
-      <div className="mb-2.5 flex items-center justify-between gap-2 border-b border-zen-ink/[0.06] pb-2">
-        <span className="type-overline">
-          排序
-        </span>
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <span className="zen-catalog text-zen-stone">排序</span>
         <div className="flex gap-1.5">
           {[
             { key: 'trending', label: '最新' },
@@ -140,10 +137,8 @@ function CategorizedTagPanel({
               key={key}
               type="button"
               onClick={() => onSelectSort(key)}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-extralight transition-colors ${
-                sort === key
-                  ? 'bg-zen-ink text-zen-paper'
-                  : 'bg-zen-mist text-zen-ink/55 hover:bg-zen-ink/10'
+              className={`zen-tag px-2.5 py-0.5 ${
+                sort === key ? 'zen-tag-active' : ''
               }`}
             >
               {label}
@@ -162,7 +157,7 @@ function CategorizedTagPanel({
             tags.length === 0 ? null : (
               <section
                 key={id}
-                className="flex min-w-0 flex-col gap-1.5 border-r border-zen-ink/[0.06] pr-2 last:border-r-0 last:pr-0 md:gap-2 md:pr-3"
+                className="flex min-w-0 flex-col gap-1.5 pr-2 last:pr-0 md:gap-2 md:pr-3"
                 aria-label={label}
               >
                 <h3 className="type-overline shrink-0 text-zen-ink/50">
@@ -336,11 +331,9 @@ export default function ColorSeaPage({
         <>
           <div ref={searchAreaRef}>
             <div className="relative">
-              <Search
-                size={16}
-                strokeWidth={1.35}
-                className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zen-stone"
-              />
+              <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 font-zenTypewriter text-[11px] text-zen-stone">
+                搜
+              </span>
               <input
                 type="search"
                 value={searchQuery}
@@ -353,10 +346,8 @@ export default function ColorSeaPage({
                     onClearSimilarHexFilter?.();
                   }
                 }}
-                placeholder="搜索色票、标签、名称…"
-                className={`zen-input py-2.5 pl-10 pr-9 ${
-                  searchExpanded ? 'border-zen-stone/40 bg-white' : ''
-                }`}
+                placeholder="色票、标签、名称"
+                className="zen-input py-2.5 pl-7 pr-8"
               />
               {(searchQuery || searchExpanded) && (
                 <button
@@ -366,10 +357,10 @@ export default function ColorSeaPage({
                     setActiveTag('All');
                     setSearchExpanded(false);
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zen-stone smooth-transition hover:text-zen-coal"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 font-zenTypewriter text-[12px] text-zen-stone smooth-transition hover:text-zen-coal"
                   aria-label="清除搜索并关闭标签"
                 >
-                  <X size={14} />
+                  ×
                 </button>
               )}
             </div>
@@ -387,23 +378,23 @@ export default function ColorSeaPage({
           </div>
 
           {similarHexFilter && (
-            <div className="mt-2 flex items-center gap-2 rounded-full border border-zen-ink/10 bg-white px-2.5 py-1.5 shadow-sm">
+            <div className="mt-3 flex items-baseline gap-2">
               <span
-                className="h-4 w-4 shrink-0 rounded-full border border-zen-ink/10"
+                className="zen-wash inline-block h-3 w-3 shrink-0"
                 style={{ backgroundColor: similarHexFilter }}
                 aria-hidden
               />
-              <span className="min-w-0 flex-1 truncate text-[12px] font-extralight text-zen-ink/70">
+              <span className="zen-catalog min-w-0 flex-1 truncate">
                 相近于 {similarLabel}
-                <span className="ml-1 font-mono text-[11px] text-zen-ink/40">#{similarHexLabel}</span>
+                <span className="ml-2 text-zen-stone">#{similarHexLabel}</span>
               </span>
               <button
                 type="button"
                 onClick={() => onClearSimilarHexFilter?.()}
-                className="inline-flex h-6 w-6 items-center justify-center rounded-full text-zen-ink/45 hover:bg-zen-mist hover:text-zen-ink"
+                className="zen-catalog text-zen-stone hover:text-zen-coal"
                 aria-label="清除相近色筛选"
               >
-                <X size={12} strokeWidth={2} aria-hidden />
+                ×
               </button>
             </div>
           )}
@@ -420,28 +411,29 @@ export default function ColorSeaPage({
       )}
     >
       {renderableFeed.length > 0 ? (
-        <MasonryColumns className={COLOR_SEA_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
+        <MasonryColumns className={`${COLOR_SEA_MASONRY_CLASS} zen-feed-scrap`} gap={PALETTE_FEED_MASONRY_GAP}>
           {renderableFeed.map(({ item, cd }) => (
             <PaletteFeedCard
               key={item.id}
+              cardId={item.id}
               colors={cd.colors}
               title={item.aesthetic || ''}
               favorited={favoritedExploreStyleIds?.has(item.id)}
               favoriteBusy={vaultFavoriteBusyId === item.id}
-              onToggleFavorite={() => {
+              onToggleFavorite={item.isLocalPreview ? undefined : () => {
                 if (!user) { onOpenAuth?.(); return; }
                 onToggleFavorite?.(item);
               }}
               mode="sea"
               onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
               onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
-              onCopyLink={() => onCopyLink?.(item.id)}
+              onCopyLink={item.isLocalPreview ? undefined : () => onCopyLink?.(item.id)}
             />
           ))}
         </MasonryColumns>
       ) : (
-        <div className="py-16 text-center">
-          <p className="type-body text-zen-ink/40">
+        <div className="py-16">
+          <p className="zen-catalog text-zen-stone">
             {similarHexFilter
               ? '没有找到包含相近颜色的色卡。'
               : searchQuery || activeTag !== 'All'

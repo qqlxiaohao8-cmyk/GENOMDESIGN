@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Bookmark, ThumbsUp, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import DailyColorChallengeCard from '../components/DailyColorChallengeCard';
 import ColorMemoryChallengeCard from '../components/ColorMemoryChallengeCard';
 import ColorWalkChallengeCard from '../components/ColorWalkChallengeCard';
@@ -72,39 +72,9 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
 
   return (
     <PageShell title="游戏" index="03">
-      <DailyColorChallengeCard onStart={onStartChallenge} />
-
-      <button
-        type="button"
-        onClick={() => onOpenDailyPool?.()}
-        className="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-vermilion/10 text-zen-vermilion">
-            <ThumbsUp size={18} strokeWidth={2} aria-hidden />
-          </div>
-          <p className="type-h4">今日投稿 · 投票</p>
-        </div>
-        <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
-      </button>
-
+      <DailyColorChallengeCard onStart={onStartChallenge} onOpenPool={onOpenDailyPool} />
       <ColorMemoryChallengeCard onOpen={openMemoryGame} />
-      <ColorWalkChallengeCard onOpen={openColorWalk} />
-
-      <button
-        type="button"
-        onClick={openColorWalkSaved}
-        className="mb-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-zen-ink/10 bg-white px-4 py-3.5 text-left shadow-sm transition-shadow hover:shadow-md"
-        aria-label="打开 Color Walk 收藏"
-      >
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zen-ink/[0.06] text-zen-ink">
-            <Bookmark size={18} strokeWidth={2} aria-hidden />
-          </div>
-          <p className="type-h4">Color Walk 收藏</p>
-        </div>
-        <ArrowRight size={16} className="shrink-0 text-zen-ink/35" strokeWidth={2} aria-hidden />
-      </button>
+      <ColorWalkChallengeCard onOpen={openColorWalk} onOpenSaved={openColorWalkSaved} />
 
       {memoryGameOpen && (
         <div

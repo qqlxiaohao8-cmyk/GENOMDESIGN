@@ -1,47 +1,42 @@
 import React from 'react';
-import { ArrowRight, Compass } from 'lucide-react';
 
 /**
- * 游戏页 · Color Walk 入口卡片（与每日一色同尺寸）
- * @param {{ onOpen?: () => void }} props
+ * 游戏页 · Color Walk：出门采色，或回看已收的色。
  */
-export default function ColorWalkChallengeCard({ onOpen }) {
+export default function ColorWalkChallengeCard({ onOpen, onOpenSaved }) {
   return (
-    <button
-      type="button"
-      onClick={() => onOpen?.()}
-      className="zen-scrap group mb-4 flex w-full overflow-hidden text-left shadow-sm hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-zen-vermilion/40"
-      aria-label="打开 Color Walk"
-    >
-      <div className="relative w-[min(38%,9rem)] shrink-0 self-stretch min-h-[7.5rem] bg-black">
-        <div
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(140deg, #D58A6A 0%, #8DA3D9 45%, #CFA0D4 72%, #B8D79A 100%)',
-          }}
-          aria-hidden
-        />
-        <div className="absolute inset-0 bg-black/30" aria-hidden />
-        <span className="absolute bottom-2 left-2 font-zenTypewriter text-[10px] font-normal tracking-wider text-white/75">
-          随机定色
-        </span>
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 px-4 py-3.5">
-        <div className="type-overline flex items-center gap-1.5">
-          <Compass size={12} strokeWidth={2} aria-hidden />
-          <span>Color Walk</span>
+    <article className="zen-specimen mb-10 flex w-full items-start gap-5 py-1 sm:gap-8">
+      <button
+        type="button"
+        onClick={() => onOpen?.()}
+        className="zen-wash zen-wash--pear relative h-[8.25rem] w-[6.5rem] shrink-0"
+        style={{
+          background: 'linear-gradient(140deg, #D58A6A 0%, #8DA3D9 45%, #CFA0D4 72%, #B8D79A 100%)',
+        }}
+        aria-label="开始 Color Walk"
+      />
+      <div className="min-w-0 flex-1 pt-2">
+        <p className="font-zenTypewriter text-[10px] text-zen-stone">3</p>
+        <h2 className="type-h2 mt-2">Color Walk</h2>
+        <div className="mt-4 flex flex-wrap items-baseline gap-x-5 gap-y-1">
+          <button
+            type="button"
+            onClick={() => onOpen?.()}
+            className="zen-action zen-hit px-0"
+          >
+            开始
+          </button>
+          {onOpenSaved ? (
+            <button
+              type="button"
+              onClick={() => onOpenSaved()}
+              className="zen-quiet zen-hit px-0"
+            >
+              回看
+            </button>
+          ) : null}
         </div>
-
-        <div>
-          <h2 className="type-h2">Color Walk</h2>
-        </div>
-
-        <span className="type-caption inline-flex items-center gap-1 text-zen-vermilion group-hover:opacity-80">
-          开始
-          <ArrowRight size={14} strokeWidth={2} aria-hidden />
-        </span>
       </div>
-    </button>
+    </article>
   );
 }

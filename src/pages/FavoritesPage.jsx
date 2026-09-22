@@ -1,5 +1,4 @@
 import React from 'react';
-import { Bookmark } from 'lucide-react';
 import MasonryColumns from '../components/MasonryColumns';
 import PaletteFeedCard from '../components/PaletteFeedCard';
 import PageShell from '../components/layout/PageShell';
@@ -10,7 +9,6 @@ const PAGE_TITLE = '收藏';
 
 /**
  * 收藏首页：用户私人色卡库（移动 1 列 / 桌面 2 列瀑布流）。
- * 未登录时显示空态 + 登录引导；数据存于 Supabase，登出后仍保留。
  */
 export default function FavoritesPage({
   user,
@@ -36,20 +34,15 @@ export default function FavoritesPage({
   if (!user) {
     return (
       <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="w-full max-w-xs text-center">
-            <div className="zen-panel mx-auto mb-5 flex h-16 w-16 items-center justify-center p-0">
-              <Bookmark size={28} strokeWidth={1.35} className="text-zen-stone" />
-            </div>
-            <h2 className="type-h2 mb-7">
-              登录后解锁收藏
-            </h2>
+        <div className="flex flex-1 items-center p-2 pt-8">
+          <div className="max-w-xs text-left">
+            <h2 className="type-h2">登录后解锁收藏</h2>
             <button
               type="button"
               onClick={onOpenAuth}
-              className="zen-btn-primary w-full"
+              className="zen-action zen-hit mt-5"
             >
-              登录 / 注册
+              登录
             </button>
           </div>
         </div>
@@ -60,14 +53,9 @@ export default function FavoritesPage({
   if (vaultColorPaletteItems.length === 0) {
     return (
       <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="w-full max-w-xs text-center">
-            <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-dashed border-zen-ink/20 bg-transparent">
-              <Bookmark size={28} strokeWidth={1.5} className="text-zen-ink/25" />
-            </div>
-            <h3 className="type-h3 text-zen-ink/60">
-              暂无收藏
-            </h3>
+        <div className="flex flex-1 items-center p-2 pt-10">
+          <div className="max-w-xs text-left">
+            <h3 className="type-h3 text-zen-ink/70">暂无收藏</h3>
           </div>
         </div>
       </PageShell>
@@ -76,13 +64,14 @@ export default function FavoritesPage({
 
   return (
     <PageShell title={PAGE_TITLE} index="01" bodyClassName="zen-page-body-feed">
-      <MasonryColumns className={FAVORITES_MASONRY_CLASS} gap={PALETTE_FEED_MASONRY_GAP}>
+      <MasonryColumns className={`${FAVORITES_MASONRY_CLASS} zen-feed-scrap`} gap={PALETTE_FEED_MASONRY_GAP}>
         {vaultColorPaletteItems.map((item) => {
           const cd = itemColorCardData(item);
           if (!cd) return null;
           return (
             <PaletteFeedCard
               key={item.id}
+              cardId={item.id}
               colors={cd.colors}
               title={item.aesthetic || cd.overview || ''}
               mode="favorites"

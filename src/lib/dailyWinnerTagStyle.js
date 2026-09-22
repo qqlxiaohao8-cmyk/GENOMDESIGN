@@ -1,29 +1,25 @@
 import { DAILY_WINNER_TAG } from './dailyOneColorConstants.js';
-import { hexToRgb, pickReadableTextOnHex } from './colorValues.js';
 
-/** 与 .zen-tag 同尺寸；叠在 zen-tag 上时只覆盖颜色 */
-const TAG_COLOR_ONLY =
-  'transition-[background-color,border-color,color]';
-
-/** 色海「每日色卡」快捷标签：边框与底色随当日观色 hex 变化 */
+/** 色海「每日色卡」快捷标签：字色随当日观色 */
 export function getDailyWinnerTagButtonProps(hex, active) {
   const norm = String(hex || '#888888').trim();
-  const [r, g, b] = hexToRgb(norm);
   if (active) {
     return {
-      className: TAG_COLOR_ONLY,
+      className: 'font-zenTypewriter',
       style: {
-        backgroundColor: norm,
-        borderColor: norm,
-        color: pickReadableTextOnHex(norm),
+        color: norm,
+        boxShadow: `0 1px 0 ${norm}`,
+        backgroundColor: 'transparent',
+        borderColor: 'transparent',
       },
     };
   }
   return {
-    className: `${TAG_COLOR_ONLY} text-zen-ink/70`,
+    className: 'font-zenTypewriter text-zen-stone',
     style: {
-      backgroundColor: `rgba(${r}, ${g}, ${b}, 0.18)`,
-      borderColor: `rgba(${r}, ${g}, ${b}, 0.42)`,
+      color: norm,
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
     },
   };
 }
