@@ -4,7 +4,8 @@ import LoginFlipPrompt from './LoginFlipPrompt';
 
 const INTRO_SRC = '/sekong-ink-intro.mp4';
 const INTRO_POSTER = '/sekong-ink-intro-poster.png';
-const LAND_HOLD_MS = 200;
+const HANDOFF_AT = 8.22;
+const LAND_HOLD_MS = 48;
 const SPREAD_MS = 920;
 const REVEAL_MS = 420;
 const FAILSAFE_MS = 10000;
@@ -124,8 +125,8 @@ function findDropInFrame(video) {
 }
 
 /**
- * 开场视频 2.6 倍速播完（片里已有水滴落下）。
- * 停在最后一帧，从最下方墨滴长成登录框或「我的」色块。
+ * 开场视频 2.6 倍速。水滴落地、涟漪还没翻起时，
+ * 从墨点长成登录框或「我的」色块。
  */
 export default function SplashDrop({
   ready = false,
@@ -230,9 +231,25 @@ export default function SplashDrop({
 
     video.muted = true;
     applySpeed(video);
+
+    let raf = 0;
+    const watch = () => {
+      applySpeed(video);
+      if (!linkedRef.current && video.currentTime >= HANDOFF_AT) {
+        beginRef.current();
+        return;
+      }
+      raf = window.requestAnimationFrame(watch);
+    };
+
+    const onPlaying = () => {
+      keepRate();
+      if (!raf) raf = window.requestAnimationFrame(watch);
+    };
+
     video.addEventListener('loadedmetadata', keepRate);
     video.addEventListener('canplay', play, { once: true });
-    video.addEventListener('playing', keepRate);
+    video.addEventListener('playing', onPlaying);
     video.addEventListener('ratechange', keepRate);
     video.addEventListener('timeupdate', keepRate);
     if (video.readyState >= 2) play();
@@ -241,9 +258,10 @@ export default function SplashDrop({
     return () => {
       video.removeEventListener('loadedmetadata', keepRate);
       video.removeEventListener('canplay', play);
-      video.removeEventListener('playing', keepRate);
+      video.removeEventListener('playing', onPlaying);
       video.removeEventListener('ratechange', keepRate);
       video.removeEventListener('timeupdate', keepRate);
+      window.cancelAnimationFrame(raf);
       window.clearTimeout(failsafe);
     };
   }, [reduceMotion, ready, startAtLogin]);

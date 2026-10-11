@@ -623,15 +623,16 @@
     @apply min-w-0 flex-1 space-y-1.5;
   }
   .sekong-header-logo {
-    height: 2.75rem;
-    width: 9.25rem;
+    display: block;
+    height: 3.15rem;
+    width: 4.55rem;
     object-fit: cover;
-    object-position: center;
+    object-position: 48% 46%;
   }
   @media (min-width: 768px) {
     .sekong-header-logo {
-      height: 3rem;
-      width: 10.25rem;
+      height: 3.45rem;
+      width: 5rem;
     }
   }
   .zen-page-header {
@@ -1341,7 +1342,7 @@
   height: 100%;
   object-fit: contain;
   background: #ffffff;
-  transition: opacity 0.48s ease 0.16s;
+  transition: opacity 0.34s ease 0.02s;
 }
 
 .heytea-splash.is-play .heytea-splash-video,

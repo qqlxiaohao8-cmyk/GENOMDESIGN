@@ -1,5 +1,5 @@
 import React from 'react';
-import sekongLogo from '../../assets/sekong-wordmark.png';
+import sekongLogo from '../../assets/sekong-mark.png';
 
 /**
  * 主导航页统一页头：色空字标 + 可选说明
