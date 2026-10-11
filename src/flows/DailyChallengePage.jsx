@@ -232,7 +232,7 @@ function EmptyStripe({ hex, filled, onPick }) {
       aria-label={filled ? '已选色，点击修改' : '轻触选色'}
     >
       {!filled ? (
-        <span className="flex items-center gap-1.5 text-[11px] font-extralight tracking-wide text-zen-ink/40">
+        <span className="daily-pick-blink flex items-center gap-1.5 text-[11px] font-extralight tracking-wide text-zen-ink/55">
           <Pipette size={13} strokeWidth={2} aria-hidden />
           轻触选色
         </span>
@@ -304,12 +304,9 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
         </button>
       </div>
 
-      <div className="shrink-0 border-b border-zen-ink/[0.06] bg-zen-mist/40 px-4 py-2.5 text-center">
-        <p className="type-note text-zen-ink/50">
-          今日色已固定 · 请为其余 {SLOT_COUNT - 1} 个色块自主选色（不可使用「生色」随机生成）
-        </p>
-        {dailyData.quote?.zh && (
-          <p className="type-note mt-1.5 line-clamp-2 text-zen-ink/60">
+      {dailyData.quote?.zh ? (
+        <div className="shrink-0 border-b border-zen-ink/[0.06] bg-zen-mist/40 px-4 py-2.5 text-center">
+          <p className="type-note line-clamp-2 text-zen-ink/60">
             「{dailyData.quote.zh}」
             {dailyData.quote.zhSource && (
               <span className="type-caption mt-0.5 block">
@@ -317,8 +314,8 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
               </span>
             )}
           </p>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div className="relative flex flex-1 flex-col min-h-0">
         {hexes.map((hex, i) => {
@@ -342,12 +339,6 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
           );
         })}
       </div>
-
-      {!allFilled && (
-        <p className="type-note shrink-0 border-t border-zen-ink/10 bg-white px-4 py-2 text-center">
-          还有 {touched.filter((t) => !t).length} 个色块待填写
-        </p>
-      )}
 
       {pickerIdx !== null && pickerIdx !== DAILY_SLOT_INDEX && (
         <HslColorPicker

@@ -7,7 +7,7 @@ import SetPasswordModal from './components/SetPasswordModal';
 import ColorCardPreviewOverlay from './components/ColorCardPreviewOverlay';
 import { itemColorCardData } from './components/StyleUiPreviewCard';
 
-import FavoritesPage from './pages/FavoritesPage';
+import FavoritesPage, { PREVIEW_USER } from './pages/FavoritesPage';
 import ColorSeaPage from './pages/ColorSeaPage';
 import DailyOneColorPage from './pages/DailyOneColorPage';
 import ProfilePage from './pages/ProfilePage';
@@ -564,8 +564,13 @@ export default function App() {
         <SplashDrop
           ready={authReady}
           user={user}
-          accentHex={user?.user_metadata?.accent_hex || '#2C2C2C'}
-          username={user?.user_metadata?.username || user?.email?.split('@')[0] || ''}
+          landOnHero
+          accentHex={user?.user_metadata?.accent_hex || PREVIEW_USER.user_metadata.accent_hex}
+          username={
+            user?.user_metadata?.username
+            || user?.email?.split('@')[0]
+            || PREVIEW_USER.user_metadata.username
+          }
           startAtLogin={gate === 'flip'}
           onLanded={() => setGate('app')}
           onNeedLogin={() => setGate('flip')}

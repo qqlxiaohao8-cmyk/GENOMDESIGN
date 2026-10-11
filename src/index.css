@@ -603,6 +603,139 @@
   .mine-page .heytea-activity-card span[style] {
     border-radius: 0.7rem;
   }
+  .mine-section {
+    margin-bottom: 1.85rem;
+  }
+  .mine-section--last {
+    margin-bottom: 0;
+  }
+  .mine-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.7rem;
+    padding-inline: 0.15rem;
+  }
+  .mine-section-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0.18em;
+    color: #8a8478;
+  }
+  .mine-section-aside {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #8a8478;
+  }
+  .mine-today {
+    display: flex;
+    min-height: 5.6rem;
+    width: 100%;
+    overflow: hidden;
+    text-align: left;
+    background: #fff;
+  }
+  .mine-today-wash {
+    width: 38%;
+    min-width: 6.8rem;
+  }
+  .mine-today-copy {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.05rem 1.15rem 0.95rem;
+  }
+  .mine-vote-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .mine-vote-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.5rem 0.65rem 0.5rem 0.5rem;
+    background: #fff;
+  }
+  .mine-vote-stripes {
+    width: 6.2rem;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 0.85rem;
+  }
+  .mine-vote-meta {
+    min-width: 0;
+    flex: 1;
+  }
+  .mine-vote-btn {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.12rem;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: #8a8478;
+    box-shadow: 0 1px 0 currentColor;
+  }
+  .mine-vote-btn.is-voted {
+    color: #c93756;
+  }
+  .mine-vote-btn:disabled {
+    opacity: 0.4;
+    box-shadow: none;
+  }
+  .mine-more {
+    display: block;
+    margin-top: 0.7rem;
+    padding-inline: 0.15rem;
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    color: #8a8478;
+    box-shadow: 0 1px 0 currentColor;
+  }
+  .mine-yesterday {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    margin-top: 0.85rem;
+    text-align: left;
+    background: #fff;
+  }
+  .mine-yesterday-copy {
+    display: block;
+    width: 100%;
+    padding: 0.7rem 0.85rem 0.8rem;
+    text-align: left;
+  }
+  .mine-activity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+  }
+  .mine-page .mine-activity-card {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+  }
+  @keyframes daily-pick-blink {
+    0%, 100% { opacity: 0.28; }
+    50% { opacity: 1; }
+  }
+  .daily-pick-blink {
+    animation: daily-pick-blink 1.35s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .daily-pick-blink {
+      animation: none;
+      opacity: 0.7;
+    }
+  }
   .zen-stripe {
     cursor: pointer;
     transition: flex-grow 0.35s ease;
@@ -1402,6 +1535,11 @@ body {
 .heytea-splash.is-reveal {
   background: transparent;
   pointer-events: none;
+  transition: background 0.2s ease;
+}
+
+body:has(.heytea-splash) [data-mine-hero] {
+  visibility: hidden;
 }
 
 .heytea-splash-video {
@@ -1446,11 +1584,6 @@ body {
 .heytea-ink-drop.is-spread,
 .heytea-ink-drop.is-reveal,
 .heytea-ink-drop.is-login {
-  left: 0;
-  top: env(safe-area-inset-top, 0px);
-  width: 100%;
-  height: 8.5rem;
-  border-radius: 0;
   transition:
     left 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
     top 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
@@ -1458,6 +1591,20 @@ body {
     height 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
     border-radius 0.78s cubic-bezier(0.45, 0.02, 0.18, 1),
     background 0.55s ease 0.12s;
+}
+
+.heytea-ink-drop.is-spread:not(.is-flip):not(.is-hero),
+.heytea-ink-drop.is-reveal:not(.is-flip):not(.is-hero) {
+  left: 0;
+  top: env(safe-area-inset-top, 0px);
+  width: 100%;
+  height: 8.5rem;
+  border-radius: 0;
+}
+
+.heytea-ink-drop.is-hero.is-spread,
+.heytea-ink-drop.is-hero.is-reveal {
+  border-radius: 1.25rem;
 }
 
 .heytea-ink-drop.is-flip.is-spread,
@@ -1499,14 +1646,15 @@ body {
 
 .heytea-ink-kicker {
   top: 1.25rem;
-  font-size: 11px;
-  letter-spacing: 0.16em;
+  font-size: 13px;
+  letter-spacing: 0.12em;
   opacity: 0.7;
 }
 
 .heytea-ink-name {
   bottom: 1.25rem;
   font-size: 2rem;
+  line-height: 1;
   letter-spacing: 0.03em;
 }
 

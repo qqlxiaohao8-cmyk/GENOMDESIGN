@@ -7,9 +7,32 @@ const INTRO_POSTER = '/sekong-ink-intro-poster.png';
 const HANDOFF_AT = 8.22;
 const LAND_HOLD_MS = 48;
 const SPREAD_MS = 920;
-const REVEAL_MS = 420;
+const REVEAL_MS = 180;
 const FAILSAFE_MS = 10000;
 const PLAYBACK_RATE = 2.6;
+const HERO_RADIUS = '1.25rem';
+const HERO_HEIGHT = 136;
+
+function readMineHeroBox() {
+  const el = document.querySelector('[data-mine-hero]');
+  if (el) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 40 && r.height > 40) {
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    }
+  }
+  const md = window.matchMedia('(min-width: 768px)').matches;
+  const padX = md ? 24 : 16;
+  const padY = md ? 24 : 16;
+  const main = document.querySelector('main');
+  const mr = main?.getBoundingClientRect();
+  return {
+    left: (mr?.left ?? 0) + padX,
+    top: (mr?.top ?? 0) + padY,
+    width: Math.max(160, (mr?.width ?? window.innerWidth) - padX * 2),
+    height: HERO_HEIGHT,
+  };
+}
 
 function applySpeed(video) {
   if (!video) return;
@@ -131,6 +154,7 @@ function findDropInFrame(video) {
 export default function SplashDrop({
   ready = false,
   user = null,
+  landOnHero = false,
   accentHex = '#2C2C2C',
   username = '',
   startAtLogin = false,
@@ -145,6 +169,8 @@ export default function SplashDrop({
   const timersRef = useRef([]);
   const [phase, setPhase] = useState(startAtLogin ? 'login' : 'play');
   const [land, setLand] = useState(null);
+  const [heroBox, setHeroBox] = useState(null);
+  const toHero = Boolean((user || landOnHero) && !startAtLogin);
 
   const reduceMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -175,8 +201,12 @@ export default function SplashDrop({
       setLand(fallbackDrop(null));
     }
 
+    const captureHero = () => setHeroBox(readMineHeroBox());
+    captureHero();
+    requestAnimationFrame(captureHero);
+
     if (reduceMotion) {
-      if (user) onLanded?.();
+      if (toHero) onLanded?.();
       else {
         setPhase('login');
         onNeedLogin?.();
@@ -187,7 +217,7 @@ export default function SplashDrop({
     setPhase('land');
     later(() => setPhase('spread'), LAND_HOLD_MS);
     later(() => {
-      if (user) {
+      if (toHero) {
         setPhase('reveal');
         later(() => onLanded?.(), REVEAL_MS);
       } else {
@@ -195,7 +225,7 @@ export default function SplashDrop({
         onNeedLogin?.();
       }
     }, LAND_HOLD_MS + SPREAD_MS);
-  }, [ready, user, reduceMotion, onLanded, onNeedLogin]);
+  }, [ready, toHero, reduceMotion, onLanded, onNeedLogin]);
 
   const beginRef = useRef(beginHandoff);
   beginRef.current = beginHandoff;
@@ -270,15 +300,17 @@ export default function SplashDrop({
     return null;
   }
 
-  const ink = user ? accentHex : '#1C1C1C';
+  const ink = toHero ? accentHex : '#1C1C1C';
   const text = pickReadableTextOnHex(ink);
   const dropClass = [
     'heytea-ink-drop',
     `is-${phase === 'login' ? 'spread' : phase}`,
-    !user && phase !== 'play' ? 'is-flip' : '',
+    !toHero && phase !== 'play' ? 'is-flip' : '',
     phase === 'login' ? 'is-login' : '',
+    toHero && phase !== 'play' ? 'is-hero' : '',
   ].filter(Boolean).join(' ');
 
+  const heroRect = heroBox || (toHero ? readMineHeroBox() : null);
   const landStyle = phase === 'land' && land
     ? {
         left: `${land.x - land.w / 2}px`,
@@ -287,13 +319,23 @@ export default function SplashDrop({
         height: `${land.h}px`,
         background: '#1C1C1C',
       }
-    : phase === 'spread' || phase === 'reveal'
-      ? { background: user ? ink : '#ffffff' }
-      : undefined;
+    : (phase === 'spread' || phase === 'reveal') && toHero && heroRect
+      ? {
+          left: `${heroRect.left}px`,
+          top: `${heroRect.top}px`,
+          width: `${heroRect.width}px`,
+          height: `${heroRect.height}px`,
+          background: ink,
+          borderRadius: HERO_RADIUS,
+        }
+      : phase === 'spread' || phase === 'reveal'
+        ? { background: '#ffffff' }
+        : undefined;
 
   const showVideo = !startAtLogin && phase !== 'login' && phase !== 'reveal';
   const showDrop = phase !== 'play';
-  const showLogin = !user && (phase === 'spread' || phase === 'login');
+  const showLogin = !toHero && (phase === 'spread' || phase === 'login');
+  const showHeroFill = toHero && (phase === 'spread' || phase === 'reveal');
 
   return (
     <div
@@ -317,7 +359,7 @@ export default function SplashDrop({
 
       {showDrop ? (
         <div className={dropClass} style={landStyle}>
-          {user && (phase === 'spread' || phase === 'reveal') ? (
+          {showHeroFill ? (
             <>
               <span className="heytea-ink-kicker" style={{ color: text }}>我的</span>
               <span className="heytea-ink-name" style={{ color: text }}>{username}</span>
