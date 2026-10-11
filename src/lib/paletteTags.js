@@ -15,6 +15,7 @@ import {
   SEA_STYLE_TAGS,
   SEA_THEME_TAGS,
 } from './seaTagVocabulary.js';
+import { inferThemeFromColors, themeFitsColors } from './themeColorGuides.js';
 
 const DOMAIN_TO_HUE = {
   red: '红色',
@@ -89,21 +90,33 @@ export function generatePaletteTags(hexes, meta = {}, legacyKeywords = [], palet
 
   const legacyStyle = mappedLegacy.find(
     (t) => SEA_STYLE_TAGS.includes(t) && t !== '现代',
-  ) || null;
+  ) || mappedLegacy.find((t) => t === '现代') || null;
   const legacyTheme = mappedLegacy.find((t) => SEA_THEME_TAGS.includes(t)) || null;
 
   const domain = safeMeta.primaryDomain || null;
   const hueFromMeta = domain ? DOMAIN_TO_HUE[domain] : null;
   const harmonyTheme = harmonyTagFromId(safeMeta.harmonyId);
+  const candidateTheme = legacyTheme
+    || inferThemeFromTitle(paletteTitle)
+    || broadThemeFromMeta(safeMeta.styleLabel, safeMeta.category)
+    || harmonyTheme;
+  const theme = candidateTheme && themeFitsColors(candidateTheme, hexes || [])
+    ? candidateTheme
+    : inferThemeFromColors(hexes || []);
 
   return assembleSeaTags({
     hue: hueFromMeta || dominantHueTag(hexes || []),
     style: legacyStyle || inferStyleFromTitle(paletteTitle) || broadStyleFromMeta(safeMeta.styleLabel, safeMeta.category),
-    theme: legacyTheme || inferThemeFromTitle(paletteTitle) || broadThemeFromMeta(safeMeta.styleLabel, safeMeta.category) || harmonyTheme,
+    theme,
     colorFeel: [],
     legacy: [
-      ...legacy,
-      ...(harmonyTheme && !legacyTheme && !inferThemeFromTitle(paletteTitle) ? [harmonyTheme] : []),
+      ...legacy.filter((raw) => {
+        const mapped = normalizeLegacySeaTag(raw);
+        if (mapped && SEA_THEME_TAGS.includes(mapped) && !themeFitsColors(mapped, hexes || [])) {
+          return false;
+        }
+        return true;
+      }),
     ],
   });
 }

@@ -1,60 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import MasonryColumns from '../components/MasonryColumns';
-import PaletteFeedCard, { formatLikeCount } from '../components/PaletteFeedCard';
+import PaletteFeedCard from '../components/PaletteFeedCard';
 import ColorWalkFlowOverlay from '../components/ColorWalkFlowOverlay';
 import ColorMemoryGame from '../components/ColorMemoryGame';
 import { itemColorCardData } from '../components/StyleUiPreviewCard';
 import { FAVORITES_MASONRY_CLASS, PALETTE_FEED_MASONRY_GAP } from '../lib/paletteFeedLayout';
 import { dateFromDailyPaletteKey, getTodayColor } from '../lib/dailyPalette';
 import { useCalendarDateKey } from '../hooks/useCalendarDateKey';
-import useDailyOneColor from '../hooks/useDailyOneColor';
-import {
-  addChallengeDays,
-  challengeDateKey,
-  fetchSubmissionsForChallengeDate,
-  fetchVotesForChallengeDate,
-  mapSubmissionToFeedCard,
-} from '../lib/dailyOneColorApi';
-import { DAILY_VOTES_PER_USER } from '../lib/dailyOneColorConstants';
 import { getHomeActivityCards } from '../lib/homeActivities';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { buildLocalSeaPreviewItems } from '../lib/localSeaPreview';
 import { IconMemory, IconWalk } from '../components/icons/HeyteaIcons';
-import ColorSeaStripes from '../components/ColorSeaStripes';
 
 export const PREVIEW_USER = {
   id: 'preview',
   email: 'preview@sekong.app',
   user_metadata: { username: '空山', accent_hex: '#B08968' },
 };
-
-const PREVIEW_NAMES = ['晚茶', '青瓦', '疏影', '未央'];
-const PREVIEW_COUNTS = [12, 7, 4, 2];
-
-const PREVIEW_WINNER = (() => {
-  const sample = buildLocalSeaPreviewItems()[0];
-  const colors = sample.extractionSnapshot?.colorCardData?.colors || [];
-  return {
-    title: sample.aesthetic || '昨日赢家',
-    colors,
-    username: '晚茶',
-    voteCount: 12,
-  };
-})();
-
-const PREVIEW_VOTES = buildLocalSeaPreviewItems().slice(0, 4).map((item, i) => {
-  const colors = item.extractionSnapshot?.colorCardData?.colors || [];
-  return {
-    id: `preview-vote-${i}`,
-    title: item.aesthetic || '色卡',
-    colors,
-    voteCount: PREVIEW_COUNTS[i] || 1,
-    votedByMe: false,
-    username: PREVIEW_NAMES[i] || '匿名',
-    ownerUserId: 'preview-other',
-  };
-});
 
 function ProfileColorHero({ hex, username, onEdit }) {
   const text = pickReadableTextOnHex(hex);
@@ -92,7 +55,7 @@ function SectionHead({ label, aside }) {
   );
 }
 
-function TodayBlock({ today, onPlay }) {
+function TodayBlock({ today, onPlay, onVote }) {
   return (
     <section className="mine-section">
       <SectionHead label="今日" />
@@ -109,111 +72,14 @@ function TodayBlock({ today, onPlay }) {
           <p className="type-caption">参加</p>
         </div>
       </button>
-    </section>
-  );
-}
-
-function VoteRow({ item, voted, busy, disabled, onVote }) {
-  return (
-    <div className="mine-round mine-vote-row">
-      <div className="mine-vote-stripes">
-        <ColorSeaStripes
-          colors={item.colors || []}
-          className="!h-14 !min-h-14 !max-h-14"
-          hexCopyScope={`mine-vote-${item.id}`}
-        />
-      </div>
-      <div className="mine-vote-meta">
-        <p className="truncate font-heytea text-[1.02rem] leading-snug tracking-[0.02em]">
-          {item.title || '色卡'}
-        </p>
-        <p className="type-caption mt-0.5 truncate">
-          {item.username || '匿名'}
-        </p>
-      </div>
       <button
         type="button"
         onClick={onVote}
-        disabled={busy || disabled || voted}
-        className={`mine-vote-btn ${voted ? 'is-voted' : ''}`}
-        aria-label={voted ? '已投票' : '投票'}
+        className="mine-round mine-vote-entry"
       >
-        <span>{voted ? '已投' : '投票'}</span>
-        <span className="tabular-nums opacity-60">{formatLikeCount(item.voteCount)}</span>
+        <span className="font-heytea text-[1.05rem] tracking-[0.04em]">投票</span>
+        <span className="type-caption">今日色卡</span>
       </button>
-    </div>
-  );
-}
-
-function VoteSection({
-  items,
-  remaining,
-  loading,
-  winner,
-  hasMore,
-  onVote,
-  onOpenPool,
-  voteBusyId,
-  voteDisabledFor,
-}) {
-  return (
-    <section className="mine-section">
-      <SectionHead
-        label="投票"
-        aside={(
-          <span className="tabular-nums">
-            余 {remaining}
-          </span>
-        )}
-      />
-
-      {loading && items.length === 0 ? (
-        <p className="type-caption px-0.5 py-6">正在取今日色卡</p>
-      ) : items.length === 0 ? (
-        <p className="type-caption px-0.5 py-6">今日还没有投稿</p>
-      ) : (
-        <div className="mine-vote-list">
-          {items.map((item) => (
-            <VoteRow
-              key={item.id}
-              item={item}
-              voted={item.votedByMe}
-              busy={voteBusyId === item.id}
-              disabled={voteDisabledFor?.(item)}
-              onVote={() => onVote(item)}
-            />
-          ))}
-        </div>
-      )}
-
-      {hasMore ? (
-        <button type="button" onClick={onOpenPool} className="mine-more">
-          全部
-        </button>
-      ) : null}
-
-      {winner?.colors?.length ? (
-        <div className="mine-round mine-yesterday">
-          <ColorSeaStripes
-            colors={winner.colors}
-            className="!h-[4.5rem] !min-h-[4.5rem] !max-h-[4.5rem]"
-            hexCopyScope="yesterday-winner"
-          />
-          <button
-            type="button"
-            onClick={onOpenPool}
-            className="mine-yesterday-copy"
-          >
-            <p className="truncate font-heytea text-[1.02rem] leading-snug tracking-[0.02em]">
-              {winner.title || '昨日赢家'}
-            </p>
-            <p className="type-caption mt-0.5 truncate">
-              {winner.username ? `${winner.username} · 昨日` : '昨日'}
-              {winner.voteCount != null ? ` · ${winner.voteCount}` : ''}
-            </p>
-          </button>
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -267,7 +133,6 @@ export default function FavoritesPage({
     [dateKey],
   );
   const activityCards = useMemo(() => getHomeActivityCards(), []);
-  const [winner, setWinner] = useState(PREVIEW_WINNER);
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [memorySession, setMemorySession] = useState(0);
   const [walkOpen, setWalkOpen] = useState(false);
@@ -283,58 +148,12 @@ export default function FavoritesPage({
     ? previewVault
     : vaultColorPaletteItems;
 
-  const vote = useDailyOneColor({ user });
-  const liveVotes = vote.items;
-  const voteItems = liveVotes.length > 0
-    ? liveVotes.slice(0, 4)
-    : (isPreview ? PREVIEW_VOTES : []);
-  const remaining = user ? vote.remainingVotes : DAILY_VOTES_PER_USER;
-  const hasMoreVotes = liveVotes.length > 4;
-
-  useEffect(() => {
-    let cancelled = false;
-    const yesterdayKey = addChallengeDays(challengeDateKey(), -1);
-    (async () => {
-      const { rows } = await fetchSubmissionsForChallengeDate(null, yesterdayKey);
-      const { bySubmission } = await fetchVotesForChallengeDate(null, yesterdayKey);
-      if (cancelled || !rows.length) {
-        if (!cancelled) setWinner(PREVIEW_WINNER);
-        return;
-      }
-      const scored = rows.map((row) =>
-        mapSubmissionToFeedCard(row, (bySubmission[row.id] || []).length),
-      );
-      scored.sort((a, b) => (b.voteCount || 0) - (a.voteCount || 0));
-      const top = scored[0];
-      if (!top) {
-        setWinner(PREVIEW_WINNER);
-        return;
-      }
-      setWinner({
-        title: top.title || '昨日赢家',
-        colors: top.colors || [],
-        username: top.username || '匿名',
-        voteCount: top.voteCount || 0,
-      });
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
   useEffect(() => {
     if (!memoryOpen && !walkOpen) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [memoryOpen, walkOpen]);
-
-  const handleVote = async (item) => {
-    if (!user) {
-      onOpenAuth?.();
-      return;
-    }
-    if (item.ownerUserId === user.id) return;
-    await vote.castVote(item.id);
-  };
 
   if (!authReady) {
     return (
@@ -355,20 +174,7 @@ export default function FavoritesPage({
       <TodayBlock
         today={today}
         onPlay={() => onStartChallenge?.(today)}
-      />
-
-      <VoteSection
-        items={voteItems}
-        remaining={remaining}
-        loading={vote.loading && !isPreview}
-        winner={winner}
-        hasMore={hasMoreVotes}
-        onVote={handleVote}
-        onOpenPool={() => onOpenDailyPool?.()}
-        voteBusyId={vote.voteBusyId}
-        voteDisabledFor={(item) =>
-          Boolean(user && (item.ownerUserId === user.id || (vote.remainingVotes <= 0 && !item.votedByMe)))
-        }
+        onVote={() => onOpenDailyPool?.()}
       />
 
       <ActivityGrid

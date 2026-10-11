@@ -20,7 +20,19 @@ import { uniquePoeticNamesForSwatches } from '../lib/poeticColorNaming';
 import { generatePaletteTags } from '../lib/paletteTags';
 import { normalizePublicPaletteTitle } from '../lib/palettePublicTitle';
 import { clampPaletteTitle } from '../lib/palettePoeticTitle';
-import { buildLocalSeaPreviewItems } from '../lib/localSeaPreview';
+import { buildOfficialSeaItems, buildLocalSeaPreviewItems } from '../lib/localSeaPreview';
+
+function mergeOfficialSeaFeed(apiItems = []) {
+  const official = buildOfficialSeaItems();
+  const officialTitles = new Set(
+    official.map((i) => normalizePublicPaletteTitle(i.aesthetic)),
+  );
+  const rest = apiItems.filter((item) => {
+    if (item?.isOfficial) return false;
+    return !officialTitles.has(normalizePublicPaletteTitle(item.aesthetic));
+  });
+  return [...official, ...rest];
+}
 
 const COMMUNITY_TAG_CLICKS_KEY = 'genom-community-tag-clicks';
 
@@ -126,7 +138,7 @@ export default function useColorApp() {
       const pubRes = await apiFetch('/styles?scope=explore');
       const mapped = (pubRes.data || []).map(mapStyleRow);
       const hasPalettes = mapped.some((item) => isCommunityPaletteCardItem(item));
-      setExploreFeed(hasPalettes ? mapped : buildLocalSeaPreviewItems());
+      setExploreFeed(mergeOfficialSeaFeed(hasPalettes ? mapped : []));
     } catch {
       setExploreFeed(buildLocalSeaPreviewItems());
     }

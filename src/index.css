@@ -648,70 +648,15 @@
     justify-content: space-between;
     padding: 1.05rem 1.15rem 0.95rem;
   }
-  .mine-vote-list {
+  .mine-vote-entry {
     display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
-  .mine-vote-row {
-    display: flex;
-    align-items: center;
-    gap: 0.7rem;
-    padding: 0.5rem 0.65rem 0.5rem 0.5rem;
-    background: #fff;
-  }
-  .mine-vote-stripes {
-    width: 6.2rem;
-    flex-shrink: 0;
-    overflow: hidden;
-    border-radius: 0.85rem;
-  }
-  .mine-vote-meta {
-    min-width: 0;
-    flex: 1;
-  }
-  .mine-vote-btn {
-    display: flex;
-    flex-shrink: 0;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.12rem;
-    font-family: var(--font-body);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: #8a8478;
-    box-shadow: 0 1px 0 currentColor;
-  }
-  .mine-vote-btn.is-voted {
-    color: #c93756;
-  }
-  .mine-vote-btn:disabled {
-    opacity: 0.4;
-    box-shadow: none;
-  }
-  .mine-more {
-    display: block;
-    margin-top: 0.7rem;
-    padding-inline: 0.15rem;
-    font-family: var(--font-body);
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    color: #8a8478;
-    box-shadow: 0 1px 0 currentColor;
-  }
-  .mine-yesterday {
-    display: block;
+    align-items: baseline;
+    justify-content: space-between;
     width: 100%;
-    overflow: hidden;
-    margin-top: 0.85rem;
+    margin-top: 0.65rem;
+    padding: 0.95rem 1.15rem;
     text-align: left;
     background: #fff;
-  }
-  .mine-yesterday-copy {
-    display: block;
-    width: 100%;
-    padding: 0.7rem 0.85rem 0.8rem;
-    text-align: left;
   }
   .mine-activity-grid {
     display: grid;

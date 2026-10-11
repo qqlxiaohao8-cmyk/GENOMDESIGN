@@ -11,6 +11,7 @@ import {
 import { isDuplicatePublicTitle } from '../lib/palettePublicTitle';
 import { enrichColorsWithChineseNames } from '../lib/paletteChineseDisplay';
 import { fetchAiPaletteTitle } from '../lib/paletteTitleApi';
+import { describePaletteVibe } from '../lib/themeColorGuides';
 import DailySubmitSuccessModal from '../components/DailySubmitSuccessModal';
 import SekongPaletteSharePreview from '../components/SekongPaletteSharePreview';
 
@@ -58,11 +59,29 @@ export default function PublishPreviewPage({
   const takenTitles = existingPublicTitles;
 
   useEffect(() => {
-    if (titleInitialized || !hexes.length) return;
-    const defaultTitle = paletteTitleFromHexesAndMeta(hexes, paletteMeta, paletteTags, takenTitles);
-    setTitle(defaultTitle);
-    setTitleInitialized(true);
-  }, [hexes, paletteMeta, paletteTags, takenTitles, titleInitialized]);
+    if (titleInitialized || !hexes.length) return undefined;
+    let cancelled = false;
+    setGeneratingTitle(true);
+    (async () => {
+      const fallback = paletteTitleFromHexesAndMeta(hexes, paletteMeta, paletteTags, takenTitles);
+      const aiTitle = await fetchAiPaletteTitle({
+        colors: colorDetails,
+        tags: paletteTags,
+        paletteMeta,
+        excludeTitles: takenTitles,
+        colorVibe: describePaletteVibe(hexes).summary,
+      });
+      if (cancelled) return;
+      const next = aiTitle || fallback;
+      setTitle(next);
+      if (aiTitle) recentTitlesRef.current = [...recentTitlesRef.current, aiTitle].slice(-15);
+      setTitleInitialized(true);
+      setGeneratingTitle(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hexes, paletteMeta, paletteTags, takenTitles, titleInitialized, colorDetails]);
 
   const isDuplicateTitle = (t) => isDuplicatePublicTitle(t, takenTitles);
 
@@ -81,7 +100,6 @@ export default function PublishPreviewPage({
   const requireAuth = () => (user ? true : promptLogin());
 
   const generateTitle = async () => {
-    if (!requireAuth()) return;
     setGeneratingTitle(true);
     const exclude = [
       ...new Set([
@@ -97,6 +115,7 @@ export default function PublishPreviewPage({
         paletteMeta,
         excludeTitles: exclude,
         currentTitle: title.trim(),
+        colorVibe: describePaletteVibe(hexes).summary,
       });
       const t = aiTitle
         || randomPalettePoeticTitleFromHexes(hexes, exclude, paletteMeta, paletteTags);
@@ -240,7 +259,7 @@ export default function PublishPreviewPage({
                 onClick={() => {
                   if (!user) promptLogin();
                 }}
-                placeholder={user ? '如：生椰拿铁、降真香、丰收…' : '点击登录后命名'}
+                placeholder={generatingTitle ? '正在按颜色取名…' : (user ? '如：谷雨煎茶、旧页微尘…' : '点击登录后修改')}
                 maxLength={PALETTE_TITLE_MAX_LEN}
                 className={`type-body-sm flex-1 rounded-xl border px-3 py-2.5 text-zen-ink placeholder:text-zen-ink/30 focus:outline-none transition-colors ${
                   titleShake ? 'animate-title-shake border-red-400 bg-red-50/40' : 'border-zen-ink/15 bg-zen-mist/20 focus:border-zen-ink/30'

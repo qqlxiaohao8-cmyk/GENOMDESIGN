@@ -1,16 +1,12 @@
 import { Hono } from 'hono';
 import type { WorkerEnv } from '../auth';
 import { generatePaletteTitleWithAi, type GenerateTitleInput } from '../lib/paletteTitleAi';
-import { requireUser } from '../middleware/session';
 
 type Env = WorkerEnv & { AI?: Ai };
 
 const paletteTitle = new Hono<{ Bindings: Env }>();
 
 paletteTitle.post('/palette/generate-title', async (c) => {
-  const user = await requireUser(c);
-  if (user instanceof Response) return user;
-
   if (!c.env.AI) {
     return c.json({ error: 'ai_unavailable' }, 503);
   }
@@ -34,6 +30,7 @@ paletteTitle.post('/palette/generate-title', async (c) => {
       paletteMeta: body.paletteMeta && typeof body.paletteMeta === 'object' ? body.paletteMeta : {},
       excludeTitles: Array.isArray(body.excludeTitles) ? body.excludeTitles : [],
       currentTitle: body.currentTitle,
+      colorVibe: typeof body.colorVibe === 'string' ? body.colorVibe : '',
     });
 
     if (!title) {

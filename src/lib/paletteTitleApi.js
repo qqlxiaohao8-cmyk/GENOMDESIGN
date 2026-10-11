@@ -8,6 +8,7 @@ import { apiFetch } from './apiClient';
  *   paletteMeta?: object,
  *   excludeTitles?: string[],
  *   currentTitle?: string,
+ *   colorVibe?: string,
  * }} payload
  * @returns {Promise<string|null>}
  */

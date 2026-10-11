@@ -1,9 +1,10 @@
 import { normalizeHex } from './randomInspiration';
 import { generatePaletteTags } from './paletteTags';
+import { describePaletteVibe, titleFromPaletteVibe, themeFitsColors } from './themeColorGuides';
 
 /** 色卡公开名称长度（预览页输入与生成） */
-export const PALETTE_TITLE_MAX_LEN = 10;
-export const PALETTE_TITLE_MIN_LEN = 1;
+export const PALETTE_TITLE_MAX_LEN = 12;
+export const PALETTE_TITLE_MIN_LEN = 2;
 
 const FOOD_TITLES = [
   '生椰拿铁', '薄巧圈', '草莓奶昔', '焦糖布丁', '抹茶麻薯', '甜甜圈', '蓝莓酸奶',
@@ -96,6 +97,40 @@ function fingerprintHexList(hexes) {
   return hash >>> 0;
 }
 
+function hexHueSatLight(hex) {
+  const h = String(hex || '').replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const d = max - min;
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+  let hue = 0;
+  if (d !== 0) {
+    if (max === r) hue = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) hue = ((b - r) / d + 2) / 6;
+    else hue = ((r - g) / d + 4) / 6;
+  }
+  return { h: hue * 360, s, l };
+}
+
+function vibePoolFromHexes(hexes = [], tags = []) {
+  const vibe = describePaletteVibe(hexes);
+  const theme = (tags || []).find((t) => themeFitsColors(t, hexes));
+  const primary = titleFromPaletteVibe(hexes, { theme });
+  const extras = [];
+  if (vibe.satKey === 'muted' && vibe.litKey === 'low') extras.push('旧页', '灯尽', '雨巷');
+  else if (vibe.litKey === 'high' && vibe.satKey === 'muted') extras.push('窗纱', '牛乳雾', '浅潮');
+  else if (vibe.satKey === 'vivid' && vibe.warmth === '暖') extras.push('晚橘', '热汽水', '节庆灯');
+  else if (vibe.satKey === 'vivid') extras.push('冷焰', '深潜', '青磁');
+  else if (vibe.warmth === '暖') extras.push('焙茶', '秋窗', '柿霜');
+  else extras.push('潮退', '青瓷', '夜航');
+  return [primary, ...extras, ...(vibe.nameWords || [])].filter(Boolean);
+}
+
 function moodKeyFromTags(tags = []) {
   if (tags.includes('暖色')) return 'warm';
   if (tags.includes('冷色')) return 'cool';
@@ -130,6 +165,8 @@ function buildCandidatePool(hexes, paletteMeta = {}, tags = []) {
   const styleLabel = String(paletteMeta?.styleLabel || '').trim();
   if (styleLabel.length >= 2 && styleLabel.length <= PALETTE_TITLE_MAX_LEN) add(styleLabel);
 
+  vibePoolFromHexes(hexes, moodTags).forEach(add);
+
   const moodPool = MOOD_FALLBACK[moodKeyFromTags(moodTags)] || MOOD_FALLBACK.neutral;
   moodPool.forEach(add);
 
@@ -162,6 +199,9 @@ export function palettePoeticTitleFromHexes(hexes) {
  */
 export function paletteTitleFromHexesAndMeta(hexes, paletteMeta = {}, tags = [], excludeTitles = []) {
   if (!Array.isArray(hexes) || !hexes.length) return '春芽';
+  const theme = (tags || []).find((t) => themeFitsColors(t, hexes));
+  const vibeTitle = titleFromPaletteVibe(hexes, { theme, exclude: excludeTitles });
+  if (vibeTitle && vibeTitle !== '未名') return vibeTitle;
   const pool = buildCandidatePool(hexes, paletteMeta, tags);
   return pickFromPool(pool, hexes, excludeTitles);
 }
