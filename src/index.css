@@ -374,38 +374,42 @@
   /** 一级：页面主标题 */
   .type-h1 {
     font-family: var(--font-display);
-    @apply text-[1.85rem] font-normal tracking-[0.04em] text-zen-coal md:text-[2rem];
+    @apply text-[2.15rem] font-normal leading-[1.15] tracking-[0.02em] text-zen-coal md:text-[2.4rem];
   }
   /** 二级：区块 / 模块标题 */
   .type-h2 {
     font-family: var(--font-display);
-    @apply text-[1.35rem] font-normal tracking-[0.03em] text-zen-coal;
+    @apply text-[1.7rem] font-normal leading-[1.2] tracking-[0.015em] text-zen-coal md:text-[1.85rem];
   }
   /** 三级：子区块、空态标题 */
   .type-h3 {
     font-family: var(--font-display);
-    @apply text-[1.15rem] font-normal tracking-[0.03em] text-zen-coal;
+    @apply text-[1.38rem] font-normal leading-snug tracking-[0.02em] text-zen-coal;
   }
   /** 四级：弹层 / 全屏流顶部标题、卡片内主标题 */
   .type-h4 {
     font-family: var(--font-display);
-    @apply text-[1.02rem] font-normal tracking-[0.02em] text-zen-coal;
+    @apply text-[1.18rem] font-normal leading-snug tracking-[0.02em] text-zen-coal;
   }
   /** 正文 */
   .type-body {
-    @apply text-sm font-extralight leading-relaxed text-zen-ink;
+    font-family: var(--font-body);
+    @apply text-sm font-normal leading-relaxed text-zen-ink;
   }
   /** 略小正文（表单、列表说明） */
   .type-body-sm {
-    @apply text-[13px] font-extralight leading-relaxed text-zen-ink;
+    font-family: var(--font-body);
+    @apply text-[13px] font-normal leading-relaxed text-zen-ink;
   }
   /** 辅助说明（11px） */
   .type-caption {
-    @apply text-[11px] font-extralight tracking-widest text-zen-stone;
+    font-family: var(--font-body);
+    @apply text-[11px] font-normal tracking-widest text-zen-stone;
   }
   /** 备注 / 提示（11px，略淡） */
   .type-note {
-    @apply text-[11px] font-extralight leading-relaxed text-zen-stone/90;
+    font-family: var(--font-body);
+    @apply text-[11px] font-normal leading-relaxed text-zen-stone/90;
   }
   /** 顶栏眉题（每日一色、排序等）— 打字机旁注感 */
   .type-overline {
@@ -413,7 +417,8 @@
   }
   /** 全屏流程顶栏标题（析色 / 生色 / 预览） */
   .type-flow-title {
-    @apply font-zenSerif text-base font-medium tracking-[0.12em] text-zen-coal;
+    font-family: var(--font-display);
+    @apply text-[1.38rem] font-normal leading-snug tracking-[0.02em] text-zen-coal;
   }
   /** 顶栏返回 / 下一步 */
   .type-flow-action {
@@ -549,7 +554,7 @@
     box-shadow: none;
   }
   .zen-catalog {
-    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-family: var(--font-body);
     font-size: 11px;
     font-weight: 400;
     letter-spacing: 0.02em;
@@ -565,11 +570,13 @@
     color: #2c2c2c;
   }
   .zen-action {
-    @apply inline-block font-zenTypewriter text-[12px] tracking-[0.06em] text-zen-vermilion;
+    @apply inline-block text-[12px] tracking-[0.06em] text-zen-vermilion;
+    font-family: var(--font-body);
     box-shadow: 0 1px 0 currentColor;
   }
   .zen-quiet {
-    @apply inline-block font-zenTypewriter text-[12px] tracking-[0.06em] text-zen-stone smooth-transition;
+    @apply inline-block text-[12px] tracking-[0.06em] text-zen-stone smooth-transition;
+    font-family: var(--font-body);
     box-shadow: 0 1px 0 transparent;
   }
   .zen-quiet:hover,
@@ -578,13 +585,23 @@
     box-shadow: 0 1px 0 currentColor;
   }
   .zen-menu-row {
-    @apply w-full px-3 py-2 text-left font-zenTypewriter text-[12px] tracking-[0.04em] text-zen-ink smooth-transition hover:text-zen-vermilion;
+    @apply w-full px-3 py-2 text-left text-[12px] tracking-[0.04em] text-zen-ink smooth-transition hover:text-zen-vermilion;
+    font-family: var(--font-body);
   }
   .zen-hit {
     min-height: 2.75rem;
   }
   .zen-stripe-row {
     cursor: pointer;
+  }
+  .mine-page .mine-round,
+  .mine-page .heytea-activity-card,
+  .mine-page .zen-stripe-row {
+    border-radius: 1.25rem;
+    overflow: hidden;
+  }
+  .mine-page .heytea-activity-card span[style] {
+    border-radius: 0.7rem;
   }
   .zen-stripe {
     cursor: pointer;
@@ -635,6 +652,39 @@
       width: 5rem;
     }
   }
+  .sekong-settings-logo {
+    display: block;
+    height: 6.4rem;
+    width: 9.2rem;
+    object-fit: cover;
+    object-position: 48% 46%;
+  }
+  .heytea-volume {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 2px;
+    border-radius: 0;
+    background: #e0d9ce;
+    outline: none;
+  }
+  .heytea-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #2c2c2c;
+    cursor: pointer;
+  }
+  .heytea-volume::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 50%;
+    background: #2c2c2c;
+    cursor: pointer;
+  }
   .zen-page-header {
     @apply shrink-0 border-b border-transparent bg-transparent px-5 py-6 md:px-8 md:py-8;
   }
@@ -673,22 +723,26 @@
   .zen-input {
     @apply type-body-sm w-full border-0 border-b border-zen-clay bg-transparent px-0 py-2.5 text-zen-ink placeholder:text-zen-stone/80 smooth-transition focus:border-zen-coal focus:outline-none focus-visible:ring-0;
     border-radius: 0;
-    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-family: var(--font-body);
   }
   .zen-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 border-0 bg-transparent px-0 py-2 font-zenTypewriter text-[12px] tracking-[0.04em] text-zen-coal smooth-transition hover:text-zen-vermilion focus:outline-none disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 border-0 bg-transparent px-0 py-2 text-[12px] tracking-[0.04em] text-zen-coal smooth-transition hover:text-zen-vermilion focus:outline-none disabled:pointer-events-none disabled:opacity-40;
+    font-family: var(--font-body);
     border-radius: 0;
   }
   .zen-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 border-0 bg-transparent px-0 py-2 font-zenTypewriter text-[12px] tracking-[0.04em] text-zen-stone smooth-transition hover:text-zen-ink focus:outline-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 border-0 bg-transparent px-0 py-2 text-[12px] tracking-[0.04em] text-zen-stone smooth-transition hover:text-zen-ink focus:outline-none disabled:opacity-40;
+    font-family: var(--font-body);
     border-radius: 0;
   }
   .zen-btn-vermilion {
-    @apply inline-flex items-center justify-center gap-2 border-0 bg-transparent px-0 py-2 font-zenTypewriter text-[12px] tracking-[0.04em] text-zen-vermilion smooth-transition hover:opacity-80 focus:outline-none disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 border-0 bg-transparent px-0 py-2 text-[12px] tracking-[0.04em] text-zen-vermilion smooth-transition hover:opacity-80 focus:outline-none disabled:pointer-events-none disabled:opacity-40;
+    font-family: var(--font-body);
     border-radius: 0;
   }
   .zen-tag {
-    @apply border-0 bg-transparent px-1 py-0.5 font-zenTypewriter text-[11px] tracking-[0.04em] text-zen-stone smooth-transition hover:text-zen-ink;
+    @apply border-0 bg-transparent px-1 py-0.5 text-[11px] tracking-[0.04em] text-zen-stone smooth-transition hover:text-zen-ink;
+    font-family: var(--font-body);
     border-radius: 0;
   }
   .zen-tag-active {
@@ -699,7 +753,8 @@
     @apply type-overline tracking-[0.2em] text-zen-ink/45;
   }
   .zen-section-title {
-    @apply font-zenTypewriter text-[11px] tracking-[0.04em] text-zen-vermilion;
+    @apply text-[11px] tracking-[0.04em] text-zen-vermilion;
+    font-family: var(--font-body);
   }
 }
 
@@ -1274,12 +1329,27 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: "HYSongZhuMeiU";
+  src: url("/fonts/HYSongZhuMeiU.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --font-display: "HYGuQuW", "ZCOOL XiaoWei", "Noto Serif SC", serif;
+  --font-body: "HYSongZhuMeiU", "Noto Serif SC", "Songti SC", serif;
 }
 
 .font-heytea {
   font-family: var(--font-display);
+}
+
+.font-zenSans,
+.font-zenSerif,
+body {
+  font-family: var(--font-body);
 }
 
 .heytea-icon {
@@ -1436,8 +1506,8 @@
 
 .heytea-ink-name {
   bottom: 1.25rem;
-  font-size: 1.7rem;
-  letter-spacing: 0.06em;
+  font-size: 2rem;
+  letter-spacing: 0.03em;
 }
 
 .heytea-ink-spread-field {

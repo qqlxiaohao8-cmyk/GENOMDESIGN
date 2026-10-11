@@ -5,12 +5,12 @@ export default {
     extend: {
       fontFamily: {
         bricolage: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
-        /** 标题 / 情感：宋体 */
-        zenSerif: ['"Noto Serif SC"', '"Songti SC"', 'STSong', 'SimSun', 'serif'],
+        /** 标题 / 情感 / 色名：汉仪宋朱墨 */
+        zenSerif: ['"HYSongZhuMeiU"', '"Noto Serif SC"', '"Songti SC"', 'serif'],
         /** 标题：汉仪古趣 */
         heytea: ['"HYGuQuW"', '"ZCOOL XiaoWei"', '"Noto Serif SC"', 'serif'],
-        /** UI / 正文 / 元数据：黑体 */
-        zenSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
+        /** UI / 正文：汉仪宋朱墨 */
+        zenSans: ['"HYSongZhuMeiU"', '"Noto Serif SC"', '"Songti SC"', 'serif'],
         /** 数字 / 英文短注：打字机旁注 */
         zenTypewriter: [
           '"IBM Plex Mono"',

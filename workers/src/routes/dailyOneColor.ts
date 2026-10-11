@@ -25,6 +25,7 @@ function formatSubmission(row: Record<string, unknown>) {
     daily_anchor_hex: row.daily_anchor_hex,
     winner_rank: row.winner_rank,
     created_at: row.created_at,
+    username: row.username || null,
   };
 }
 
@@ -32,11 +33,12 @@ daily.get('/daily-one-color/submissions', async (c) => {
   const date = c.req.query('date');
   if (!date) return c.json({ error: 'date required' }, 400);
   const { results } = await c.env.DB.prepare(
-    `SELECT id, challenge_date, user_id, style_id, title, palette, image_url, tags,
-            daily_anchor_hex, winner_rank, created_at
-     FROM daily_palette_submissions
-     WHERE challenge_date = ?
-     ORDER BY created_at ASC`,
+    `SELECT s.id, s.challenge_date, s.user_id, s.style_id, s.title, s.palette, s.image_url, s.tags,
+            s.daily_anchor_hex, s.winner_rank, s.created_at, p.username
+     FROM daily_palette_submissions s
+     LEFT JOIN profiles p ON p.user_id = s.user_id
+     WHERE s.challenge_date = ?
+     ORDER BY s.created_at ASC`,
   )
     .bind(date)
     .all();

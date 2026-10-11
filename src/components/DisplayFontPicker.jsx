@@ -55,7 +55,7 @@ export default function DisplayFontPicker() {
     <section className="mb-8">
       <p className="type-h4">标题字体</p>
       <p className="type-body-sm mt-1 text-zen-stone">{current}</p>
-      <p className="mt-3 font-heytea text-[1.65rem] tracking-[0.08em] text-zen-coal">色空</p>
+      <p className="type-h2 mt-3">色空</p>
       {msg ? <p className="type-body-sm mt-2 text-zen-vermilion">{msg}</p> : null}
 
       <div className="mt-4 flex flex-wrap items-baseline gap-5">
@@ -73,7 +73,7 @@ export default function DisplayFontPicker() {
           </button>
         ) : null}
       </div>
-      <p className="type-caption mt-3">ttf / otf / woff / woff2，用在标题和底栏。正文仍保持清淡。</p>
+      <p className="type-caption mt-3">ttf / otf / woff / woff2，用在标题和底栏。正文用汉仪宋朱墨。</p>
       <input
         ref={inputRef}
         type="file"

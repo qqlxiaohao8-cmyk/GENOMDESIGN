@@ -24,16 +24,16 @@ function CreateCluster({ onShengSe, onExtract, raised = false }) {
         aria-label="生色"
       >
         <IconShengSe />
-        <span className="font-heytea text-[11px] tracking-[0.06em] text-zen-coal">创作</span>
+        <span className="font-heytea text-[13px] tracking-[0.04em] text-zen-coal">生色</span>
       </button>
       <button
         type="button"
         onClick={onExtract}
         className="heytea-create-slot"
-        aria-label="析色"
+        aria-label="取色"
       >
         <IconExtract />
-        <span className="font-heytea text-[11px] tracking-[0.06em] text-zen-coal">创作</span>
+        <span className="font-heytea text-[13px] tracking-[0.04em] text-zen-coal">取色</span>
       </button>
     </div>
   );
@@ -55,7 +55,7 @@ export default function AppNav({
         className="hidden h-full w-[5.25rem] shrink-0 flex-col items-center bg-transparent py-8 lg:w-[5.75rem] md:flex"
         aria-label="主导航"
       >
-        <p className="font-heytea mb-10 text-[1.35rem] tracking-[0.18em] text-zen-coal">色空</p>
+        <p className="font-heytea mb-10 text-[1.7rem] tracking-[0.08em] text-zen-coal">色空</p>
 
         <nav className="flex flex-1 flex-col items-center gap-6">
           {SIDE_ITEMS.slice(0, 2).map(({ key, label, Icon }) => {
@@ -72,7 +72,7 @@ export default function AppNav({
                 aria-current={isActive ? 'page' : undefined}
               >
                 <Icon />
-                <span className="font-heytea text-[12px] tracking-[0.08em]">{label}</span>
+                <span className="font-heytea text-[13px] tracking-[0.04em]">{label}</span>
               </button>
             );
           })}
@@ -93,7 +93,7 @@ export default function AppNav({
                 aria-current={isActive ? 'page' : undefined}
               >
                 <Icon />
-                <span className="font-heytea text-[12px] tracking-[0.08em]">{label}</span>
+                <span className="font-heytea text-[13px] tracking-[0.04em]">{label}</span>
               </button>
             );
           })}
@@ -111,7 +111,7 @@ export default function AppNav({
           aria-current={activeTab === 'favorites' ? 'page' : undefined}
         >
           <IconMine />
-          <span className="font-heytea text-[12px]">我的</span>
+          <span className="font-heytea text-[13px] tracking-[0.04em]">我的</span>
         </button>
 
         <button
@@ -124,7 +124,7 @@ export default function AppNav({
           aria-current={activeTab === 'colorSea' ? 'page' : undefined}
         >
           <IconSea />
-          <span className="font-heytea text-[12px]">色海</span>
+          <span className="font-heytea text-[13px] tracking-[0.04em]">色海</span>
         </button>
 
         <CreateCluster raised onShengSe={onShengSe} onExtract={onExtract} />
@@ -139,7 +139,7 @@ export default function AppNav({
           aria-current={activeTab === 'profile' ? 'page' : undefined}
         >
           <IconSettings />
-          <span className="font-heytea text-[12px]">设定</span>
+          <span className="font-heytea text-[13px] tracking-[0.04em]">设定</span>
         </button>
       </div>
     </>

@@ -190,10 +190,6 @@ export default function App() {
 
   // ── Tab change helper ─────────────────────────────────────────────────
   const handleTabChange = (key) => {
-    if (key === 'favorites' && !user) {
-      setGate('flip');
-      return;
-    }
     setActiveTab(key);
     try {
       sessionStorage.setItem(ACTIVE_TAB_KEY, key);

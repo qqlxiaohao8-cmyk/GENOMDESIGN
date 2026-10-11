@@ -115,5 +115,6 @@ export function mapSubmissionToFeedCard(row, voteCount = 0, votedByMe = false) {
     winnerRank: row.winner_rank,
     ownerUserId: row.user_id,
     createdAt: row.created_at,
+    username: row.username || row.submitter_display_name || '',
   };
 }
