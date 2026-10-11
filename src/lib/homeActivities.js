@@ -14,5 +14,12 @@ export function getHomeActivityCards() {
       hint: '出门采色',
       wash: '#C9D6C4',
     },
+    {
+      id: 'vault',
+      kind: 'vault',
+      title: '收藏',
+      hint: '收下的色卡',
+      wash: '#E4D4C4',
+    },
   ];
 }

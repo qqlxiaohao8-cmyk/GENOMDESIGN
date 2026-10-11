@@ -31,7 +31,7 @@ function ProfileColorHero({ hex, username, onEdit }) {
       data-mine-hero
     >
       <span
-        className="absolute left-5 top-5 font-heytea text-[13px] tracking-[0.12em] opacity-70"
+        className="absolute left-5 top-5 font-heytea text-[1.05rem] tracking-[0.08em] opacity-80"
         style={{ color: text }}
       >
         我的
@@ -66,19 +66,23 @@ function TodayBlock({ today, onPlay, onVote }) {
       >
         <div className="mine-today-wash" style={{ backgroundColor: today.hex }} />
         <div className="mine-today-copy">
-          <p className="font-heytea text-[1.25rem] leading-none tracking-[0.02em]">
+          <p className="font-heytea text-[1.45rem] leading-none tracking-[0.02em]">
             {today.name}
           </p>
-          <p className="type-caption">参加</p>
+          <p className="text-[0.95rem] tracking-[0.08em] text-zen-stone">参加</p>
         </div>
       </button>
       <button
         type="button"
         onClick={onVote}
         className="mine-round mine-vote-entry"
+        aria-label="今日投票，为今日色卡投一票"
       >
-        <span className="font-heytea text-[1.05rem] tracking-[0.04em]">投票</span>
-        <span className="type-caption">今日色卡</span>
+        <span className="mine-vote-copy">
+          <span className="mine-vote-title">今日投票</span>
+          <span className="mine-vote-hint">为今日色卡投一票</span>
+        </span>
+        <span className="mine-vote-go">进入</span>
       </button>
     </section>
   );
@@ -86,7 +90,7 @@ function TodayBlock({ today, onPlay, onVote }) {
 
 function ActivityGrid({ cards, onOpen }) {
   return (
-    <section className="mine-section">
+    <section className="mine-section mine-section--last">
       <SectionHead label="活动" />
       <div className="mine-activity-grid">
         {cards.map((card) => (
@@ -100,9 +104,16 @@ function ActivityGrid({ cards, onOpen }) {
               <span className="h-9 w-7" style={{ backgroundColor: card.wash }} />
               {card.kind === 'memory' ? <IconMemory /> : null}
               {card.kind === 'walk' ? <IconWalk /> : null}
+              {card.kind === 'vault' ? (
+                <span className="flex h-8 w-8 overflow-hidden rounded-md">
+                  <span className="h-full flex-1" style={{ backgroundColor: '#C45A6A' }} />
+                  <span className="h-full flex-1" style={{ backgroundColor: '#C4A35A' }} />
+                  <span className="h-full flex-1" style={{ backgroundColor: '#5A8A6A' }} />
+                </span>
+              ) : null}
             </div>
-            <p className="font-heytea text-[1.05rem] leading-snug tracking-[0.02em]">{card.title}</p>
-            <p className="mt-1 text-[11px] text-zen-stone">{card.hint}</p>
+            <p className="font-heytea text-[1.2rem] leading-snug tracking-[0.02em]">{card.title}</p>
+            <p className="mt-1 text-[0.88rem] text-zen-stone">{card.hint}</p>
           </button>
         ))}
       </div>
@@ -111,7 +122,7 @@ function ActivityGrid({ cards, onOpen }) {
 }
 
 /**
- * 我的：身份、今日参加、投票、活动、收藏
+ * 我的：身份、今日参加、投票、活动（含收藏入口）
  */
 export default function FavoritesPage({
   user,
@@ -136,6 +147,7 @@ export default function FavoritesPage({
   const [memoryOpen, setMemoryOpen] = useState(false);
   const [memorySession, setMemorySession] = useState(0);
   const [walkOpen, setWalkOpen] = useState(false);
+  const [vaultOpen, setVaultOpen] = useState(false);
 
   const profile = user || PREVIEW_USER;
   const isPreview = !user;
@@ -149,11 +161,11 @@ export default function FavoritesPage({
     : vaultColorPaletteItems;
 
   useEffect(() => {
-    if (!memoryOpen && !walkOpen) return undefined;
+    if (!memoryOpen && !walkOpen && !vaultOpen) return undefined;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
-  }, [memoryOpen, walkOpen]);
+  }, [memoryOpen, walkOpen, vaultOpen]);
 
   if (!authReady) {
     return (
@@ -187,37 +199,55 @@ export default function FavoritesPage({
           }
           if (card.kind === 'walk') {
             setWalkOpen(true);
+            return;
+          }
+          if (card.kind === 'vault') {
+            setVaultOpen(true);
           }
         }}
       />
 
-      <section className="mine-section mine-section--last">
-        <SectionHead label="收藏" />
-        {shownVault.length === 0 ? (
-          <p className="type-caption px-0.5">还没有收下颜色</p>
-        ) : (
-          <MasonryColumns className={`${FAVORITES_MASONRY_CLASS} zen-feed-scrap`} gap={PALETTE_FEED_MASONRY_GAP}>
-            {shownVault.map((item) => {
-              const cd = itemColorCardData(item);
-              if (!cd) return null;
-              return (
-                <PaletteFeedCard
-                  key={item.id}
-                  cardId={item.id}
-                  colors={cd.colors}
-                  title={item.aesthetic || cd.overview || ''}
-                  mode="favorites"
-                  onUnfavorite={() => onDeleteItem?.(item.id)}
-                  onAnalyze={() => onAnalyzePalette?.(item)}
-                  onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
-                  onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
-                  onCopyLink={() => onCopyLink?.(item.id)}
-                />
-              );
-            })}
-          </MasonryColumns>
-        )}
-      </section>
+      {vaultOpen && (
+        <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper" role="dialog" aria-modal="true" aria-label="收藏">
+          <div className="flex items-center justify-between px-4 pb-2 pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-6">
+            <p className="mine-section-label mb-0">收藏</p>
+            <button
+              type="button"
+              onClick={() => setVaultOpen(false)}
+              className="flex h-10 w-10 items-center justify-center"
+              aria-label="关闭收藏"
+            >
+              <X size={18} strokeWidth={1.6} />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] md:px-6">
+            {shownVault.length === 0 ? (
+              <p className="px-0.5 pt-6 text-[1rem] text-zen-stone">还没有收下颜色</p>
+            ) : (
+              <MasonryColumns className={`${FAVORITES_MASONRY_CLASS} zen-feed-scrap`} gap={PALETTE_FEED_MASONRY_GAP}>
+                {shownVault.map((item) => {
+                  const cd = itemColorCardData(item);
+                  if (!cd) return null;
+                  return (
+                    <PaletteFeedCard
+                      key={item.id}
+                      cardId={item.id}
+                      colors={cd.colors}
+                      title={item.aesthetic || cd.overview || ''}
+                      mode="favorites"
+                      onUnfavorite={() => onDeleteItem?.(item.id)}
+                      onAnalyze={() => onAnalyzePalette?.(item)}
+                      onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
+                      onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
+                      onCopyLink={() => onCopyLink?.(item.id)}
+                    />
+                  );
+                })}
+              </MasonryColumns>
+            )}
+          </div>
+        </div>
+      )}
 
       {memoryOpen && (
         <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="色彩记忆">
