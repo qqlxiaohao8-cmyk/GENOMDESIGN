@@ -9,27 +9,27 @@ import { itemColorCardData } from './components/StyleUiPreviewCard';
 
 import FavoritesPage from './pages/FavoritesPage';
 import ColorSeaPage from './pages/ColorSeaPage';
-import GamePage from './pages/GamePage';
 import DailyOneColorPage from './pages/DailyOneColorPage';
 import ProfilePage from './pages/ProfilePage';
 import ProfileOnboardingPage from './pages/ProfileOnboardingPage';
 import { needsProfileOnboarding } from './lib/profileOnboarding';
 import { applyProfileFont } from './lib/profileFonts';
+import SplashDrop from './components/SplashDrop';
+import LoginFlipPrompt from './components/LoginFlipPrompt';
+import { compressImageDataUrl } from './lib/styleImageUpload';
 
-import CreateActionSheet from './flows/CreateActionSheet';
 import ExtractEditorPage from './flows/ExtractEditorPage';
 import ShengSePage from './flows/ShengSePage';
 import PublishPreviewPage from './flows/PublishPreviewPage';
 import PaletteAnalysisPage from './flows/PaletteAnalysisPage';
 import DailyChallengePage from './flows/DailyChallengePage';
-import LandingPage from './components/LandingPage';
 
 import { normalizeHex } from './lib/randomInspiration';
 import { authClient } from './lib/authClient';
 
 const LANDING_DISMISSED_KEY = 'genom-landing-dismissed';
 const ACTIVE_TAB_KEY = 'genom-active-tab';
-const VALID_TABS = new Set(['favorites', 'colorSea', 'dailyOneColor', 'game', 'profile']);
+const VALID_TABS = new Set(['favorites', 'colorSea', 'dailyOneColor', 'profile']);
 
 function readStoredActiveTab() {
   if (typeof window === 'undefined') return 'favorites';
@@ -79,7 +79,10 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState(readStoredActiveTab);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [createSheetOpen, setCreateSheetOpen] = useState(false);
+  const [gate, setGate] = useState('splash');
+  const [seaFocusTag, setSeaFocusTag] = useState(null);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const extractInputRef = useRef(null);
   // Shared style preview overlay (deep-link or card detail)
   const [previewOverlay, setPreviewOverlay] = useState(null);
   const [colorSeaSimilarHex, setColorSeaSimilarHex] = useState(null);
@@ -174,10 +177,22 @@ export default function App() {
     applyProfileFont(user.user_metadata?.font_id || 'serif');
   }, [user?.id, user?.user_metadata?.font_id]);
 
+  useEffect(() => {
+    if (user && gate === 'flip') {
+      setGate('app');
+      setActiveTab('favorites');
+    }
+  }, [user, gate]);
+
+  useEffect(() => {
+    if (gate !== 'splash') return;
+    setActiveTab('favorites');
+  }, [gate]);
+
   // ── Tab change helper ─────────────────────────────────────────────────
   const handleTabChange = (key) => {
     if (key === 'favorites' && !user) {
-      setAuthModalOpen(true);
+      setGate('flip');
       return;
     }
     setActiveTab(key);
@@ -235,6 +250,32 @@ export default function App() {
 
   const openExtract = (imageDataUrl) => {
     pushFlow({ type: 'extract', imageDataUrl, source: 'fab' });
+  };
+
+  const handleExtractFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file) return;
+    if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type || '')) {
+      alert('请选择 JPG / PNG / WEBP 图片。');
+      return;
+    }
+    if (file.size > 28 * 1024 * 1024) {
+      alert('图片过大（需 ≤ 28MB）。');
+      return;
+    }
+    try {
+      const raw = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => reject(new Error('无法读取文件'));
+        r.readAsDataURL(file);
+      });
+      const compressed = await compressImageDataUrl(raw, 3200, 0.88);
+      openExtract(compressed);
+    } catch (err) {
+      alert(err?.message || '处理图片失败。');
+    }
   };
 
   const openPaletteAnalysis = (vaultItem) => {
@@ -398,12 +439,20 @@ export default function App() {
             user={user}
             authReady={authReady}
             vaultColorPaletteItems={vaultColorPaletteItems}
-            onOpenAuth={() => setAuthModalOpen(true)}
+            onOpenAuth={() => setGate('flip')}
             onDeleteItem={(id) => removeFromVault(id)}
             onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onAnalyzePalette={openPaletteAnalysis}
             onCopyLink={(id) => copyShareLink(id, 'analysis')}
+            onStartChallenge={(dailyData) => {
+              pushFlow({ type: 'dailyChallenge', dailyData, source: 'mine' });
+            }}
+            onOpenDailyPool={() => handleTabChange('dailyOneColor')}
+            onEditProfile={() => {
+              setEditProfileOpen(true);
+              handleTabChange('profile');
+            }}
           />
         );
       case 'colorSea':
@@ -426,6 +475,7 @@ export default function App() {
               setColorSeaSimilarHex(null);
               setColorSeaSimilarMeta(null);
             }}
+            focusTag={seaFocusTag}
           />
         );
       case 'dailyOneColor':
@@ -435,26 +485,17 @@ export default function App() {
             onOpenAuth={() => setAuthModalOpen(true)}
             onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
-            onBackToGame={() => handleTabChange('game')}
-          />
-        );
-      case 'game':
-        return (
-          <GamePage
-            user={user}
-            onOpenAuth={() => setAuthModalOpen(true)}
-            onStartChallenge={(dailyData) => {
-              pushFlow({ type: 'dailyChallenge', dailyData, source: 'game' });
-            }}
-            onOpenDailyPool={() => handleTabChange('dailyOneColor')}
+            onBackToGame={() => handleTabChange('favorites')}
           />
         );
       case 'profile':
                         return (
           <ProfilePage
             user={user}
-            onOpenAuth={() => setAuthModalOpen(true)}
+            onOpenAuth={() => setGate('flip')}
             onSignOut={signOut}
+            editOpen={editProfileOpen}
+            onEditConsumed={() => setEditProfileOpen(false)}
           />
         );
       default:
@@ -464,15 +505,12 @@ export default function App() {
 
   return (
     <>
-    {authReady && desktopLandingOpen && !user && (
-      <LandingPage onGoExplore={() => dismissDesktopLanding(setDesktopLandingOpen)} />
-    )}
     {showProfileOnboarding && (
       <ProfileOnboardingPage
         user={user}
         onComplete={() => {
           setProfileSetupDone(true);
-          handleTabChange('profile');
+          handleTabChange('favorites');
         }}
       />
     )}
@@ -503,7 +541,8 @@ export default function App() {
           <AppNav
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            onFabClick={() => setCreateSheetOpen(true)}
+            onShengSe={() => pushFlow({ type: 'shengSe', source: 'fab' })}
+            onExtract={() => extractInputRef.current?.click()}
           />
         }
       >
@@ -518,14 +557,34 @@ export default function App() {
       {/* ── Full-screen flows ── */}
       {renderFlow()}
 
-      {/* ── Create action sheet ── */}
-      {createSheetOpen && (
-        <CreateActionSheet
-          onClose={() => setCreateSheetOpen(false)}
-          onShengSe={() => {
-            pushFlow({ type: 'shengSe', source: 'fab' });
+      <input
+        ref={extractInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/webp"
+        className="hidden"
+        onChange={handleExtractFile}
+      />
+
+      {gate === 'splash' && (
+        <SplashDrop
+          ready={authReady}
+          user={user}
+          accentHex={user?.user_metadata?.accent_hex || '#2C2C2C'}
+          username={user?.user_metadata?.username || user?.email?.split('@')[0] || ''}
+          onLanded={() => setGate('app')}
+          onNeedLogin={() => setGate('flip')}
+        />
+      )}
+      {gate === 'flip' && !user && (
+        <LoginFlipPrompt
+          onSkip={() => {
+            setGate('app');
+            handleTabChange('colorSea');
           }}
-          onExtract={openExtract}
+          onAuthed={() => {
+            setGate('app');
+            handleTabChange('favorites');
+          }}
         />
       )}
 

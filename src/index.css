@@ -373,19 +373,23 @@
 @layer components {
   /** 一级：页面主标题 */
   .type-h1 {
-    @apply font-zenSerif text-2xl font-medium tracking-[0.12em] text-zen-coal md:text-[1.75rem] md:tracking-[0.14em];
+    font-family: var(--font-display);
+    @apply text-[1.85rem] font-normal tracking-[0.04em] text-zen-coal md:text-[2rem];
   }
   /** 二级：区块 / 模块标题 */
   .type-h2 {
-    @apply font-zenSerif text-xl font-medium tracking-[0.1em] text-zen-coal;
+    font-family: var(--font-display);
+    @apply text-[1.35rem] font-normal tracking-[0.03em] text-zen-coal;
   }
   /** 三级：子区块、空态标题 */
   .type-h3 {
-    @apply font-zenSerif text-lg font-medium tracking-[0.08em] text-zen-coal;
+    font-family: var(--font-display);
+    @apply text-[1.15rem] font-normal tracking-[0.03em] text-zen-coal;
   }
   /** 四级：弹层 / 全屏流顶部标题、卡片内主标题 */
   .type-h4 {
-    @apply font-zenSerif text-base font-medium tracking-[0.06em] text-zen-coal;
+    font-family: var(--font-display);
+    @apply text-[1.02rem] font-normal tracking-[0.02em] text-zen-coal;
   }
   /** 正文 */
   .type-body {
@@ -1237,4 +1241,252 @@
   .genom-neon-bg {
     background-position: 40% 50%;
   }
+
+  .heytea-drop,
+  .heytea-mark,
+  .heytea-ink-drop,
+  .heytea-ink-spread-field,
+  .heytea-splash-video,
+  .heytea-flip-card {
+    animation: none !important;
+    transition: none !important;
+  }
 }
+
+:root {
+  --font-display: "ZCOOL XiaoWei", "Noto Serif SC", serif;
+}
+
+.font-heytea {
+  font-family: var(--font-display);
+}
+
+.heytea-icon {
+  width: 1.55rem;
+  height: 1.55rem;
+  display: block;
+}
+
+.heytea-icon-upload {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: block;
+  object-fit: contain;
+}
+
+.text-zen-stone .heytea-icon-upload {
+  opacity: 0.42;
+}
+
+.heytea-create-cluster {
+  display: flex;
+  align-items: stretch;
+  gap: 0.15rem;
+  padding: 0.28rem 0.38rem 0.2rem;
+  background: #E8E0D4;
+  border-radius: 1.15rem;
+}
+
+.heytea-create-slot {
+  display: flex;
+  min-width: 3.1rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.18rem;
+  padding: 0.15rem 0.35rem 0.05rem;
+}
+
+.heytea-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  transition: background 0.62s ease;
+}
+
+.heytea-splash.is-reveal {
+  background: transparent;
+  pointer-events: none;
+}
+
+.heytea-splash-video {
+  width: min(92vw, 34rem);
+  height: min(92vw, 34rem);
+  max-height: 86vh;
+  object-fit: contain;
+  background: #ffffff;
+  transform-origin: 50% 46%;
+  transition:
+    opacity 0.48s ease,
+    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.48s ease;
+}
+
+.heytea-splash.is-fall .heytea-splash-video,
+.heytea-splash.is-spread .heytea-splash-video,
+.heytea-splash.is-reveal .heytea-splash-video {
+  opacity: 0;
+  transform: scale(0.08);
+  filter: blur(10px);
+  background: transparent;
+}
+
+.heytea-ink-drop {
+  position: fixed;
+  z-index: 2;
+  left: 50%;
+  top: 46%;
+  width: 18px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  background: #1c1c1c;
+  border-radius: 48% 52% 50% 50% / 36% 36% 64% 64%;
+  pointer-events: none;
+}
+
+.heytea-ink-drop.is-play {
+  opacity: 0;
+}
+
+.heytea-ink-drop.is-fall {
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  transition: top 0.56s cubic-bezier(0.32, 0.08, 0.18, 1);
+}
+
+.heytea-ink-drop.is-spread,
+.heytea-ink-drop.is-reveal {
+  left: 0;
+  top: env(safe-area-inset-top, 0px);
+  width: 100%;
+  height: 8.5rem;
+  transform: none;
+  border-radius: 0;
+  overflow: hidden;
+  transition:
+    left 0.78s cubic-bezier(0.16, 1, 0.3, 1),
+    top 0.78s cubic-bezier(0.16, 1, 0.3, 1),
+    width 0.78s cubic-bezier(0.16, 1, 0.3, 1),
+    height 0.78s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.78s cubic-bezier(0.16, 1, 0.3, 1),
+    border-radius 0.7s ease,
+    background 0.5s ease;
+}
+
+.heytea-ink-drop.is-flip.is-spread,
+.heytea-ink-drop.is-flip.is-reveal {
+  left: 50%;
+  top: 50%;
+  width: min(22rem, calc(100vw - 2.5rem));
+  height: 26rem;
+  transform: translate(-50%, -50%);
+  border-radius: 1.6rem;
+  background: #fffdf9 !important;
+  border: 1px solid #2c2c2c;
+}
+
+.heytea-ink-kicker,
+.heytea-ink-name {
+  position: absolute;
+  left: 1.25rem;
+  font-family: var(--font-display);
+  animation: heytea-ink-name 0.5s ease 0.28s both;
+}
+
+.heytea-ink-kicker {
+  top: 1.25rem;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  opacity: 0.7;
+}
+
+.heytea-ink-name {
+  bottom: 1.25rem;
+  font-size: 1.7rem;
+  letter-spacing: 0.06em;
+}
+
+.heytea-ink-spread-field {
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.heytea-ink-spread-field.is-center {
+  top: 50%;
+}
+
+.heytea-ink-spread-field i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 8px;
+  margin: -5px -5px;
+  border-radius: 46% 54% 48% 52%;
+  background: rgba(28, 28, 28, 0.16);
+  animation: heytea-ink-bloom 0.92s ease-out forwards;
+}
+
+.heytea-ink-spread-field i:nth-child(2) {
+  animation-delay: 0.07s;
+}
+
+.heytea-ink-spread-field i:nth-child(3) {
+  animation-delay: 0.14s;
+}
+
+@keyframes heytea-ink-bloom {
+  to {
+    width: 150vw;
+    height: 42rem;
+    margin: -21rem -75vw;
+    opacity: 0;
+  }
+}
+
+@keyframes heytea-ink-name {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.heytea-flip-stage {
+  width: min(22rem, calc(100vw - 2.5rem));
+  height: 26rem;
+  perspective: 1200px;
+}
+
+.heytea-flip-card {
+  height: 100%;
+  background: #fffdf9;
+  border: 1px solid #2c2c2c;
+  border-radius: 1.6rem;
+  padding: 1.75rem 1.5rem 1.4rem;
+}
+
+.heytea-activity-rail {
+  display: flex;
+  gap: 0.85rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.heytea-activity-card {
+  flex: 0 0 8.4rem;
+  scroll-snap-align: start;
+  border: 1px solid #2c2c2c;
+  border-radius: 1.15rem;
+  padding: 0.9rem 0.75rem 0.8rem;
+  background: #fffdf9;
+  text-align: left;
+}
+

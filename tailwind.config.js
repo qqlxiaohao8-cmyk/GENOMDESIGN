@@ -7,6 +7,8 @@ export default {
         bricolage: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
         /** 标题 / 情感：宋体 */
         zenSerif: ['"Noto Serif SC"', '"Songti SC"', 'STSong', 'SimSun', 'serif'],
+        /** 喜茶式手写标题 */
+        heytea: ['"ZCOOL XiaoWei"', '"Noto Serif SC"', 'serif'],
         /** UI / 正文 / 元数据：黑体 */
         zenSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
         /** 数字 / 英文短注：打字机旁注 */
@@ -38,6 +40,7 @@ export default {
           /** 雾纸 — 半透明叠层基色 */
           mist: '#F3EFE6',
           vermilion: '#BC2026',
+          blush: '#F6E6E4',
         },
       },
       boxShadow: {

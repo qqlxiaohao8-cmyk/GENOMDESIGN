@@ -220,6 +220,7 @@ export default function ColorSeaPage({
   similarHexFilter = null,
   similarHexMeta = null,
   onClearSimilarHexFilter,
+  focusTag = null,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTag, setActiveTag] = useState('All');
@@ -231,6 +232,15 @@ export default function ColorSeaPage({
     const d = dateFromDailyPaletteKey(dateKey);
     return getTodayColor(d).hex;
   }, [dateKey]);
+
+  useEffect(() => {
+    if (!focusTag) return;
+    setActiveTag(focusTag);
+    setSearchQuery('');
+    setSearchExpanded(false);
+    onClearSimilarHexFilter?.();
+    onTagClickTrack?.(focusTag);
+  }, [focusTag]);
 
   const { quickTags, categories } = useMemo(
     () => buildColorSeaTagSets(communityTagList, { dateKey }),
@@ -325,7 +335,6 @@ export default function ColorSeaPage({
   return (
     <PageShell
       title="色海"
-      index="02"
       bodyClassName="zen-page-body-feed"
       headerExtra={(
         <>
