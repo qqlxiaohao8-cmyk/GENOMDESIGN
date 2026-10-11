@@ -7,8 +7,8 @@ export default {
         bricolage: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
         /** 标题 / 情感：宋体 */
         zenSerif: ['"Noto Serif SC"', '"Songti SC"', 'STSong', 'SimSun', 'serif'],
-        /** 喜茶式手写标题 */
-        heytea: ['"ZCOOL XiaoWei"', '"Noto Serif SC"', 'serif'],
+        /** 标题：汉仪古趣 */
+        heytea: ['"HYGuQuW"', '"ZCOOL XiaoWei"', '"Noto Serif SC"', 'serif'],
         /** UI / 正文 / 元数据：黑体 */
         zenSans: ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"', 'sans-serif'],
         /** 数字 / 英文短注：打字机旁注 */
@@ -25,10 +25,10 @@ export default {
       },
       colors: {
         zen: {
-          /** 暖纸底 */
-          paper: '#F6F3EC',
+          /** 开场视频同色白底，水滴才能溶进首页 */
+          paper: '#FFFFFF',
           /** 略深纸色 — 分隔 / 浅底 */
-          sand: '#EFE9DF',
+          sand: '#F4F4F4',
           /** 浅灰 — borders, inactive */
           clay: '#E0D9CE',
           /** 苔岩 — muted text, secondary strokes */
@@ -38,7 +38,7 @@ export default {
           /** 漆黑 — headings, emphasis */
           coal: '#2C2C2C',
           /** 雾纸 — 半透明叠层基色 */
-          mist: '#F3EFE6',
+          mist: '#F7F7F7',
           vermilion: '#BC2026',
           blush: '#F6E6E4',
         },

@@ -3,7 +3,7 @@ const STORE = 'fonts';
 const KEY = 'display';
 const STYLE_ID = 'sekong-display-font';
 const FAMILY = 'Sekong Display';
-const FALLBACK = '"ZCOOL XiaoWei", "Noto Serif SC", serif';
+const FALLBACK = '"HYGuQuW", "ZCOOL XiaoWei", "Noto Serif SC", serif';
 const MAX_BYTES = 8 * 1024 * 1024;
 
 const FORMAT_BY_EXT = {
@@ -136,18 +136,6 @@ export async function loadDisplayFont() {
     /* private mode */
   }
 
-  try {
-    const res = await fetch('/fonts/display.woff2', { method: 'HEAD' });
-    const type = (res.headers.get('content-type') || '').toLowerCase();
-    const isFont = /font|woff|otf|ttf|octet-stream/.test(type);
-    if (res.ok && isFont && !type.includes('html')) {
-      applyFace('/fonts/display.woff2', 'woff2');
-      return { name: 'display.woff2', source: 'bundled' };
-    }
-  } catch {
-    /* no bundled font */
-  }
-
   applyDefaultDisplayFont();
-  return { name: '', source: 'default' };
+  return { name: 'HYGuQuW', source: 'default' };
 }

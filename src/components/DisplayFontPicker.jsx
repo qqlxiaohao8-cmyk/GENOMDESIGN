@@ -47,8 +47,8 @@ export default function DisplayFontPicker() {
     }
   };
 
-  const current = info.source === 'default'
-    ? '现在用站酷小薇'
+  const current = info.source === 'default' || info.source === 'bundled'
+    ? '现在用汉仪古趣'
     : `现在用 ${info.name}`;
 
   return (

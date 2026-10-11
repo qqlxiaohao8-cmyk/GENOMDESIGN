@@ -622,6 +622,18 @@
   .zen-page-heading__text {
     @apply min-w-0 flex-1 space-y-1.5;
   }
+  .sekong-header-logo {
+    height: 2.75rem;
+    width: 9.25rem;
+    object-fit: cover;
+    object-position: center;
+  }
+  @media (min-width: 768px) {
+    .sekong-header-logo {
+      height: 3rem;
+      width: 10.25rem;
+    }
+  }
   .zen-page-header {
     @apply shrink-0 border-b border-transparent bg-transparent px-5 py-6 md:px-8 md:py-8;
   }
@@ -1253,8 +1265,16 @@
   }
 }
 
+@font-face {
+  font-family: "HYGuQuW";
+  src: url("/fonts/HYGuQuW.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --font-display: "ZCOOL XiaoWei", "Noto Serif SC", serif;
+  --font-display: "HYGuQuW", "ZCOOL XiaoWei", "Noto Serif SC", serif;
 }
 
 .font-heytea {
@@ -1314,78 +1334,88 @@
 }
 
 .heytea-splash-video {
-  width: min(92vw, 34rem);
-  height: min(92vw, 34rem);
-  max-height: 86vh;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   background: #ffffff;
-  transform-origin: 50% 46%;
-  transition:
-    opacity 0.48s ease,
-    transform 0.52s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.48s ease;
+  transition: opacity 0.48s ease 0.16s;
 }
 
-.heytea-splash.is-fall .heytea-splash-video,
+.heytea-splash.is-play .heytea-splash-video,
+.heytea-splash.is-land .heytea-splash-video {
+  opacity: 1;
+}
+
 .heytea-splash.is-spread .heytea-splash-video,
+.heytea-splash.is-login .heytea-splash-video,
 .heytea-splash.is-reveal .heytea-splash-video {
   opacity: 0;
-  transform: scale(0.08);
-  filter: blur(10px);
-  background: transparent;
 }
 
 .heytea-ink-drop {
   position: fixed;
   z-index: 2;
-  left: 50%;
-  top: 46%;
-  width: 18px;
+  left: calc(50% - 10px);
+  top: calc(70% - 13px);
+  width: 20px;
   height: 26px;
-  transform: translate(-50%, -50%);
   background: #1c1c1c;
   border-radius: 48% 52% 50% 50% / 36% 36% 64% 64%;
   pointer-events: none;
+  overflow: hidden;
 }
 
-.heytea-ink-drop.is-play {
-  opacity: 0;
-}
-
-.heytea-ink-drop.is-fall {
-  top: calc(env(safe-area-inset-top, 0px) + 4.25rem);
-  transition: top 0.56s cubic-bezier(0.32, 0.08, 0.18, 1);
+.heytea-ink-drop.is-land {
+  transition: none;
 }
 
 .heytea-ink-drop.is-spread,
-.heytea-ink-drop.is-reveal {
+.heytea-ink-drop.is-reveal,
+.heytea-ink-drop.is-login {
   left: 0;
   top: env(safe-area-inset-top, 0px);
   width: 100%;
   height: 8.5rem;
-  transform: none;
   border-radius: 0;
-  overflow: hidden;
   transition:
-    left 0.78s cubic-bezier(0.16, 1, 0.3, 1),
-    top 0.78s cubic-bezier(0.16, 1, 0.3, 1),
-    width 0.78s cubic-bezier(0.16, 1, 0.3, 1),
-    height 0.78s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.78s cubic-bezier(0.16, 1, 0.3, 1),
-    border-radius 0.7s ease,
-    background 0.5s ease;
+    left 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
+    top 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
+    width 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
+    height 0.92s cubic-bezier(0.45, 0.02, 0.18, 1),
+    border-radius 0.78s cubic-bezier(0.45, 0.02, 0.18, 1),
+    background 0.55s ease 0.12s;
 }
 
 .heytea-ink-drop.is-flip.is-spread,
-.heytea-ink-drop.is-flip.is-reveal {
-  left: 50%;
-  top: 50%;
+.heytea-ink-drop.is-flip.is-reveal,
+.heytea-ink-drop.is-login {
+  left: calc(50% - min(11rem, 50vw - 1.25rem));
+  top: calc(50% - 13rem);
   width: min(22rem, calc(100vw - 2.5rem));
   height: 26rem;
-  transform: translate(-50%, -50%);
   border-radius: 1.6rem;
-  background: #fffdf9 !important;
+  background: #ffffff !important;
   border: 1px solid #2c2c2c;
+  pointer-events: auto;
+}
+
+.heytea-ink-card-fill {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 1.75rem 1.5rem 1.4rem;
+  opacity: 0;
+}
+
+.heytea-ink-drop.is-spread .heytea-ink-card-fill {
+  animation: heytea-ink-name 0.4s ease 0.4s both;
+}
+
+.heytea-splash.is-login .heytea-ink-card-fill {
+  animation: none;
+  opacity: 1;
 }
 
 .heytea-ink-kicker,
@@ -1463,9 +1493,13 @@
   perspective: 1200px;
 }
 
+.heytea-flip-stage.is-from-drop {
+  animation: heytea-ink-name 0.42s ease 0.05s both;
+}
+
 .heytea-flip-card {
   height: 100%;
-  background: #fffdf9;
+  background: #ffffff;
   border: 1px solid #2c2c2c;
   border-radius: 1.6rem;
   padding: 1.75rem 1.5rem 1.4rem;
@@ -1486,7 +1520,7 @@
   border: 1px solid #2c2c2c;
   border-radius: 1.15rem;
   padding: 0.9rem 0.75rem 0.8rem;
-  background: #fffdf9;
+  background: #ffffff;
   text-align: left;
 }
 

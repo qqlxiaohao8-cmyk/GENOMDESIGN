@@ -15,7 +15,6 @@ import ProfileOnboardingPage from './pages/ProfileOnboardingPage';
 import { needsProfileOnboarding } from './lib/profileOnboarding';
 import { applyProfileFont } from './lib/profileFonts';
 import SplashDrop from './components/SplashDrop';
-import LoginFlipPrompt from './components/LoginFlipPrompt';
 import { compressImageDataUrl } from './lib/styleImageUpload';
 
 import ExtractEditorPage from './flows/ExtractEditorPage';
@@ -565,18 +564,15 @@ export default function App() {
         onChange={handleExtractFile}
       />
 
-      {gate === 'splash' && (
+      {(gate === 'splash' || (gate === 'flip' && !user)) && (
         <SplashDrop
           ready={authReady}
           user={user}
           accentHex={user?.user_metadata?.accent_hex || '#2C2C2C'}
           username={user?.user_metadata?.username || user?.email?.split('@')[0] || ''}
+          startAtLogin={gate === 'flip'}
           onLanded={() => setGate('app')}
           onNeedLogin={() => setGate('flip')}
-        />
-      )}
-      {gate === 'flip' && !user && (
-        <LoginFlipPrompt
           onSkip={() => {
             setGate('app');
             handleTabChange('colorSea');
