@@ -2,6 +2,7 @@
  * Matrix palette engine — 10 aesthetic themes × 8 color harmonies.
  * Used by 生色 / 空生色 via randomPaletteHarmonyWithMeta.
  */
+import { oklabDistSqFromHex } from './oklch.js';
 import { getPoeticColorName } from './poeticColorNaming';
 
 /** @typedef {{ name: string, sMin: number, sMax: number, lMin: number, lMax: number, hBias: null | 'sunset' | 'ocean' }} ThemeProfile */
@@ -83,6 +84,178 @@ export function hslToHex(h, s, l) {
   return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
 }
 
+/** OKLab ΔE² — large stripes need more than a just-noticeable difference. */
+function minDistSqFor(harmonyId) {
+  if (harmonyId === 'monochromatic') return 0.0032;
+  if (harmonyId === 'analogous') return 0.006;
+  if (harmonyId === 'accentNeutral') return 0.0055;
+  return 0.0075;
+}
+
+function hueBudgetFor(harmonyId) {
+  if (harmonyId === 'monochromatic') return 6;
+  if (harmonyId === 'analogous') return 20;
+  if (harmonyId === 'accentNeutral') return 14;
+  return 40;
+}
+
+function normalizeLockedHexes(lockedColors) {
+  if (!lockedColors?.length) return [];
+  const out = [];
+  for (const entry of lockedColors) {
+    const hex = String(entry?.hex ?? entry ?? '').trim().toUpperCase();
+    if (/^#[0-9A-F]{6}$/.test(hex)) out.push(hex);
+  }
+  return out;
+}
+
+function hueDeltaDeg(a, b) {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
+}
+
+/** Screen-level twins the OKLab floor can still miss (two near-blacks, two creams). */
+function looksTheSameOnScreen(a, b) {
+  const [h1, s1, l1] = hexToHsl(a);
+  const [h2, s2, l2] = hexToHsl(b);
+  if (l1 < 18 && l2 < 18) return true;
+  if (l1 > 90 && l2 > 90) return true;
+  if (s1 < 14 && s2 < 14 && Math.abs(l1 - l2) < 11) return true;
+  return hueDeltaDeg(h1, h2) < 16 && Math.abs(s1 - s2) < 14 && Math.abs(l1 - l2) < 10;
+}
+
+function colorsTooClose(a, b, minSq) {
+  if (!a || !b) return false;
+  if (a.toUpperCase() === b.toUpperCase()) return true;
+  if (looksTheSameOnScreen(a, b)) return true;
+  return oklabDistSqFromHex(a, b) < minSq;
+}
+
+function paletteMinDistSq(hexes) {
+  let min = Infinity;
+  for (let i = 0; i < hexes.length; i++) {
+    for (let j = i + 1; j < hexes.length; j++) {
+      min = Math.min(min, oklabDistSqFromHex(hexes[i], hexes[j]));
+    }
+  }
+  return min;
+}
+
+function minDistToOccupied(hex, occupied) {
+  if (!occupied.length) return Infinity;
+  let min = Infinity;
+  for (const other of occupied) {
+    min = Math.min(min, oklabDistSqFromHex(hex, other));
+  }
+  return min;
+}
+
+/** Widen a tight theme L range just enough so 4–5 swatches can read as different. */
+function expandLightRange(theme, count, harmonyId) {
+  let lo = theme.lMin;
+  let hi = theme.lMax;
+  const step = harmonyId === 'monochromatic' ? 12 : 8;
+  const minSpan = Math.max(harmonyId === 'monochromatic' ? 40 : 28, (count - 1) * step);
+  if (hi - lo < minSpan) {
+    const mid = (lo + hi) / 2;
+    lo = clamp(mid - minSpan / 2, 8, 80);
+    hi = clamp(lo + minSpan, 24, 94);
+  }
+  if (theme.lMax <= 42) hi = Math.max(hi, 58);
+  if (theme.lMin >= 58) lo = Math.min(lo, 40);
+  if (hi - lo < minSpan) {
+    if (theme.lMax <= 42) lo = Math.max(8, hi - minSpan);
+    else hi = Math.min(94, lo + minSpan);
+  }
+  return [lo, hi];
+}
+
+function shuffleInPlace(list) {
+  for (let i = list.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+  return list;
+}
+
+function lightnessSlots(count, lMin, lMax, { shuffle = true } = {}) {
+  if (count <= 1) return [randRange(lMin, lMax)];
+  const step = (lMax - lMin) / (count - 1);
+  const slots = Array.from({ length: count }, (_, i) => {
+    const jitter = (Math.random() - 0.5) * Math.min(5, step * 0.35);
+    return clamp(lMin + i * step + jitter, 8, 94);
+  });
+  return shuffle ? shuffleInPlace(slots) : slots;
+}
+
+function satSlots(count, sMin, sMax) {
+  if (count <= 1) return [randRange(sMin, sMax)];
+  const span = Math.max(8, sMax - sMin);
+  return Array.from({ length: count }, (_, i) => {
+    const t = count === 1 ? 0.5 : i / (count - 1);
+    const jitter = randRange(-4, 4);
+    return clamp(sMin + t * span + jitter, 6, 100);
+  });
+}
+
+function nudgeHexAway(hex, occupied, harmonyId, minSq) {
+  const [h0, s0, l0] = hexToHsl(hex);
+  const hueBudget = hueBudgetFor(harmonyId);
+  const lTries = [0, 9, -9, 15, -15, 22, -22, 30, -30, 38, -38];
+  const sTries = [0, 12, -12, 20, -20, 28, -28];
+  const hTries = [0, 8, -8, 14, -14, 22, -22, 32, -32];
+
+  for (const dh of hTries) {
+    if (Math.abs(dh) > hueBudget) continue;
+    for (const ds of sTries) {
+      for (const dl of lTries) {
+        if (dh === 0 && ds === 0 && dl === 0) continue;
+        const next = hslToHex(h0 + dh, clamp(s0 + ds, 6, 100), clamp(l0 + dl, 8, 94));
+        if (occupied.every((other) => !colorsTooClose(next, other, minSq))) return next;
+      }
+    }
+  }
+  return null;
+}
+
+function forceDistinctHex(hex, occupied, theme, harmonyId, minSq) {
+  const [h0] = hexToHsl(hex);
+  const hueBudget = hueBudgetFor(harmonyId);
+  const hues = [0, -hueBudget, hueBudget, -Math.round(hueBudget / 2), Math.round(hueBudget / 2)];
+  const sats = [
+    clamp(theme.sMin + 8, 8, 100),
+    clamp((theme.sMin + theme.sMax) / 2, 8, 100),
+    clamp(theme.sMax - 4, 8, 100),
+  ];
+  for (const dh of hues) {
+    for (const s of sats) {
+      for (let l = 12; l <= 90; l += 7) {
+        const next = hslToHex(h0 + dh, s, l);
+        if (occupied.every((other) => !colorsTooClose(next, other, minSq))) return next;
+      }
+    }
+  }
+  return hex;
+}
+
+function ensureDistinctHexes(hexes, occupied, theme, harmonyId) {
+  const minSq = minDistSqFor(harmonyId);
+  const taken = occupied.map((h) => String(h).toUpperCase());
+  const out = [];
+  for (const raw of hexes) {
+    let hex = String(raw).toUpperCase();
+    if (taken.some((other) => colorsTooClose(hex, other, minSq))) {
+      hex = nudgeHexAway(hex, taken, harmonyId, minSq) || hex;
+    }
+    if (taken.some((other) => colorsTooClose(hex, other, minSq))) {
+      hex = forceDistinctHex(hex, taken, theme, harmonyId, minSq);
+    }
+    out.push(hex);
+    taken.push(hex);
+  }
+  return out;
+}
+
 function pickTheme(forcedName) {
   if (forcedName) {
     const found = THEME_PROFILES.find((t) => t.name === forcedName || t.name.includes(forcedName));
@@ -126,108 +299,60 @@ function baseHueFromLocked(lockedColors) {
   return null;
 }
 
+function hexAt(h, sSlots, lSlots, i) {
+  return hslToHex(h, sSlots[i % sSlots.length], lSlots[i % lSlots.length]);
+}
+
 /** Build exactly `n` hex colors for a theme + harmony + base hue. */
 function buildHarmonyColors(n, theme, harmonyId, baseH) {
   const count = clamp(Math.round(n), 2, 10);
+  const [lo, hi] = expandLightRange(theme, count, harmonyId);
+  const lights = lightnessSlots(count, lo, hi, { shuffle: harmonyId !== 'monochromatic' });
+  const sats = satSlots(count, theme.sMin, theme.sMax);
 
   switch (harmonyId) {
     case 'analogous': {
-      const spread = Math.floor(Math.random() * 20) + 12;
+      const spread = Math.floor(Math.random() * 16) + 18;
       const mid = (count - 1) / 2;
       return Array.from({ length: count }, (_, i) => {
         const h = baseH + (i - mid) * spread;
-        const s = randRange(theme.sMin, theme.sMax);
-        const l = randRange(theme.lMin, theme.lMax);
-        return hslToHex(h, s, l);
+        return hexAt(h, sats, lights, i);
       });
     }
     case 'complementary': {
-      const compH = baseH + 180;
-      const pool = [
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), Math.max(15, theme.lMin - 10)),
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(baseH, Math.max(10, theme.sMin - 15), Math.min(90, theme.lMax + 10)),
-        hslToHex(compH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(compH, randRange(theme.sMin, theme.sMax), Math.min(92, theme.lMax + 15)),
-      ];
-      while (pool.length < count) {
-        const useComp = pool.length % 2 === 1;
-        const h = useComp ? compH : baseH;
-        pool.push(hslToHex(h, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)));
-      }
-      return pool.slice(0, count);
+      const hubs = [baseH, baseH, baseH + 180, baseH + 180, baseH];
+      while (hubs.length < count) hubs.push(hubs.length % 2 === 0 ? baseH : baseH + 180);
+      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
     }
     case 'splitComplementary': {
-      const h2 = baseH + 150;
-      const h3 = baseH + 210;
-      const pool = [
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), Math.min(90, theme.lMax + 12)),
-        hslToHex(h2, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h3, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h3, Math.max(10, theme.sMin - 10), Math.max(15, theme.lMin - 15)),
-      ];
-      const hubs = [baseH, h2, h3];
-      while (pool.length < count) {
-        const h = hubs[pool.length % hubs.length];
-        pool.push(hslToHex(h, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)));
-      }
-      return pool.slice(0, count);
+      const hubs = [baseH, baseH + 150, baseH + 210, baseH, baseH + 150];
+      while (hubs.length < count) hubs.push([baseH, baseH + 150, baseH + 210][hubs.length % 3]);
+      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
     }
     case 'triadic': {
-      const h2 = baseH + 120;
-      const h3 = baseH + 240;
-      const pool = [
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), Math.max(20, theme.lMin - 15)),
-        hslToHex(h2, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h3, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h3, randRange(theme.sMin, theme.sMax), Math.min(90, theme.lMax + 15)),
-      ];
-      const hubs = [baseH, h2, h3];
-      while (pool.length < count) {
-        const h = hubs[pool.length % hubs.length];
-        pool.push(hslToHex(h, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)));
-      }
-      return pool.slice(0, count);
+      const hubs = [baseH, baseH + 120, baseH + 240, baseH, baseH + 120];
+      while (hubs.length < count) hubs.push([baseH, baseH + 120, baseH + 240][hubs.length % 3]);
+      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
     }
     case 'tetradic': {
-      const h2 = baseH + 60;
-      const h3 = baseH + 180;
-      const h4 = baseH + 240;
-      const pool = [
-        hslToHex(baseH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h2, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h3, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(h4, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(baseH, Math.max(10, theme.sMin - 20), Math.min(95, theme.lMax + 15)),
-      ];
-      const hubs = [baseH, h2, h3, h4];
-      while (pool.length < count) {
-        const h = hubs[pool.length % hubs.length];
-        pool.push(hslToHex(h, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)));
-      }
-      return pool.slice(0, count);
+      const hubs = [baseH, baseH + 60, baseH + 180, baseH + 240, baseH];
+      while (hubs.length < count) hubs.push([baseH, baseH + 60, baseH + 180, baseH + 240][hubs.length % 4]);
+      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
     }
     case 'monochromatic': {
       const sat = randRange(theme.sMin, theme.sMax);
-      const step = count > 1 ? (theme.lMax - theme.lMin) / (count - 1) : 0;
       return Array.from({ length: count }, (_, i) => {
-        const l = theme.lMin + i * step;
-        return hslToHex(baseH, sat, l);
+        const s = clamp(sat + (i - (count - 1) / 2) * 5, 8, 100);
+        return hslToHex(baseH, s, lights[i]);
       });
     }
     case 'accentNeutral': {
       const satAccent = Math.min(100, theme.sMax + 20);
-      const pool = [
-        hslToHex(baseH, satAccent, randRange(45, 65)),
-        hslToHex(baseH, 12, 92),
-        hslToHex(baseH, 15, 80),
-        hslToHex(baseH, 20, 45),
-        hslToHex(baseH, 25, 20),
-      ];
-      while (pool.length < count) {
-        pool.push(hslToHex(baseH, randRange(10, 28), randRange(18, 90)));
+      const neutralL = [90, 62, 38, 18, 74];
+      const neutralS = [8, 14, 18, 22, 11];
+      const pool = [hslToHex(baseH, satAccent, clamp(lights[0], 38, 68))];
+      for (let i = 0; i < count - 1; i += 1) {
+        pool.push(hslToHex(baseH, neutralS[i % neutralS.length], neutralL[i % neutralL.length]));
       }
       return pool.slice(0, count);
     }
@@ -235,18 +360,9 @@ function buildHarmonyColors(n, theme, harmonyId, baseH) {
     default: {
       const warmH = Math.floor(Math.random() * 60);
       const coolH = Math.floor(Math.random() * 80) + 170;
-      const pool = [
-        hslToHex(warmH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(warmH, randRange(theme.sMin, theme.sMax), Math.min(90, theme.lMax + 15)),
-        hslToHex((warmH + 30) % 360, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(coolH, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)),
-        hslToHex(coolH, randRange(theme.sMin, theme.sMax), Math.max(15, theme.lMin - 15)),
-      ];
-      while (pool.length < count) {
-        const h = pool.length % 2 === 0 ? warmH : coolH;
-        pool.push(hslToHex(h, randRange(theme.sMin, theme.sMax), randRange(theme.lMin, theme.lMax)));
-      }
-      return pool.slice(0, count);
+      const hubs = [warmH, warmH + 28, coolH, coolH + 18, warmH];
+      while (hubs.length < count) hubs.push(hubs.length % 2 === 0 ? warmH : coolH);
+      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
     }
   }
 }
@@ -270,10 +386,34 @@ export function generateMatrixPalette(options = {}) {
   const harmony = pickHarmony(options.harmonyId || null);
 
   let baseH = sampleBaseHue(theme);
+  const lockedHexes = normalizeLockedHexes(options.lockedColors);
   const lockedHue = baseHueFromLocked(options.lockedColors);
   if (lockedHue != null) baseH = lockedHue;
 
-  const hexes = buildHarmonyColors(count, theme, harmony.id, baseH);
+  const minSq = minDistSqFor(harmony.id);
+  const attempts = Math.max(6, options.maxAttempts ?? 10);
+  let hexes = [];
+  let bestScore = -1;
+
+  for (let i = 0; i < attempts; i += 1) {
+    const candidate = ensureDistinctHexes(
+      buildHarmonyColors(count, theme, harmony.id, baseH),
+      lockedHexes,
+      theme,
+      harmony.id,
+    );
+    const pairScore = paletteMinDistSq(candidate);
+    const lockScore = lockedHexes.length
+      ? Math.min(...candidate.map((hex) => minDistToOccupied(hex, lockedHexes)))
+      : Infinity;
+    const score = Math.min(pairScore, lockScore);
+    if (score > bestScore) {
+      hexes = candidate;
+      bestScore = score;
+    }
+    if (score >= minSq) break;
+  }
+
   const colors = hexes.map((hex) => ({
     hex,
     label: getPoeticColorName(hex),
