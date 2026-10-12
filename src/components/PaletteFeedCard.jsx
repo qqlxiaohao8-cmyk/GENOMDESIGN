@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { Bookmark, BookmarkX, MoreHorizontal, Sparkles, ThumbsUp } from 'lucide-react';
 import ColorSeaStripes from './ColorSeaStripes';
 import {
   enrichColorsWithChineseNames,
@@ -15,8 +16,11 @@ export function formatLikeCount(n) {
 
 /**
  * 色海 / 收藏 feed 色卡：
- * 看色条 → 点色复制 → 标题跟着当前色走 → 收藏 / 打开 是下一步。
+ * 看色条 → 点色复制 → 标题跟着当前色走 → 图标操作是下一步。
  */
+const footerBtn =
+  'inline-flex items-center justify-center text-zen-stone smooth-transition hover:text-zen-ink';
+
 export default function PaletteFeedCard({
   colors = [],
   title,
@@ -196,40 +200,40 @@ export default function PaletteFeedCard({
           {liveLine}
         </p>
 
-        <div className="relative flex min-h-[1.75rem] items-baseline gap-3.5">
+        <div className="relative flex min-h-[1.75rem] items-center gap-1">
           {isDailyVote ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onVote?.(); }}
               disabled={voteBusy || voteDisabled || voted}
-              className={`zen-hit px-0 ${
-                voted ? 'zen-action' : 'zen-quiet'
-              } disabled:opacity-40`}
+              className={`${footerBtn} zen-hit h-8 gap-1 px-1.5 disabled:opacity-40 ${
+                voted ? 'text-zen-vermilion' : 'hover:text-zen-vermilion'
+              }`}
               aria-label={voted ? '已投票' : '投票'}
             >
-              {voted ? '已投' : '投票'}
-              <span className="ml-1 tabular-nums opacity-70">{formatLikeCount(voteCount)}</span>
+              <ThumbsUp size={14} strokeWidth={2} fill={voted ? 'currentColor' : 'none'} aria-hidden />
+              <span className="text-[10px] tabular-nums">{formatLikeCount(voteCount)}</span>
             </button>
           ) : isFavorites ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onUnfavorite?.(); }}
-              className="zen-quiet zen-hit px-0"
+              className={`${footerBtn} zen-hit h-8 w-8 hover:text-zen-vermilion`}
               aria-label="从收藏中移除"
             >
-              移除
+              <BookmarkX size={14} strokeWidth={2} aria-hidden />
             </button>
           ) : onToggleFavorite ? (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
               disabled={favoriteBusy}
-              className={`zen-hit px-0 disabled:opacity-40 ${
-                favorited ? 'zen-action' : 'zen-quiet'
+              className={`${footerBtn} zen-hit h-8 w-8 disabled:opacity-40 ${
+                favorited ? 'text-zen-vermilion' : 'hover:text-zen-vermilion'
               }`}
               aria-label={favorited ? '取消收藏' : '收藏色卡'}
             >
-              {favorited ? '已藏' : '收藏'}
+              <Bookmark size={14} strokeWidth={2} fill={favorited ? 'currentColor' : 'none'} aria-hidden />
             </button>
           ) : null}
 
@@ -237,9 +241,10 @@ export default function PaletteFeedCard({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onOpenInShengSe(); }}
-              className="zen-action zen-hit px-0"
+              className={`${footerBtn} zen-hit h-8 w-8 hover:text-zen-coal`}
+              aria-label="打开"
             >
-              打开
+              <Sparkles size={14} strokeWidth={2} aria-hidden />
             </button>
           ) : null}
 
@@ -248,11 +253,11 @@ export default function PaletteFeedCard({
               ref={triggerRef}
               type="button"
               onClick={(e) => { e.stopPropagation(); setMenuOpen((o) => !o); }}
-              className="zen-quiet zen-hit px-0"
+              className={`${footerBtn} zen-hit h-8 w-8`}
               aria-label="更多选项"
               aria-expanded={menuOpen}
             >
-              更多
+              <MoreHorizontal size={14} strokeWidth={2} aria-hidden />
             </button>
           ) : null}
 
