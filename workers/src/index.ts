@@ -12,6 +12,7 @@ import paletteTitleRoutes from './routes/paletteTitle';
 import profilesRoutes from './routes/profiles';
 import stylesRoutes from './routes/styles';
 import uploadRoutes from './routes/upload';
+import feedbackRoutes from './routes/feedback';
 import { StyleLikeRoom } from './durableObjects/StyleLikeRoom';
 
 export { StyleLikeRoom };
@@ -49,6 +50,7 @@ app.route('/api/v1', dailyRoutes);
 app.route('/api/v1', colorWalkRoutes);
 app.route('/api/v1', profilesRoutes);
 app.route('/api/v1', paletteTitleRoutes);
+app.route('/api/v1', feedbackRoutes);
 
 app.post('/api/internal/tally-daily-winners', async (c) => {
   const cronSecret = c.req.header('X-Cron-Secret');

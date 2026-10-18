@@ -66,7 +66,7 @@ export default function DailyOneColorPage({
               onClick={onBackToGame}
               className="type-caption hover:text-zen-ink"
             >
-              ← 返回游戏
+              ← 返回
             </button>
           ) : null}
           {user && mySubmission ? (

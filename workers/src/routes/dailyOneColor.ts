@@ -62,6 +62,32 @@ daily.get('/daily-one-color/votes', async (c) => {
   return c.json({ data: bySubmission });
 });
 
+daily.get('/daily-one-color/my-month', async (c) => {
+  const user = await requireUser(c);
+  if (user instanceof Response) return user;
+  const month = c.req.query('month');
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return c.json({ error: 'month required' }, 400);
+  }
+  const start = `${month}-01`;
+  const end = `${month}-31`;
+  const { results } = await c.env.DB.prepare(
+    `SELECT challenge_date, winner_rank FROM daily_palette_submissions
+     WHERE user_id = ? AND challenge_date >= ? AND challenge_date <= ?`,
+  )
+    .bind(user.id, start, end)
+    .all<{ challenge_date: string; winner_rank: number | null }>();
+
+  const days: Record<string, { participated: boolean; winnerRank: number | null }> = {};
+  for (const row of results || []) {
+    days[row.challenge_date] = {
+      participated: true,
+      winnerRank: row.winner_rank ?? null,
+    };
+  }
+  return c.json({ data: days });
+});
+
 daily.get('/daily-one-color/my-submission', async (c) => {
   const user = await requireUser(c);
   if (user instanceof Response) return user;

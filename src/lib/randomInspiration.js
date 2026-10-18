@@ -649,7 +649,7 @@ const LEGACY_MOOD_TO_AESTHETIC = {
  */
 /** 同步兜底色盘，避免引擎重试阻塞 UI 时无内容 */
 export function quickFallbackPalette(count = 5) {
-  const seeds = ['#C93756', '#4F8A5B', '#2B7BA8', '#E8C48E', '#6B4FA8', '#FF4C00', '#8B5E3C', '#66A9C9'];
+  const seeds = ['#C4A38A', '#E8D5C4', '#8A6A52', '#D9C4A8', '#5C4A3A', '#B08968', '#F2E6D8', '#7A6554'];
   const n = Math.max(2, Math.min(10, Math.round(count) || 5));
   return seeds.slice(0, n).map((hex) => ({ hex, label: pickFunNameForHex(hex) }));
 }

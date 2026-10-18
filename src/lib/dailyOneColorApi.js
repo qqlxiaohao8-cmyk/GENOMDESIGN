@@ -58,6 +58,18 @@ export async function fetchMySubmissionForChallengeDate(_legacy, dateKey, userId
   }
 }
 
+export async function fetchMyMonthParticipation(monthKey, userId) {
+  if (!userId || !monthKey) return { days: {}, error: null };
+  try {
+    const { data } = await apiFetch(
+      `/daily-one-color/my-month?month=${encodeURIComponent(monthKey)}`,
+    );
+    return { days: data && typeof data === 'object' ? data : {}, error: null };
+  } catch (e) {
+    return { days: {}, error: e };
+  }
+}
+
 export async function insertDailyPaletteSubmission(_legacy, row) {
   try {
     const { id } = await apiFetch('/daily-one-color/submissions', {

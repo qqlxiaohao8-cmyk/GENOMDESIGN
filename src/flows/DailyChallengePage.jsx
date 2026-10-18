@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Lock, Pipette, X } from 'lucide-react';
 import { normalizeHex } from '../lib/randomInspiration';
 import { generatePaletteTags } from '../lib/paletteTags';
@@ -192,11 +192,52 @@ function HslColorPicker({ hex, onChange, onClose }) {
   );
 }
 
-function DailyFixedStripe({ hex, name }) {
+function DailyFixedStripe({ hex, name, sourceRect }) {
+  const stripeRef = useRef(null);
+  const playedRef = useRef(false);
   const textColor = pickReadableTextOnHex(hex);
+  const [expanding, setExpanding] = useState(Boolean(sourceRect) && !prefersReducedMotion());
+
+  useLayoutEffect(() => {
+    if (!expanding || !sourceRect || playedRef.current) return undefined;
+    const el = stripeRef.current;
+    if (!el) {
+      setExpanding(false);
+      return undefined;
+    }
+    el.style.transition = 'none';
+    el.style.transform = 'none';
+    const dest = el.getBoundingClientRect();
+    if (dest.width < 8 || dest.height < 8) {
+      setExpanding(false);
+      return undefined;
+    }
+    playedRef.current = true;
+    el.style.transformOrigin = 'top left';
+    el.style.transform = `translate(${sourceRect.left - dest.left}px, ${sourceRect.top - dest.top}px) scale(${sourceRect.width / dest.width}, ${sourceRect.height / dest.height})`;
+    el.style.borderRadius = '1.15rem 0 0 1.15rem';
+    void el.offsetWidth;
+    const finish = (event) => {
+      if (event?.propertyName && event.propertyName !== 'transform') return;
+      setExpanding(false);
+    };
+    requestAnimationFrame(() => {
+      el.addEventListener('transitionend', finish);
+      el.style.transition = 'transform 0.82s cubic-bezier(0.4, 0.08, 0.2, 1), border-radius 0.82s cubic-bezier(0.4, 0.08, 0.2, 1)';
+      el.style.transform = 'none';
+      el.style.borderRadius = '0px';
+    });
+    const fallback = window.setTimeout(() => setExpanding(false), 1000);
+    return () => {
+      window.clearTimeout(fallback);
+      el.removeEventListener('transitionend', finish);
+    };
+  }, [expanding, sourceRect]);
+
   return (
     <div
-      className="relative flex min-h-[3.5rem] flex-1 select-none items-center"
+      ref={stripeRef}
+      className={`daily-fixed-stripe relative flex min-h-[3.5rem] flex-1 select-none items-center${expanding ? ' is-expanding' : ''}`}
       style={{ backgroundColor: hex }}
       aria-label={`今日色：${name} ${normalizeHex(hex)}`}
     >
@@ -253,8 +294,14 @@ function buildInitialState(dailyData) {
 /**
  * 每日挑战 · 定制生色：今日色锁定，其余色块须自主选色后才能进入预览。
  */
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function DailyChallengePage({ flow, onBack, onNext }) {
   const dailyData = flow?.dailyData ?? {};
+  const sourceRect = flow?.sourceRect || dailyData.sourceRect || null;
   const initial = useMemo(() => buildInitialState(dailyData), [dailyData.dateKey, dailyData.hex]);
 
   const [hexes, setHexes] = useState(initial.hexes);
@@ -279,7 +326,7 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
   );
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+    <div className={`daily-challenge-page${sourceRect ? ' is-from-swatch' : ''} fixed inset-0 z-[200] flex flex-col overflow-hidden bg-zen-paper`}>
       <div className="shrink-0 flex items-center justify-between border-b border-zen-ink/10 bg-white px-4 py-3">
         <button
           type="button"
@@ -304,19 +351,6 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
         </button>
       </div>
 
-      {dailyData.quote?.zh ? (
-        <div className="shrink-0 border-b border-zen-ink/[0.06] bg-zen-mist/40 px-4 py-2.5 text-center">
-          <p className="type-note line-clamp-2 text-zen-ink/60">
-            「{dailyData.quote.zh}」
-            {dailyData.quote.zhSource && (
-              <span className="type-caption mt-0.5 block">
-                — {dailyData.quote.zhSource}
-              </span>
-            )}
-          </p>
-        </div>
-      ) : null}
-
       <div className="relative flex flex-1 flex-col min-h-0">
         {hexes.map((hex, i) => {
           if (i === DAILY_SLOT_INDEX) {
@@ -325,6 +359,7 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
                 key="daily"
                 hex={hex}
                 name={initial.dailyName}
+                sourceRect={sourceRect}
               />
             );
           }

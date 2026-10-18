@@ -4,7 +4,7 @@ import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
 import { PROFILE_FONTS } from '../lib/profileFonts';
 import { authClient } from '../lib/authClient';
-import { syncProfile } from '../lib/apiClient';
+import { apiFetch, syncProfile } from '../lib/apiClient';
 import { readSfxVolume, writeSfxVolume } from '../lib/sfxVolume';
 import sekongLogo from '../assets/sekong-mark.png';
 
@@ -159,6 +159,7 @@ export default function ProfilePage({
   const [sheet, setSheet] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
 
   const username = user?.user_metadata?.username || '';
   const accentHex = normalizeHex(user?.user_metadata?.accent_hex || '#C93756');
@@ -194,17 +195,22 @@ export default function ProfilePage({
     [user],
   );
 
-  const copyFeedback = async () => {
+  const sendFeedback = async () => {
     const text = feedback.trim();
     if (!text) {
       setFeedbackMsg('先写一点想法');
       return;
     }
+    setFeedbackBusy(true);
+    setFeedbackMsg('');
     try {
-      await navigator.clipboard.writeText(text);
-      setFeedbackMsg('已复制，之后可以发给我们');
+      await apiFetch('/feedback', { method: 'POST', body: { message: text } });
+      setFeedback('');
+      setFeedbackMsg('已经送到，谢谢');
     } catch {
-      setFeedbackMsg('复制没有成功，请再试一次');
+      setFeedbackMsg('现在发不出去，请稍后再试');
+    } finally {
+      setFeedbackBusy(false);
     }
   };
 
@@ -266,8 +272,13 @@ export default function ProfilePage({
             placeholder="想说的话"
           />
           {feedbackMsg ? <p className="type-body-sm mt-2 text-zen-stone">{feedbackMsg}</p> : null}
-          <button type="button" className="zen-action mt-5" onClick={copyFeedback}>
-            复制这段话
+          <button
+            type="button"
+            className="zen-action mt-5"
+            onClick={sendFeedback}
+            disabled={feedbackBusy}
+          >
+            {feedbackBusy ? '正在送出' : '送出'}
           </button>
         </SettingsSheet>
       ) : null}

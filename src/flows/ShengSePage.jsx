@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight,
   Lock, Unlock, Plus, Minus, RefreshCw, Bookmark,
-  Pipette, X, Loader2, GripVertical,
+  Pipette, X, Loader2, GripVertical, GripHorizontal,
 } from 'lucide-react';
 import { randomPaletteHarmony, randomPaletteHarmonyWithMeta, quickFallbackPalette, normalizeHex } from '../lib/randomInspiration';
 import { generatePaletteTags } from '../lib/paletteTags';
@@ -320,7 +320,8 @@ function ColorStripeRow({
         onPointerCancel={onGripPointerUp}
         onClick={(e) => e.stopPropagation()}
       >
-        <GripVertical size={17} strokeWidth={1.5} style={{ opacity: 0.42 }} aria-hidden />
+        <GripHorizontal size={17} strokeWidth={1.5} className="md:hidden" style={{ opacity: 0.42 }} aria-hidden />
+        <GripVertical size={17} strokeWidth={1.5} className="hidden md:block" style={{ opacity: 0.42 }} aria-hidden />
       </button>
 
       <div
@@ -545,12 +546,17 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
   useEffect(() => { stripeIdsRef.current = stripeIds; }, [stripeIds]);
   useEffect(() => { paletteMetaRef.current = paletteMeta; }, [paletteMeta]);
 
-  const findDropIndex = useCallback((clientX) => {
+  const findDropIndex = useCallback((clientX, clientY) => {
     for (let i = 0; i < stripeRefs.current.length; i++) {
       const el = stripeRefs.current[i];
       if (!el) continue;
       const rect = el.getBoundingClientRect();
-      if (clientX >= rect.left && clientX <= rect.right) return i;
+      if (
+        clientX >= rect.left
+        && clientX <= rect.right
+        && clientY >= rect.top
+        && clientY <= rect.bottom
+      ) return i;
     }
     return null;
   }, []);
@@ -583,14 +589,14 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
 
   const handleGripPointerMove = useCallback((e) => {
     if (dragFromRef.current === null) return;
-    const over = findDropIndex(e.clientX);
+    const over = findDropIndex(e.clientX, e.clientY);
     if (over !== null) setDragOverIdx(over);
   }, [findDropIndex]);
 
   const handleGripPointerUp = useCallback((e) => {
     const from = dragFromRef.current;
     dragFromRef.current = null;
-    const to = findDropIndex(e.clientX);
+    const to = findDropIndex(e.clientX, e.clientY);
     setDragFromIdx(null);
     setDragOverIdx(null);
     try {
@@ -763,7 +769,7 @@ export default function ShengSePage({ flow, onBack, onNext, onSaveToFavorites })
       </div>
 
       {/* Color stripes */}
-      <div className="relative flex flex-1 flex-row items-stretch min-h-0">
+      <div className="relative flex min-h-0 flex-1 flex-col items-stretch md:flex-row">
         {paletteBusy && (
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-zen-paper/60 backdrop-blur-[2px]">
             <div className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 shadow-sm">

@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Download, Link, Send, Loader2, Sparkles, Check } from 'lucide-react';
 import {
-  paletteTitleFromHexesAndMeta,
   randomPalettePoeticTitleFromHexes,
   PALETTE_TITLE_MAX_LEN,
   PALETTE_TITLE_MIN_LEN,
@@ -38,7 +37,6 @@ export default function PublishPreviewPage({
   const isDailySubmit = publishTarget === 'dailyOneColor';
   const paletteTags = Array.isArray(flowTags) ? flowTags : [];
   const [title, setTitle] = useState('');
-  const [titleInitialized, setTitleInitialized] = useState(false);
   const [generatingTitle, setGeneratingTitle] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState(null);
@@ -57,31 +55,6 @@ export default function PublishPreviewPage({
   );
 
   const takenTitles = existingPublicTitles;
-
-  useEffect(() => {
-    if (titleInitialized || !hexes.length) return undefined;
-    let cancelled = false;
-    setGeneratingTitle(true);
-    (async () => {
-      const fallback = paletteTitleFromHexesAndMeta(hexes, paletteMeta, paletteTags, takenTitles);
-      const aiTitle = await fetchAiPaletteTitle({
-        colors: colorDetails,
-        tags: paletteTags,
-        paletteMeta,
-        excludeTitles: takenTitles,
-        colorVibe: describePaletteVibe(hexes).summary,
-      });
-      if (cancelled) return;
-      const next = aiTitle || fallback;
-      setTitle(next);
-      if (aiTitle) recentTitlesRef.current = [...recentTitlesRef.current, aiTitle].slice(-15);
-      setTitleInitialized(true);
-      setGeneratingTitle(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [hexes, paletteMeta, paletteTags, takenTitles, titleInitialized, colorDetails]);
 
   const isDuplicateTitle = (t) => isDuplicatePublicTitle(t, takenTitles);
 

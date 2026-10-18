@@ -31,6 +31,7 @@ binding = "AI"
 [vars]
 # Overridden in .dev.vars for local dev (use http://localhost:5173 with Vite proxy)
 BETTER_AUTH_URL = "https://sekong.app"
+FEEDBACK_FROM_EMAIL = "noreply@sekong.app"
 
 # Custom domain (after sekong.app is on Cloudflare — wrangler deploy attaches it)
 [[routes]]
@@ -41,7 +42,8 @@ custom_domain = true
 pattern = "www.sekong.app"
 custom_domain = true
 
-# Secrets (wrangler secret put): BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+# Secrets (wrangler secret put): BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+# FEEDBACK_TO_EMAIL, EXTRA_TRUSTED_ORIGIN (optional extra auth origin, not committed)
 
 # Daily tally at 16:00 UTC = GMT+8 midnight
 [triggers]

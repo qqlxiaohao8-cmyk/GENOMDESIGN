@@ -137,6 +137,7 @@ export default function ColorWalkFlowOverlay({
   user = null,
   onOpenAuth,
   initialPhase = 'spin',
+  variant = 'full',
 }) {
   const multiFileInputRef = useRef(null);
   const singleFileInputRef = useRef(null);
@@ -503,13 +504,16 @@ export default function ColorWalkFlowOverlay({
   const displayHex = phase === 'spin' ? currentHex : finalHex;
   const showColorBackdrop = phase === 'spin' || phase === 'ready';
   const showPaperBackdrop = phase === 'layout' || phase === 'saved';
+  const isModal = variant === 'modal';
 
   return (
     <div
-      className="fixed inset-0 z-[220] flex flex-col"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Color Walk"
+      className={isModal
+        ? 'relative flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-2xl'
+        : 'fixed inset-0 z-[220] flex flex-col'}
+      role={isModal ? undefined : 'dialog'}
+      aria-modal={isModal ? undefined : 'true'}
+      aria-label={isModal ? undefined : 'Color Walk'}
     >
       {showColorBackdrop && (
         <div
@@ -523,8 +527,9 @@ export default function ColorWalkFlowOverlay({
       {showColorBackdrop && <div className="absolute inset-0 bg-black/18" aria-hidden />}
 
       {phase !== 'saved' && (
-        <div className="relative z-10 flex items-center justify-between gap-2 px-4 pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8">
+        <div className={`relative z-10 flex items-center justify-between gap-2 ${isModal ? 'px-3 pt-3' : 'px-4 pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8'}`}>
           <div className="flex items-center gap-2">
+            {(phase === 'layout' || !isModal) ? (
             <button
               type="button"
               onClick={(e) => {
@@ -540,6 +545,7 @@ export default function ColorWalkFlowOverlay({
             >
               {phase === 'layout' ? <ArrowLeft size={18} strokeWidth={2} aria-hidden /> : <X size={18} strokeWidth={2} aria-hidden />}
             </button>
+            ) : null}
 
             {canSave && (
               <button
@@ -638,7 +644,7 @@ export default function ColorWalkFlowOverlay({
           )}
         </div>
       ) : (
-        <div className="relative z-10 mx-auto flex w-full max-w-6xl min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 md:px-8">
+        <div className={`relative z-10 mx-auto flex min-h-0 w-full flex-1 flex-col pt-3 ${isModal ? 'px-3 pb-3' : 'max-w-6xl px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] md:px-8'}`}>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="type-h2">{finalName}</h2>

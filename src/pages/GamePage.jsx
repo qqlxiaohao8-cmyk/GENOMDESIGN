@@ -104,13 +104,38 @@ export default function GamePage({ onStartChallenge, onOpenDailyPool, user = nul
         </div>
       )}
 
-      <ColorWalkFlowOverlay
-        open={colorWalkOpen}
-        onClose={closeColorWalk}
-        user={user}
-        onOpenAuth={onOpenAuth}
-        initialPhase={colorWalkInitialPhase}
-      />
+      {colorWalkOpen && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Color Walk"
+        >
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" aria-hidden />
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))] md:px-8 md:py-8">
+            <div className="mb-3 flex w-full max-w-md shrink-0 justify-end md:mb-4">
+              <button
+                type="button"
+                onClick={closeColorWalk}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white backdrop-blur-md transition-colors hover:bg-white/20"
+                aria-label="关闭 Color Walk"
+              >
+                <X size={18} strokeWidth={2} aria-hidden />
+              </button>
+            </div>
+            <div className="flex min-h-0 w-full max-w-md flex-1 flex-col">
+              <ColorWalkFlowOverlay
+                open
+                variant="modal"
+                onClose={closeColorWalk}
+                user={user}
+                onOpenAuth={onOpenAuth}
+                initialPhase={colorWalkInitialPhase}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </PageShell>
   );
 }

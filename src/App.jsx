@@ -1,13 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import useColorApp from './hooks/useColorApp';
 import ColorHuntShell from './components/layout/ColorHuntShell';
-import AppNav from './components/layout/AppNav';
+import CreateFab from './components/layout/CreateFab';
+import MineDrawer from './components/MineDrawer';
+import ColorMemoryGame from './components/ColorMemoryGame';
+import ColorWalkFlowOverlay from './components/ColorWalkFlowOverlay';
 import AuthModal from './components/AuthModal';
+import { X } from 'lucide-react';
 import SetPasswordModal from './components/SetPasswordModal';
 import ColorCardPreviewOverlay from './components/ColorCardPreviewOverlay';
 import { itemColorCardData } from './components/StyleUiPreviewCard';
 
-import FavoritesPage, { PREVIEW_USER } from './pages/FavoritesPage';
+import FavoritesPage from './pages/FavoritesPage';
+import { PREVIEW_USER } from './lib/guestMineAccess';
 import ColorSeaPage from './pages/ColorSeaPage';
 import DailyOneColorPage from './pages/DailyOneColorPage';
 import ProfilePage from './pages/ProfilePage';
@@ -25,6 +30,8 @@ import DailyChallengePage from './flows/DailyChallengePage';
 
 import { normalizeHex } from './lib/randomInspiration';
 import { authClient } from './lib/authClient';
+import { canOpenMine } from './lib/guestMineAccess';
+import { useCalendarDateKey } from './hooks/useCalendarDateKey';
 
 const LANDING_DISMISSED_KEY = 'genom-landing-dismissed';
 const ACTIVE_TAB_KEY = 'genom-active-tab';
@@ -81,7 +88,14 @@ export default function App() {
   const [gate, setGate] = useState('splash');
   const [seaFocusTag, setSeaFocusTag] = useState(null);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [memorySession, setMemorySession] = useState(0);
+  const [walkOpen, setWalkOpen] = useState(false);
   const extractInputRef = useRef(null);
+  const dateKey = useCalendarDateKey();
   // Shared style preview overlay (deep-link or card detail)
   const [previewOverlay, setPreviewOverlay] = useState(null);
   const [colorSeaSimilarHex, setColorSeaSimilarHex] = useState(null);
@@ -185,11 +199,33 @@ export default function App() {
 
   useEffect(() => {
     if (gate !== 'splash') return;
-    setActiveTab('favorites');
-  }, [gate]);
+    setActiveTab(canOpenMine(user) ? 'favorites' : 'colorSea');
+  }, [gate, user]);
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (activeTab === 'profile') {
+      setActiveTab(canOpenMine(user) ? 'favorites' : 'colorSea');
+      return;
+    }
+    if (canOpenMine(user)) return;
+    if (activeTab === 'favorites' || activeTab === 'dailyOneColor') {
+      setActiveTab('colorSea');
+    }
+  }, [authReady, user, activeTab]);
 
   // ── Tab change helper ─────────────────────────────────────────────────
+  const promptLogin = () => {
+    setGate('flip');
+  };
+
   const handleTabChange = (key) => {
+    if ((key === 'favorites' || key === 'dailyOneColor') && !canOpenMine(user)) {
+      promptLogin();
+      return;
+    }
+    setCreateOpen(false);
+    setDrawerOpen(false);
     setActiveTab(key);
     try {
       sessionStorage.setItem(ACTIVE_TAB_KEY, key);
@@ -221,6 +257,26 @@ export default function App() {
     pendingReturnRef.current = null;
     restoreCardPreview(itemId);
   }, [flowStack.length, exploreFeed, personalLibrary]);
+
+  const openColorCardPreview = (item, colors) => {
+    const fromItem = itemColorCardData(item);
+    const swatches = fromItem?.colors?.length ? fromItem.colors : (colors || []);
+    if (!swatches.length) return;
+    const title = fromItem?.title
+      || fromItem?.paletteTitle
+      || fromItem?.overview
+      || item?.aesthetic
+      || '';
+    setPreviewOverlay({
+      item: item || null,
+      colorCardData: {
+        ...(fromItem || {}),
+        colors: swatches,
+        title,
+        paletteTitle: title,
+      },
+    });
+  };
 
   const openShengSeFromItem = (item, colors) => {
     const hexes = (colors || [])
@@ -341,6 +397,7 @@ export default function App() {
     if (currentFlow.type === 'dailyChallenge') {
                   return (
         <DailyChallengePage
+          key={`daily-${flowStack.length}-${currentFlow.dailyData?.hex || ''}`}
           flow={currentFlow}
           onBack={popFlow}
           onNext={(hexes, tags) => {
@@ -408,7 +465,7 @@ export default function App() {
                 });
             if (res.ok && !isDailySubmit) {
               clearFlows();
-              handleTabChange('colorSea');
+              handleTabChange('favorites');
             }
             return res;
           }}
@@ -429,6 +486,7 @@ export default function App() {
   const renderTab = () => {
     switch (activeTab) {
       case 'favorites':
+        if (!canOpenMine(user)) return null;
         return (
           <FavoritesPage
             user={user}
@@ -436,17 +494,27 @@ export default function App() {
             vaultColorPaletteItems={vaultColorPaletteItems}
             onOpenAuth={() => setGate('flip')}
             onDeleteItem={(id) => removeFromVault(id)}
-            onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
+            onOpenInShengSe={(colors, item) => openColorCardPreview(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onAnalyzePalette={openPaletteAnalysis}
             onCopyLink={(id) => copyShareLink(id, 'analysis')}
             onStartChallenge={(dailyData) => {
-              pushFlow({ type: 'dailyChallenge', dailyData, source: 'mine' });
+              const { sourceRect, ...rest } = dailyData || {};
+              pushFlow({
+                type: 'dailyChallenge',
+                dailyData: rest,
+                sourceRect: sourceRect || null,
+                source: 'mine',
+              });
             }}
-            onOpenDailyPool={() => handleTabChange('dailyOneColor')}
-            onEditProfile={() => {
-              setEditProfileOpen(true);
-              handleTabChange('profile');
+            drawerOpen={drawerOpen}
+            onOpenDrawer={() => {
+              setCreateOpen(false);
+              setDrawerOpen((open) => !open);
+            }}
+            onOpenSea={() => {
+              setCreateOpen(false);
+              handleTabChange('colorSea');
             }}
           />
         );
@@ -460,7 +528,7 @@ export default function App() {
             communityTagList={communityTagList}
             onTagClick={bumpTagClick}
             onToggleFavorite={(item) => toggleVaultFavoriteFromExplore(item)}
-            onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
+            onOpenInShengSe={(colors, item) => openColorCardPreview(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onCopyLink={(id) => copyShareLink(id, 'analysis')}
                 onOpenAuth={() => setAuthModalOpen(true)}
@@ -471,9 +539,11 @@ export default function App() {
               setColorSeaSimilarMeta(null);
             }}
             focusTag={seaFocusTag}
+            onBack={() => handleTabChange('favorites')}
           />
         );
       case 'dailyOneColor':
+        if (!canOpenMine(user)) return null;
         return (
           <DailyOneColorPage
                 user={user}
@@ -481,16 +551,6 @@ export default function App() {
             onOpenInShengSe={(colors, item) => openShengSeFromItem(item, colors)}
             onDownload={(colors, title) => downloadColorCardPng(colors, title)}
             onBackToGame={() => handleTabChange('favorites')}
-          />
-        );
-      case 'profile':
-                        return (
-          <ProfilePage
-            user={user}
-            onOpenAuth={() => setGate('flip')}
-            onSignOut={signOut}
-            editOpen={editProfileOpen}
-            onEditConsumed={() => setEditProfileOpen(false)}
           />
         );
       default:
@@ -530,24 +590,151 @@ export default function App() {
         <div className="zen-paper-blob zen-paper-blob--e" />
       </div>
 
-      <ColorHuntShell
-        sidebar={
-          /* AppNav renders desktop sidebar inline + mobile bar as fixed overlay */
-          <AppNav
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            onShengSe={() => pushFlow({ type: 'shengSe', source: 'fab' })}
-            onExtract={() => extractInputRef.current?.click()}
-          />
-        }
-      >
+      <ColorHuntShell>
         <main
           ref={mainScrollRef}
-          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-transparent pt-[env(safe-area-inset-top,0px)] pb-[max(5.5rem,env(safe-area-inset-bottom,0px))] md:pb-0 md:pt-0"
+          className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent pt-[env(safe-area-inset-top,0px)]"
         >
           {renderTab()}
       </main>
       </ColorHuntShell>
+
+      {(() => {
+        const chromeUser = user || PREVIEW_USER;
+        const hideCreate = Boolean(currentFlow || settingsOpen || memoryOpen || walkOpen);
+        return (
+          <>
+            {!hideCreate && gate === 'app' && (
+              <CreateFab
+                open={createOpen}
+                sink={drawerOpen}
+                onToggle={() => setCreateOpen((v) => !v)}
+                onShengSe={() => {
+                  setCreateOpen(false);
+                  pushFlow({ type: 'shengSe', source: 'fab' });
+                }}
+                onExtract={() => {
+                  setCreateOpen(false);
+                  extractInputRef.current?.click();
+                }}
+              />
+            )}
+
+            <MineDrawer
+              open={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              user={user}
+              isPreview={!user}
+              username={
+                chromeUser?.user_metadata?.username
+                || chromeUser?.email?.split('@')[0]
+                || '用户'
+              }
+              accentHex={chromeUser?.user_metadata?.accent_hex || '#C93756'}
+              dateKey={dateKey}
+              vaultItems={vaultColorPaletteItems}
+              onEditProfile={() => {
+                setDrawerOpen(false);
+                if (!user) {
+                  setGate('flip');
+                  return;
+                }
+                setEditProfileOpen(true);
+                setSettingsOpen(true);
+              }}
+              onOpenMemory={() => {
+                setDrawerOpen(false);
+                setMemorySession((n) => n + 1);
+                setMemoryOpen(true);
+              }}
+              onOpenWalk={() => {
+                setDrawerOpen(false);
+                setWalkOpen(true);
+              }}
+              onOpenSettings={() => {
+                setDrawerOpen(false);
+                setSettingsOpen(true);
+              }}
+            />
+          </>
+        );
+      })()}
+
+      {settingsOpen && (
+        <div className="fixed inset-0 z-[170] flex flex-col bg-zen-paper" role="dialog" aria-modal="true" aria-label="设定">
+          <div className="flex justify-end px-4 pt-[max(1rem,env(safe-area-inset-top,0px))]">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(false)}
+              className="flex h-10 w-10 items-center justify-center"
+              aria-label="关闭设定"
+            >
+              <X size={18} strokeWidth={1.6} />
+            </button>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <ProfilePage
+              user={user}
+              onOpenAuth={() => setGate('flip')}
+              onSignOut={() => {
+                setSettingsOpen(false);
+                signOut();
+              }}
+              editOpen={editProfileOpen}
+              onEditConsumed={() => setEditProfileOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {memoryOpen && (
+        <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="色彩记忆">
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" aria-hidden />
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]">
+            <div className="mb-3 flex w-full max-w-md justify-end">
+              <button
+                type="button"
+                onClick={() => setMemoryOpen(false)}
+                className="flex h-10 w-10 items-center justify-center text-white"
+                aria-label="关闭游戏"
+              >
+                <X size={18} strokeWidth={1.6} />
+              </button>
+            </div>
+            <div className="flex min-h-0 w-full max-w-md flex-1 flex-col">
+              <ColorMemoryGame key={memorySession} mobileFill />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {walkOpen && (
+        <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="Color Walk">
+          <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" aria-hidden />
+          <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]">
+            <div className="mb-3 flex w-full max-w-md justify-end">
+              <button
+                type="button"
+                onClick={() => setWalkOpen(false)}
+                className="flex h-10 w-10 items-center justify-center text-white"
+                aria-label="关闭 Color Walk"
+              >
+                <X size={18} strokeWidth={1.6} />
+              </button>
+            </div>
+            <div className="flex min-h-0 w-full max-w-md flex-1 flex-col">
+              <ColorWalkFlowOverlay
+                open
+                variant="modal"
+                onClose={() => setWalkOpen(false)}
+                user={user}
+                onOpenAuth={() => setGate('flip')}
+                initialPhase="spin"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Full-screen flows ── */}
       {renderFlow()}
@@ -564,7 +751,7 @@ export default function App() {
         <SplashDrop
           ready={authReady}
           user={user}
-          landOnHero
+          landOnHero={canOpenMine(user)}
           accentHex={user?.user_metadata?.accent_hex || PREVIEW_USER.user_metadata.accent_hex}
           username={
             user?.user_metadata?.username
@@ -572,7 +759,10 @@ export default function App() {
             || PREVIEW_USER.user_metadata.username
           }
           startAtLogin={gate === 'flip'}
-          onLanded={() => setGate('app')}
+          onLanded={() => {
+            setGate('app');
+            if (!canOpenMine(user)) handleTabChange('colorSea');
+          }}
           onNeedLogin={() => setGate('flip')}
           onSkip={() => {
             setGate('app');
@@ -591,6 +781,25 @@ export default function App() {
           imageSrc={previewOverlay.item?.imageUrl || ''}
           colorCardData={previewOverlay.colorCardData}
           onClose={() => setPreviewOverlay(null)}
+          onDownload={() => {
+            const colors = previewOverlay.colorCardData?.colors || [];
+            const title = previewOverlay.colorCardData?.title || previewOverlay.item?.aesthetic;
+            downloadColorCardPng(colors, title);
+          }}
+          onToggleFavorite={
+            previewOverlay.item && !previewOverlay.item.isLocalPreview
+              ? () => {
+                if (!user) { setAuthModalOpen(true); return; }
+                toggleVaultFavoriteFromExplore(previewOverlay.item);
+              }
+              : undefined
+          }
+          isFavorite={Boolean(previewOverlay.item?.id && favoritedExploreStyleIds?.has(previewOverlay.item.id))}
+          favoriteBusy={vaultFavoriteBusyId === previewOverlay.item?.id}
+          onGenerateSimilar={() => {
+            const colors = previewOverlay.colorCardData?.colors || [];
+            openShengSeFromItem(previewOverlay.item, colors);
+          }}
           onOpenInExtract={() => {
             const colors = previewOverlay.colorCardData?.colors || [];
             openShengSeFromItem(previewOverlay.item, colors);

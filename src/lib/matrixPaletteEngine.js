@@ -12,14 +12,46 @@ import { getPoeticColorName } from './poeticColorNaming';
 export const THEME_PROFILES = [
   { name: '侘寂和风 (Wabi-Sabi)', sMin: 15, sMax: 38, lMin: 35, lMax: 72, hBias: null },
   { name: '莫兰迪 (Morandi Muted)', sMin: 20, sMax: 45, lMin: 50, lMax: 82, hBias: null },
-  { name: '复古波普 (Retro Vintage)', sMin: 55, sMax: 85, lMin: 40, lMax: 65, hBias: null },
-  { name: '鲜彩高光 (Vibrant Pop)', sMin: 70, sMax: 100, lMin: 50, lMax: 75, hBias: null },
+  { name: '复古波普 (Retro Vintage)', sMin: 48, sMax: 78, lMin: 38, lMax: 68, hBias: null },
+  { name: '鲜彩高光 (Vibrant Pop)', sMin: 62, sMax: 96, lMin: 42, lMax: 74, hBias: null },
   { name: '北欧极简 (Nordic Minimal)', sMin: 10, sMax: 30, lMin: 60, lMax: 90, hBias: null },
   { name: '日落晚霞 (Warm Sunset)', sMin: 50, sMax: 90, lMin: 45, lMax: 75, hBias: 'sunset' },
   { name: '海洋沉思 (Misty Ocean)', sMin: 30, sMax: 70, lMin: 30, lMax: 70, hBias: 'ocean' },
   { name: '莫奈花园 (Impressionist)', sMin: 40, sMax: 75, lMin: 55, lMax: 85, hBias: null },
   { name: '暗夜月影 (Deep Dark)', sMin: 25, sMax: 60, lMin: 12, lMax: 38, hBias: null },
-  { name: '赛博霓虹 (Cyber Neon)', sMin: 80, sMax: 100, lMin: 45, lMax: 70, hBias: null },
+  { name: '赛博霓虹 (Cyber Neon)', sMin: 70, sMax: 100, lMin: 42, lMax: 68, hBias: null },
+];
+
+const CLASH_HARMONIES = new Set([
+  'complementary',
+  'splitComplementary',
+  'triadic',
+  'tetradic',
+  'warmCool',
+]);
+
+const THEME_WEIGHTS = [
+  ['侘寂', 14],
+  ['莫兰迪', 14],
+  ['北欧', 10],
+  ['海洋', 10],
+  ['日落', 12],
+  ['莫奈', 10],
+  ['暗夜', 8],
+  ['复古', 8],
+  ['鲜彩', 10],
+  ['赛博', 4],
+];
+
+const HARMONY_WEIGHTS = [
+  ['analogous', 22],
+  ['complementary', 16],
+  ['splitComplementary', 14],
+  ['monochromatic', 16],
+  ['accentNeutral', 12],
+  ['warmCool', 8],
+  ['triadic', 8],
+  ['tetradic', 4],
 ];
 
 /** 8 种色彩调和模型 */
@@ -94,9 +126,10 @@ function minDistSqFor(harmonyId) {
 
 function hueBudgetFor(harmonyId) {
   if (harmonyId === 'monochromatic') return 6;
-  if (harmonyId === 'analogous') return 20;
-  if (harmonyId === 'accentNeutral') return 14;
-  return 40;
+  if (harmonyId === 'analogous') return 18;
+  if (harmonyId === 'accentNeutral') return 12;
+  if (CLASH_HARMONIES.has(harmonyId)) return 14;
+  return 18;
 }
 
 function normalizeLockedHexes(lockedColors) {
@@ -256,12 +289,23 @@ function ensureDistinctHexes(hexes, occupied, theme, harmonyId) {
   return out;
 }
 
+function pickWeightedId(pairs) {
+  const total = pairs.reduce((sum, [, w]) => sum + w, 0);
+  let r = Math.random() * total;
+  for (const [id, w] of pairs) {
+    r -= w;
+    if (r <= 0) return id;
+  }
+  return pairs[0][0];
+}
+
 function pickTheme(forcedName) {
   if (forcedName) {
     const found = THEME_PROFILES.find((t) => t.name === forcedName || t.name.includes(forcedName));
     if (found) return found;
   }
-  return THEME_PROFILES[Math.floor(Math.random() * THEME_PROFILES.length)];
+  const key = pickWeightedId(THEME_WEIGHTS);
+  return THEME_PROFILES.find((t) => t.name.includes(key)) || THEME_PROFILES[0];
 }
 
 function pickHarmony(forcedIdOrName) {
@@ -271,7 +315,16 @@ function pickHarmony(forcedIdOrName) {
     );
     if (found) return found;
   }
-  return HARMONY_MODELS[Math.floor(Math.random() * HARMONY_MODELS.length)];
+  const id = pickWeightedId(HARMONY_WEIGHTS);
+  return HARMONY_MODELS.find((h) => h.id === id) || HARMONY_MODELS[0];
+}
+
+/** Paletton / Adobe: complement is an accent, not an equal-strength twin. */
+function accentLightness(familyLights) {
+  const mid = familyLights.reduce((a, b) => a + b, 0) / Math.max(1, familyLights.length);
+  if (mid >= 56) return randRange(18, 38);
+  if (mid <= 42) return randRange(66, 88);
+  return Math.random() > 0.5 ? randRange(20, 36) : randRange(68, 88);
 }
 
 function sampleBaseHue(theme) {
@@ -320,24 +373,56 @@ function buildHarmonyColors(n, theme, harmonyId, baseH) {
       });
     }
     case 'complementary': {
-      const hubs = [baseH, baseH, baseH + 180, baseH + 180, baseH];
-      while (hubs.length < count) hubs.push(hubs.length % 2 === 0 ? baseH : baseH + 180);
-      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
+      const familyL = lights.slice(0, Math.max(1, count - 1));
+      const accentL = accentLightness(familyL);
+      const accentS = clamp(theme.sMax - randRange(0, 8), 58, 100);
+      return Array.from({ length: count }, (_, i) => {
+        if (i === count - 1) return hslToHex(baseH + 180, accentS, accentL);
+        if (count >= 5 && i === count - 2) {
+          return hslToHex(baseH + 180, clamp(theme.sMin + 8, 10, 36), clamp(100 - accentL, 24, 80));
+        }
+        const h = baseH + (i - (count - 3) / 2) * 8;
+        return hslToHex(h, sats[i], lights[i]);
+      });
     }
     case 'splitComplementary': {
-      const hubs = [baseH, baseH + 150, baseH + 210, baseH, baseH + 150];
-      while (hubs.length < count) hubs.push([baseH, baseH + 150, baseH + 210][hubs.length % 3]);
-      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
+      const familyL = lights.slice(0, Math.max(1, count - 1));
+      const accentL = accentLightness(familyL);
+      const accentS = clamp(theme.sMax - randRange(0, 10), 56, 96);
+      return Array.from({ length: count }, (_, i) => {
+        if (i === count - 1) return hslToHex(baseH + 150, accentS, accentL);
+        if (count >= 4 && i === count - 2) {
+          return hslToHex(baseH + 210, clamp(theme.sMin + 10, 12, 38), clamp(100 - accentL, 26, 78));
+        }
+        const h = baseH + (i - 1) * 10;
+        return hslToHex(h, sats[i], lights[i]);
+      });
     }
     case 'triadic': {
-      const hubs = [baseH, baseH + 120, baseH + 240, baseH, baseH + 120];
-      while (hubs.length < count) hubs.push([baseH, baseH + 120, baseH + 240][hubs.length % 3]);
-      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
+      const familyL = lights.slice(0, Math.max(1, count - 1));
+      const accentL = accentLightness(familyL);
+      const accentS = clamp(theme.sMax - 6, 52, 92);
+      return Array.from({ length: count }, (_, i) => {
+        if (i === count - 1) return hslToHex(baseH + 120, accentS, accentL);
+        if (count >= 5 && i === count - 2) {
+          return hslToHex(baseH + 240, clamp(theme.sMin + 8, 12, 34), clamp((accentL + 50) % 70 + 22, 28, 76));
+        }
+        const h = baseH + (i - (count - 3) / 2) * 9;
+        return hslToHex(h, sats[i], lights[i]);
+      });
     }
     case 'tetradic': {
-      const hubs = [baseH, baseH + 60, baseH + 180, baseH + 240, baseH];
-      while (hubs.length < count) hubs.push([baseH, baseH + 60, baseH + 180, baseH + 240][hubs.length % 4]);
-      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
+      const familyL = lights.slice(0, Math.max(1, count - 1));
+      const accentL = accentLightness(familyL);
+      const accentS = clamp(theme.sMax - 8, 50, 88);
+      return Array.from({ length: count }, (_, i) => {
+        if (i === count - 1) return hslToHex(baseH + 180, accentS, accentL);
+        if (count >= 5 && i === count - 2) {
+          return hslToHex(baseH + 60, clamp(theme.sMin + 12, 14, 40), lights[i]);
+        }
+        const h = baseH + (i - 1) * 12;
+        return hslToHex(h, sats[i], lights[i]);
+      });
     }
     case 'monochromatic': {
       const sat = randRange(theme.sMin, theme.sMax);
@@ -358,13 +443,55 @@ function buildHarmonyColors(n, theme, harmonyId, baseH) {
     }
     case 'warmCool':
     default: {
-      const warmH = Math.floor(Math.random() * 60);
-      const coolH = Math.floor(Math.random() * 80) + 170;
-      const hubs = [warmH, warmH + 28, coolH, coolH + 18, warmH];
-      while (hubs.length < count) hubs.push(hubs.length % 2 === 0 ? warmH : coolH);
-      return Array.from({ length: count }, (_, i) => hexAt(hubs[i], sats, lights, i));
+      const mainH = wrapHue(baseH);
+      const otherH = wrapHue(baseH + 150);
+      const familyL = lights.slice(0, Math.max(1, count - 1));
+      const otherL = accentLightness(familyL);
+      const otherS = clamp(theme.sMax - 4, 54, 94);
+      return Array.from({ length: count }, (_, i) => {
+        if (i === count - 1) return hslToHex(otherH, otherS, otherL);
+        const h = mainH + (i - (count - 2) / 2) * 10;
+        return hslToHex(h, sats[i], lights[i]);
+      });
     }
   }
+}
+
+function isVivid([, s, l]) {
+  return s >= 48 && l > 24 && l < 86;
+}
+
+function hueFamily(h) {
+  return Math.round(wrapHue(h) / 36) % 10;
+}
+
+/** Higher = equal-strength clash / no dominant family. Complementary + high sat is allowed. */
+export function paletteClashScore(hexes) {
+  const hsls = (hexes || []).map((hex) => hexToHsl(hex));
+  if (hsls.length < 2) return 0;
+  let score = 0;
+  const vivid = hsls.filter(isVivid);
+  const families = new Map();
+  for (const [h, s] of hsls) {
+    if (s < 12) continue;
+    const key = hueFamily(h);
+    families.set(key, (families.get(key) || 0) + 1);
+  }
+  const familyCount = families.size;
+  const dominant = Math.max(0, ...families.values());
+  if (familyCount >= 4 && dominant < Math.ceil(hsls.length * 0.4)) score += 8;
+  if (familyCount >= 3 && dominant < 2) score += 6;
+
+  for (let i = 0; i < vivid.length; i += 1) {
+    for (let j = i + 1; j < vivid.length; j += 1) {
+      const d = hueDeltaDeg(vivid[i][0], vivid[j][0]);
+      const dl = Math.abs(vivid[i][2] - vivid[j][2]);
+      const bothHot = vivid[i][1] >= 62 && vivid[j][1] >= 62;
+      if (d >= 140 && d <= 220 && dl < 16) score += 10;
+      if (d >= 140 && d <= 220 && bothHot && dl < 22) score += 8;
+    }
+  }
+  return score;
 }
 
 /**
@@ -383,17 +510,17 @@ export function generateMatrixPalette(options = {}) {
     : 5;
 
   const theme = pickTheme(options.themeName || options.styleId || null);
+  const lockedHexes = normalizeLockedHexes(options.lockedColors);
   const harmony = pickHarmony(options.harmonyId || null);
 
   let baseH = sampleBaseHue(theme);
-  const lockedHexes = normalizeLockedHexes(options.lockedColors);
   const lockedHue = baseHueFromLocked(options.lockedColors);
   if (lockedHue != null) baseH = lockedHue;
 
   const minSq = minDistSqFor(harmony.id);
-  const attempts = Math.max(6, options.maxAttempts ?? 10);
+  const attempts = Math.max(10, options.maxAttempts ?? 14);
   let hexes = [];
-  let bestScore = -1;
+  let bestScore = -Infinity;
 
   for (let i = 0; i < attempts; i += 1) {
     const candidate = ensureDistinctHexes(
@@ -402,16 +529,18 @@ export function generateMatrixPalette(options = {}) {
       theme,
       harmony.id,
     );
+    const clash = paletteClashScore([...lockedHexes, ...candidate]);
     const pairScore = paletteMinDistSq(candidate);
     const lockScore = lockedHexes.length
       ? Math.min(...candidate.map((hex) => minDistToOccupied(hex, lockedHexes)))
       : Infinity;
-    const score = Math.min(pairScore, lockScore);
+    const distinct = Math.min(pairScore, lockScore);
+    const score = distinct * 40 - clash * 12;
     if (score > bestScore) {
       hexes = candidate;
       bestScore = score;
     }
-    if (score >= minSq) break;
+    if (clash <= 2 && distinct >= minSq) break;
   }
 
   const colors = hexes.map((hex) => ({

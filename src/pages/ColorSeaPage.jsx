@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import MasonryColumns from '../components/MasonryColumns';
 import PageShell from '../components/layout/PageShell';
 import PaletteFeedCard from '../components/PaletteFeedCard';
@@ -221,6 +222,7 @@ export default function ColorSeaPage({
   similarHexMeta = null,
   onClearSimilarHexFilter,
   focusTag = null,
+  onBack,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTag, setActiveTag] = useState('All');
@@ -338,6 +340,16 @@ export default function ColorSeaPage({
       bodyClassName="zen-page-body-feed"
       headerExtra={(
         <>
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-2 flex h-10 w-10 items-center justify-center text-zen-ink"
+              aria-label="返回收藏"
+            >
+              <ArrowLeft size={18} strokeWidth={1.6} />
+            </button>
+          ) : null}
           <div ref={searchAreaRef}>
             <div className="relative">
               <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 font-zenTypewriter text-[11px] text-zen-stone">

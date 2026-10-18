@@ -189,18 +189,18 @@ export default function PaletteFeedCard({
         onActiveChange={setActiveStripe}
       />
 
-      <div className="flex min-h-[2.75rem] flex-col gap-1.5 px-0.5">
+      <div className="relative flex min-h-[2rem] items-center gap-2 px-0.5">
         <p
-          className={`min-w-0 truncate tracking-[0.06em] ${
+          className={`min-w-0 flex-1 truncate tracking-[0.06em] ${
             activeStripe
-              ? 'font-zenTypewriter text-[11px] text-zen-ink'
-              : 'font-zenSerif text-[13px] text-zen-ink'
+              ? 'font-zenTypewriter text-[13px] text-zen-ink'
+              : 'font-zenSerif text-[15px] text-zen-ink'
           }`}
         >
           {liveLine}
         </p>
 
-        <div className="relative flex min-h-[1.75rem] items-center gap-1">
+        <div className="relative flex shrink-0 items-center gap-0.5">
           {isDailyVote ? (
             <button
               type="button"

@@ -11,7 +11,35 @@ export type WorkerEnv = {
   BETTER_AUTH_URL: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  EXTRA_TRUSTED_ORIGIN?: string;
+  FEEDBACK_TO_EMAIL?: string;
+  FEEDBACK_FROM_EMAIL?: string;
+  RESEND_API_KEY?: string;
+  EMAIL?: {
+    send: (payload: {
+      to: string;
+      from: { email: string; name?: string };
+      subject: string;
+      text: string;
+    }) => Promise<unknown>;
+  };
 };
+
+function trustedOrigins(env: WorkerEnv) {
+  const extra = String(env.EXTRA_TRUSTED_ORIGIN || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:8787',
+    'http://127.0.0.1:8787',
+    'https://sekong.app',
+    'https://www.sekong.app',
+    ...extra,
+  ];
+}
 
 export function createAuth(env: WorkerEnv) {
   const socialProviders =
@@ -30,16 +58,7 @@ export function createAuth(env: WorkerEnv) {
     secret: env.BETTER_AUTH_SECRET,
     database: env.DB,
     // Vite dev (5173) proxies /api → Wrangler (8787); browser Origin stays 5173.
-    trustedOrigins: [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:8787',
-      'http://127.0.0.1:8787',
-      'https://sekong.app',
-      'https://www.sekong.app',
-      // Legacy dev/staging URL — remove after sekong.app is stable
-      'https://genomlab.qqlxiaohao8.workers.dev',
-    ],
+    trustedOrigins: trustedOrigins(env),
     emailAndPassword: {
       enabled: true,
       sendResetPassword: async ({ user, url }) => {

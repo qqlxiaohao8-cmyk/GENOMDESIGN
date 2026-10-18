@@ -22,6 +22,7 @@ bucket_name = "sekong-style-images"
 
 [vars]
 BETTER_AUTH_URL = "http://localhost:5173"
+FEEDBACK_FROM_EMAIL = "noreply@sekong.app"
 
 [triggers]
 crons = ["0 16 * * *"]
