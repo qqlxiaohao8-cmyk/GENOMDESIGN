@@ -17,7 +17,7 @@ function normalizeHex(hex) {
 /**
  * 投票弹层：色卡叠成一叠，右滑喜欢、左滑跳过。喜欢满 5 张后致谢并关闭。
  */
-export default function VoteSwipeDeck({ cards = [], onClose }) {
+export default function VoteSwipeDeck({ cards = [], onLike, onClose }) {
   const deck = useMemo(
     () => (Array.isArray(cards) ? cards.filter((card) => card?.colors?.length >= 2) : []),
     [cards],
@@ -32,6 +32,8 @@ export default function VoteSwipeDeck({ cards = [], onClose }) {
   const indexRef = useRef(0);
   const flyLock = useRef(false);
   const closeTimer = useRef(null);
+  const onLikeRef = useRef(onLike);
+  onLikeRef.current = onLike;
 
   useEffect(() => () => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
@@ -85,7 +87,31 @@ export default function VoteSwipeDeck({ cards = [], onClose }) {
     flyLock.current = true;
     setDrag((prev) => ({ ...prev, active: false }));
     setFly(dir);
-    window.setTimeout(() => finish(dir), FLY_MS);
+    const card = deck[indexRef.current];
+    window.setTimeout(() => {
+      const like = dir === 'like' ? onLikeRef.current : null;
+      if (!like) {
+        finish(dir);
+        return;
+      }
+      Promise.resolve(like(card)).then((result) => {
+        if (result && result.ok === false) {
+          const msg = String(result.error || '');
+          if (msg.includes('已用完')) {
+            likesRef.current = LIKE_GOAL;
+            setLikes(LIKE_GOAL);
+            setFly(null);
+            setDrag({ x: 0, y: 0, active: false });
+            flyLock.current = false;
+            setNotice('感谢投票！');
+            return;
+          }
+          finish('pass');
+          return;
+        }
+        finish('like');
+      }).catch(() => finish('pass'));
+    }, FLY_MS);
   };
 
   const onPointerDown = (event) => {

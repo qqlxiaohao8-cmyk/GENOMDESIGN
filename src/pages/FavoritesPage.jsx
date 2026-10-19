@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import voteIcon from '../assets/icons/vote.png';
 import MasonryColumns from '../components/MasonryColumns';
 import PaletteFeedCard from '../components/PaletteFeedCard';
@@ -11,6 +11,10 @@ import { pickReadableTextOnHex } from '../lib/colorValues';
 import { buildLocalSeaPreviewItems } from '../lib/localSeaPreview';
 import { PREVIEW_USER } from '../lib/guestMineAccess';
 import { IconSea } from '../components/icons/HeyteaIcons';
+import useDailyOneColor from '../hooks/useDailyOneColor';
+
+/** 当日挑战色卡超过这个数量才开放投票 */
+const VOTE_OPEN_AFTER = 6;
 
 /**
  * 首页：收藏色卡。顶栏固定，只有色卡列表滚动。
@@ -20,7 +24,6 @@ export default function FavoritesPage({
   authReady,
   libraryReady = true,
   vaultColorPaletteItems = [],
-  colorPaletteExploreFeed = [],
   onDeleteItem,
   onOpenInShengSe,
   onDownload,
@@ -52,18 +55,23 @@ export default function FavoritesPage({
   const headerInkLight = headerInk === '#FFFFFF';
   const skipHeaderClickRef = useRef(false);
   const [voteOpen, setVoteOpen] = useState(false);
-  const voteCards = useMemo(
-    () => (colorPaletteExploreFeed || []).map((item) => {
-      const cd = itemColorCardData(item);
-      if (!cd?.colors?.length) return null;
-      return {
-        id: item.id,
-        title: item.aesthetic || cd.overview || '',
-        colors: cd.colors,
-      };
-    }).filter(Boolean),
-    [colorPaletteExploreFeed],
+  const { items: dailyChallengeCards, castVote } = useDailyOneColor({ user });
+  const votePool = useMemo(
+    () => (dailyChallengeCards || []).filter((item) => item?.colors?.length >= 2),
+    [dailyChallengeCards],
   );
+  const voteReady = votePool.length > VOTE_OPEN_AFTER;
+  const voteCards = useMemo(
+    () => votePool
+      .filter((item) => item.ownerUserId !== user?.id && !item.votedByMe)
+      .map((item) => ({
+        id: item.id,
+        title: item.title || '',
+        colors: item.colors,
+      })),
+    [votePool, user?.id],
+  );
+  const handleVoteLike = useCallback((card) => castVote(card.id), [castVote]);
 
   const isHeaderAction = (event) => Boolean(
     event.target.closest('[aria-label="色海"], [data-home-vote]'),
@@ -106,11 +114,13 @@ export default function FavoritesPage({
         <div className="home-topbar">
           <button
             type="button"
-            className={`home-icon-btn${headerInkLight ? ' is-on-dark' : ''}`}
+            className={`home-icon-btn${headerInkLight ? ' is-on-dark' : ''}${voteReady ? '' : ' is-off'}`}
             data-home-vote
+            aria-disabled={!voteReady}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
+              if (!voteReady) return;
               setVoteOpen(true);
             }}
             aria-label="投票"
@@ -208,8 +218,12 @@ export default function FavoritesPage({
           )}
         </div>
       </div>
-      {voteOpen ? (
-        <VoteSwipeDeck cards={voteCards} onClose={() => setVoteOpen(false)} />
+      {voteOpen && voteReady ? (
+        <VoteSwipeDeck
+          cards={voteCards}
+          onLike={handleVoteLike}
+          onClose={() => setVoteOpen(false)}
+        />
       ) : null}
     </div>
   );
