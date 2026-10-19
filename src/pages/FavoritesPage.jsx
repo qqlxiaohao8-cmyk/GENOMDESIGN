@@ -1,6 +1,8 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+import voteIcon from '../assets/icons/vote.png';
 import MasonryColumns from '../components/MasonryColumns';
 import PaletteFeedCard from '../components/PaletteFeedCard';
+import VoteSwipeDeck from '../components/VoteSwipeDeck';
 import { itemColorCardData } from '../components/StyleUiPreviewCard';
 import { FAVORITES_MASONRY_CLASS, PALETTE_FEED_MASONRY_GAP } from '../lib/paletteFeedLayout';
 import { dateFromDailyPaletteKey, getTodayColor } from '../lib/dailyPalette';
@@ -18,6 +20,7 @@ export default function FavoritesPage({
   authReady,
   libraryReady = true,
   vaultColorPaletteItems = [],
+  colorPaletteExploreFeed = [],
   onDeleteItem,
   onOpenInShengSe,
   onDownload,
@@ -37,9 +40,6 @@ export default function FavoritesPage({
   const profile = user || PREVIEW_USER;
   const isPreview = !user;
   const accentHex = profile?.user_metadata?.accent_hex || '#C93756';
-  const username = profile?.user_metadata?.username
-    || profile?.email?.split('@')[0]
-    || '用户';
   const previewVault = useMemo(() => buildLocalSeaPreviewItems().slice(0, 4), []);
   const shownVault = isPreview && vaultColorPaletteItems.length === 0
     ? previewVault
@@ -51,15 +51,32 @@ export default function FavoritesPage({
     : '';
   const headerInkLight = headerInk === '#FFFFFF';
   const skipHeaderClickRef = useRef(false);
+  const [voteOpen, setVoteOpen] = useState(false);
+  const voteCards = useMemo(
+    () => (colorPaletteExploreFeed || []).map((item) => {
+      const cd = itemColorCardData(item);
+      if (!cd?.colors?.length) return null;
+      return {
+        id: item.id,
+        title: item.aesthetic || cd.overview || '',
+        colors: cd.colors,
+      };
+    }).filter(Boolean),
+    [colorPaletteExploreFeed],
+  );
 
-  const openMineNow = () => {
-    if (drawerOpen) return;
+  const isHeaderAction = (event) => Boolean(
+    event.target.closest('[aria-label="色海"], [data-home-vote]'),
+  );
+
+  const openMineNow = (event) => {
+    if (drawerOpen || isHeaderAction(event)) return;
     skipHeaderClickRef.current = true;
     onOpenDrawer?.();
   };
 
   const handleMineTriggerClick = (event) => {
-    if (event.target.closest('[aria-label="色海"]')) return;
+    if (isHeaderAction(event)) return;
     if (skipHeaderClickRef.current) {
       skipHeaderClickRef.current = false;
       return;
@@ -82,25 +99,23 @@ export default function FavoritesPage({
         style={{ backgroundColor: accentHex, color: headerInk }}
         onPointerDown={(event) => {
           if (event.button !== 0) return;
-          if (event.target.closest('[aria-label="色海"]')) return;
-          openMineNow();
+          openMineNow(event);
         }}
         onClick={handleMineTriggerClick}
       >
         <div className="home-topbar">
           <button
             type="button"
-            className="home-icon-btn"
+            className={`home-icon-btn${headerInkLight ? ' is-on-dark' : ''}`}
+            data-home-vote
+            onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
-              handleMineTriggerClick(event);
+              setVoteOpen(true);
             }}
-            aria-expanded={drawerOpen}
-            aria-label={drawerOpen ? '收起我的' : '打开我的'}
+            aria-label="投票"
           >
-            <span className="home-avatar">
-              {String(username).slice(0, 1)}
-            </span>
+            <img src={voteIcon} alt="" className="heytea-icon-upload" aria-hidden />
           </button>
           <button
             type="button"
@@ -193,6 +208,9 @@ export default function FavoritesPage({
           )}
         </div>
       </div>
+      {voteOpen ? (
+        <VoteSwipeDeck cards={voteCards} onClose={() => setVoteOpen(false)} />
+      ) : null}
     </div>
   );
 }

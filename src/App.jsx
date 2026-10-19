@@ -499,6 +499,7 @@ export default function App() {
             authReady={authReady}
             libraryReady={libraryReady}
             vaultColorPaletteItems={vaultColorPaletteItems}
+            colorPaletteExploreFeed={colorPaletteExploreFeed}
             onOpenAuth={() => setGate('flip')}
             onDeleteItem={(id) => removeFromVault(id)}
             onOpenInShengSe={(colors, item) => openColorCardPreview(item, colors)}

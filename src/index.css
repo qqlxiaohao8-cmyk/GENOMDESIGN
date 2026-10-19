@@ -1208,19 +1208,114 @@
     filter: brightness(0) invert(1);
     opacity: 0.92;
   }
-  .home-avatar {
+  .vote-deck {
+    position: fixed;
+    inset: 0;
+    z-index: 260;
     display: flex;
-    height: 2.05rem;
-    width: 2.05rem;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 18, 14, 0.72);
+  }
+  .vote-deck__panel {
+    display: flex;
+    width: min(22rem, calc(100vw - 2rem));
+    min-height: 24rem;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .vote-deck__count {
+    margin: 0 0 0.85rem;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    color: #f4efe6;
+  }
+  .vote-deck__stack {
+    position: relative;
+    width: 100%;
+    height: 13.4rem;
+  }
+  .vote-deck__card {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0.8rem 0.8rem 0.95rem;
+    background: #fff;
+    border: 1px solid #2c2c2c;
+    border-radius: 1.35rem;
+    touch-action: none;
+    user-select: none;
+    cursor: grab;
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .vote-deck__stripes {
+    border-radius: 0.95rem;
+  }
+  .vote-deck__title {
+    margin: 0;
+    padding: 0 0.2rem;
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    letter-spacing: 0.06em;
+    color: #2c2c28;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .vote-deck__stamp {
+    position: absolute;
+    top: 1.15rem;
+    z-index: 2;
+    padding: 0.15rem 0.45rem;
+    border: 2px solid currentColor;
+    border-radius: 0.45rem;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    letter-spacing: 0.12em;
+    pointer-events: none;
+  }
+  .vote-deck__stamp.is-like {
+    left: 0.95rem;
+    color: #bc2026;
+    transform: rotate(-12deg);
+  }
+  .vote-deck__stamp.is-pass {
+    right: 0.95rem;
+    color: #6b665c;
+    transform: rotate(12deg);
+  }
+  .vote-deck__actions {
+    display: flex;
+    gap: 1.4rem;
+    margin-top: 1.15rem;
+  }
+  .vote-deck__btn {
+    display: flex;
+    height: 3.1rem;
+    width: 3.1rem;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    border: 1px solid rgba(44, 44, 40, 0.18);
-    background: #f4efe6;
+    background: #fff;
     color: #2c2c28;
+    border: 1px solid #2c2c2c;
+  }
+  .vote-deck__btn.is-like {
+    color: #bc2026;
+  }
+  .vote-deck__thanks {
+    margin: 0;
     font-family: var(--font-display);
-    font-size: 0.92rem;
-    letter-spacing: 0.04em;
+    font-size: 1.65rem;
+    letter-spacing: 0.12em;
+    color: #f4efe6;
+    text-align: center;
   }
   .home-week {
     display: flex;
