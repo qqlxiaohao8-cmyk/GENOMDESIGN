@@ -168,11 +168,6 @@ export default function App() {
     return () => { cancelled = true; };
   }, [authReady, exploreFeed, personalLibrary, fetchStyleById, pushFlow]);
 
-  // ── Close auth modal on sign in ───────────────────────────────────────
-  useEffect(() => {
-    if (user) setAuthModalOpen(false);
-  }, [user]);
-
   useEffect(() => {
     if (!user) setProfileSetupDone(false);
   }, [user]);
@@ -180,6 +175,7 @@ export default function App() {
   const showProfileOnboarding =
     authReady &&
     user &&
+    !authModalOpen &&
     !recoveryMode &&
     !profileSetupDone &&
     needsProfileOnboarding(user);
@@ -570,7 +566,12 @@ export default function App() {
     <InkFilter />
     <AuthModal
       open={authModalOpen}
+      user={user}
       onClose={() => setAuthModalOpen(false)}
+      onAuthed={() => {
+        setProfileSetupDone(true);
+        setAuthModalOpen(false);
+      }}
     />
     {recoveryMode && (
       <SetPasswordModal

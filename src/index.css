@@ -2769,6 +2769,34 @@ body:has(.heytea-splash:not(.is-reveal):not(.is-exit)) [data-mine-hero] {
   pointer-events: auto;
 }
 
+.heytea-ink-drop.is-flip.is-login {
+  top: calc(50% - 12.25rem);
+  height: 24.5rem;
+}
+
+.login-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0 0.15rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  color: #bc2026;
+  box-shadow: 0 1.5px 0 currentColor;
+}
+
+.login-next::after {
+  content: "";
+  width: 0.42rem;
+  height: 0.42rem;
+  margin-right: 0.1rem;
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+  transform: rotate(45deg);
+}
+
 .profile-palette__field {
   position: relative;
   height: 7.25rem;
@@ -2884,9 +2912,17 @@ body:has(.heytea-splash:not(.is-reveal):not(.is-exit)) [data-mine-hero] {
   animation: heytea-ink-name 0.4s ease 0.4s both;
 }
 
-.heytea-splash.is-login .heytea-ink-card-fill {
+.heytea-splash.is-login .heytea-ink-card-fill,
+.auth-login-splash .heytea-ink-card-fill {
   animation: none;
   opacity: 1;
+}
+
+.auth-login-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  background: #fff;
 }
 
 .heytea-ink-kicker,

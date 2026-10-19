@@ -120,14 +120,22 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     setMsg('验证码已发到邮箱');
   };
 
-  const verifySignupCode = async (e) => {
+  const registerAccount = async (e) => {
     e.preventDefault();
+    if (!email.trim()) {
+      setMsg('请填写邮箱');
+      return;
+    }
     if (!codeSent) {
-      await sendEmailCode();
+      setMsg('请先发送验证码');
       return;
     }
     if (!otp.trim()) {
       setMsg('请填写验证码');
+      return;
+    }
+    if (password.length < 8) {
+      setMsg('密码至少 8 位');
       return;
     }
     pendingPassword.current = true;
@@ -137,15 +145,28 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
       email: email.trim(),
       otp: otp.trim(),
     });
-    setBusy(false);
     if (error) {
       pendingPassword.current = false;
+      setBusy(false);
       setMsg(otpError(error, '验证失败'));
       return;
     }
-    setPassword('');
-    setMsg('');
-    setStep('password');
+    const { error: passwordError } = await authClient.setPassword({ newPassword: password });
+    setBusy(false);
+    if (passwordError) {
+      if (passwordError.code === 'PASSWORD_ALREADY_SET') {
+        pendingPassword.current = false;
+        await authClient.signOut();
+        setPassword('');
+        setStep('login');
+        setMsg('这个邮箱已注册，请直接登录');
+        return;
+      }
+      setMsg(otpError(passwordError, '密码设置失败'));
+      return;
+    }
+    pendingPassword.current = false;
+    await continueAfterAuth();
   };
 
   const signInWithPassword = async (e) => {
@@ -163,32 +184,6 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     setBusy(false);
     if (error) setMsg(otpError(error, '登录失败'));
     else await continueAfterAuth();
-  };
-
-  const saveSignupPassword = async (e) => {
-    e.preventDefault();
-    if (password.length < 8) {
-      setMsg('密码至少 8 位');
-      return;
-    }
-    setBusy(true);
-    setMsg('');
-    const { error } = await authClient.setPassword({ newPassword: password });
-    setBusy(false);
-    if (error) {
-      if (error.code === 'PASSWORD_ALREADY_SET') {
-        pendingPassword.current = false;
-        await authClient.signOut();
-        setPassword('');
-        setStep('login');
-        setMsg('这个邮箱已注册，请直接登录');
-        return;
-      }
-      setMsg(otpError(error, '密码设置失败'));
-      return;
-    }
-    pendingPassword.current = false;
-    await continueAfterAuth();
   };
 
   const finishProfile = async () => {
@@ -268,29 +263,6 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
         </div>
       </>
     );
-  } else if (step === 'password') {
-    body = (
-      <>
-        <h2 className="type-h2 text-center">定密码</h2>
-        {msg ? <p className="type-body-sm mt-2 text-center text-zen-vermilion">{msg}</p> : null}
-        <form className="mt-6 space-y-3" onSubmit={saveSignupPassword}>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="密码"
-            className="zen-input"
-            autoComplete="new-password"
-            autoFocus
-          />
-          <div className="flex justify-end">
-            <button type="submit" disabled={busy || password.length < 8} className="zen-action disabled:opacity-40">
-              {busy ? '注册中' : '注册'}
-            </button>
-          </div>
-        </form>
-      </>
-    );
   } else if (step === 'login') {
     body = (
       <>
@@ -362,12 +334,12 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           type="button"
           onClick={oauthGoogle}
           disabled={busy || !authConfigured}
-          className="mt-6 w-full border border-zen-coal py-2.5 font-heytea text-[15px] disabled:opacity-40"
+          className="mt-3 w-full border border-zen-coal py-2 font-heytea text-[15px] disabled:opacity-40"
         >
           用 Google 继续
         </button>
 
-        <form className="mt-4 space-y-3" onSubmit={verifySignupCode}>
+        <form className="mt-3 space-y-1" onSubmit={registerAccount}>
           <input
             type="email"
             value={email}
@@ -380,7 +352,7 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
             className="zen-input"
             autoComplete="email"
           />
-          {codeSent ? (
+          <div className="flex items-end gap-3">
             <input
               type="text"
               inputMode="numeric"
@@ -388,17 +360,33 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="验证码"
-              className="zen-input"
+              className="zen-input min-w-0 flex-1"
             />
-          ) : null}
-          <div className="flex justify-end">
-            <button type="submit" disabled={busy} className="zen-action disabled:opacity-40">
-              {busy ? (codeSent ? '验证中' : '发送中') : codeSent ? '下一步' : '发送验证码'}
+            <button
+              type="button"
+              onClick={sendEmailCode}
+              disabled={busy || !email.trim()}
+              className="zen-action mb-2 shrink-0 disabled:opacity-40"
+            >
+              {codeSent ? '重新发送' : '发送验证码'}
+            </button>
+          </div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="密码"
+            className="zen-input"
+            autoComplete="new-password"
+          />
+          <div className="flex justify-end pt-3">
+            <button type="submit" disabled={busy} className="login-next disabled:opacity-40">
+              {busy ? '请稍候' : '下一步'}
             </button>
           </div>
         </form>
 
-        <div className="mt-auto flex flex-col items-center gap-4 pt-6">
+        <div className="mt-auto flex flex-col items-center gap-3 pt-3">
           <button
             type="button"
             className="zen-action"
