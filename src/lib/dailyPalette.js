@@ -452,28 +452,13 @@ function pickDailyHexForKey(dateKey) {
   return best;
 }
 
-function ensureDailyHexChain(dateKey) {
-  const maxLookback = Math.max(DAILY_COLOR_LOOKBACK_DAYS, DAILY_DOMAIN_LOOKBACK_DAYS);
-  for (let i = maxLookback; i >= 1; i--) {
-    const pastKey = shiftDailyDateKey(dateKey, -i);
-    if (!dailyHexCache.has(pastKey)) {
-      dailyHexCache.set(pastKey, pickDailyHexForKey(pastKey));
-    }
-  }
-}
-
 /**
- * Deterministic OKLCH swatch per GMT+8 calendar day.
- * Avoids repeating a near-identical color within {@link DAILY_COLOR_LOOKBACK_DAYS}
- * and the same 色系 within {@link DAILY_DOMAIN_LOOKBACK_DAYS}.
+ * 全平台同一天同一个颜色。只由 GMT+8 日期决定，不跟账号、也不跟先打开哪个页面有关。
  */
 export function dailyHexFromDateKey(dateKey) {
-  const key = String(dateKey || '').trim();
-  if (!key) return dailyHexCandidate(formatDailyPaletteDateKey(), 0);
+  const key = String(dateKey || '').trim() || formatDailyPaletteDateKey();
   if (dailyHexCache.has(key)) return dailyHexCache.get(key);
-
-  ensureDailyHexChain(key);
-  const chosen = pickDailyHexForKey(key);
+  const chosen = dailyHexCandidate(key, 0);
   dailyHexCache.set(key, chosen);
   return chosen;
 }

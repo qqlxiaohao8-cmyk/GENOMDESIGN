@@ -1,5 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { IconSettings } from './icons/HeyteaIcons';
+import { AccentColorDialog } from './AccentPalette';
+import { authClient } from '../lib/authClient';
+import { syncProfile } from '../lib/apiClient';
+import { normalizeProfileHex } from '../lib/profilePresets';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { getHomeActivityCards } from '../lib/homeActivities';
 import { fetchMyMonthParticipation } from '../lib/dailyOneColorApi';
@@ -97,6 +102,10 @@ export default function MineDrawer({
   const [expanded, setExpanded] = useState(false);
   const [heldOpen, setHeldOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [draftHex, setDraftHex] = useState(accentHex);
+  const [colorBusy, setColorBusy] = useState(false);
+  const [colorMsg, setColorMsg] = useState('');
   const panelRef = useRef(null);
   const wasOpenRef = useRef(false);
   const monthKey = String(dateKey || '').slice(0, 7);
@@ -179,13 +188,50 @@ export default function MineDrawer({
   }, [open]);
 
   useEffect(() => {
+    if (!open) setColorOpen(false);
+  }, [open]);
+
+  useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
-      if (e.key === 'Escape') onClose?.();
+      if (e.key !== 'Escape') return;
+      if (colorOpen) {
+        setColorOpen(false);
+        return;
+      }
+      onClose?.();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, onClose, colorOpen]);
+
+  const openColor = () => {
+    if (isPreview || !user) {
+      onEditProfile?.();
+      return;
+    }
+    setDraftHex(normalizeProfileHex(accentHex));
+    setColorMsg('');
+    setColorOpen(true);
+  };
+
+  const saveColor = async () => {
+    setColorBusy(true);
+    setColorMsg('');
+    try {
+      const { error } = await authClient.updateUser({
+        accent_hex: normalizeProfileHex(draftHex),
+      });
+      if (error) throw error;
+      await authClient.getSession();
+      await syncProfile();
+      setColorOpen(false);
+    } catch (e) {
+      setColorMsg(e.message || '保存失败，请重试。');
+    } finally {
+      setColorBusy(false);
+    }
+  };
 
   return (
     <div
@@ -216,7 +262,7 @@ export default function MineDrawer({
               username={username}
               dateKey={dateKey}
               participation={participation}
-              onEdit={isPreview ? onEditProfile : onEditProfile}
+              onEdit={openColor}
             />
 
             <div className="mine-drawer-acts">
@@ -266,6 +312,19 @@ export default function MineDrawer({
           </button>
         </div>
       </aside>
+      {colorOpen
+        ? createPortal(
+          <AccentColorDialog
+            hex={draftHex}
+            busy={colorBusy}
+            message={colorMsg}
+            onChange={setDraftHex}
+            onConfirm={saveColor}
+            onClose={() => { if (!colorBusy) setColorOpen(false); }}
+          />,
+          document.body,
+        )
+        : null}
     </div>
   );
 }

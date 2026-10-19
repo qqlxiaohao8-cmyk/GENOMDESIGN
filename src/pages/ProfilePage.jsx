@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Check } from 'lucide-react';
+import { BookOpen, Check, Heart, LogOut, MessageSquare } from 'lucide-react';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
 import { PROFILE_FONTS } from '../lib/profileFonts';
 import { authClient } from '../lib/authClient';
 import { apiFetch, syncProfile } from '../lib/apiClient';
-import { readSfxVolume, writeSfxVolume } from '../lib/sfxVolume';
 import sekongLogo from '../assets/sekong-mark.png';
 
 const normalizeHex = normalizeProfileHex;
@@ -134,13 +133,14 @@ function SettingsSheet({ title, onClose, children }) {
   );
 }
 
-function MenuRow({ label, sub, onClick }) {
+function MenuRow({ label, sub, onClick, icon: Icon }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="zen-hit mb-1 flex w-full items-baseline py-2.5 text-left"
+      className="zen-hit mb-1 flex w-full items-center gap-3 py-2.5 text-left"
     >
+      {Icon ? <Icon size={18} strokeWidth={2.15} aria-hidden /> : null}
       <span className="type-h4">{label}</span>
       {sub ? <span className="ml-3 text-[12px] text-zen-stone">{sub}</span> : null}
     </button>
@@ -155,7 +155,6 @@ export default function ProfilePage({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [saveBusy, setSaveBusy] = useState(false);
-  const [volume, setVolume] = useState(readSfxVolume);
   const [sheet, setSheet] = useState(null);
   const [feedback, setFeedback] = useState('');
   const [feedbackMsg, setFeedbackMsg] = useState('');
@@ -228,32 +227,13 @@ export default function ProfilePage({
 
         <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           <div className="zen-page-enter zen-page-body min-h-full pt-4">
-            <section className="mb-8">
-              <div className="flex items-baseline justify-between">
-                <p className="type-h4">音量</p>
-                <span className="type-caption tabular-nums">{volume}</span>
-              </div>
-              <p className="type-caption mt-1">之后会加入点击的特效音</p>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={volume}
-                onChange={(e) => {
-                  const next = writeSfxVolume(e.target.value);
-                  setVolume(next);
-                }}
-                className="heytea-volume mt-4"
-                aria-label="音量"
-              />
-            </section>
-
-            <MenuRow label="建议反馈" onClick={() => { setFeedbackMsg(''); setSheet('feedback'); }} />
-            <MenuRow label="使用手册" onClick={() => setSheet('handbook')} />
-            <MenuRow label="特别鸣谢" onClick={() => setSheet('thanks')} />
+            <MenuRow label="建议反馈" icon={MessageSquare} onClick={() => { setFeedbackMsg(''); setSheet('feedback'); }} />
+            <MenuRow label="使用手册" icon={BookOpen} onClick={() => setSheet('handbook')} />
+            <MenuRow label="特别鸣谢" icon={Heart} onClick={() => setSheet('thanks')} />
 
             {user ? (
-              <button type="button" onClick={onSignOut} className="zen-quiet mt-10">
+              <button type="button" onClick={onSignOut} className="zen-quiet mt-10 inline-flex items-center gap-2">
+                <LogOut size={14} strokeWidth={2.15} aria-hidden />
                 退出登录
               </button>
             ) : null}

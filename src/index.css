@@ -1086,32 +1086,6 @@
     object-fit: cover;
     object-position: 48% 46%;
   }
-  .heytea-volume {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    height: 2px;
-    border-radius: 0;
-    background: #e0d9ce;
-    outline: none;
-  }
-  .heytea-volume::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: #2c2c2c;
-    cursor: pointer;
-  }
-  .heytea-volume::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border: 0;
-    border-radius: 50%;
-    background: #2c2c2c;
-    cursor: pointer;
-  }
   .zen-page-header {
     @apply shrink-0 border-b border-transparent bg-transparent px-5 py-6 md:px-8 md:py-8;
   }
@@ -2655,6 +2629,106 @@ body:has(.heytea-splash:not(.is-reveal):not(.is-exit)) [data-mine-hero] {
   background: #ffffff !important;
   border: 1px solid #2c2c2c;
   pointer-events: auto;
+}
+
+.profile-palette__field {
+  position: relative;
+  height: 7.25rem;
+  width: 100%;
+  border: 1px solid #2c2c2c;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.profile-palette__thumb {
+  position: absolute;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px #2c2c2c;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.profile-palette__hue {
+  display: block;
+  width: 100%;
+  height: 0.7rem;
+  margin-top: 0.55rem;
+  border: 1px solid #2c2c2c;
+  background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  appearance: none;
+  cursor: pointer;
+}
+
+.profile-palette__hue::-webkit-slider-runnable-track {
+  height: 0.7rem;
+  background: transparent;
+  border: 0;
+}
+
+.profile-palette__hue::-moz-range-track {
+  height: 0.7rem;
+  background: transparent;
+  border: 0;
+}
+
+.profile-palette__hue::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.7rem;
+  height: 1.05rem;
+  background: #fff;
+  border: 1px solid #2c2c2c;
+}
+
+.profile-palette__hue::-moz-range-thumb {
+  width: 0.7rem;
+  height: 1.05rem;
+  background: #fff;
+  border: 1px solid #2c2c2c;
+  border-radius: 0;
+}
+
+.profile-palette__hex {
+  display: block;
+  width: 100%;
+  height: 1.85rem;
+  margin-top: 0.55rem;
+  padding: 0 0.55rem;
+  border: 1px solid #2c2c2c;
+  background: #fff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: #2c2c28;
+}
+
+.profile-palette__hex:focus {
+  outline: none;
+}
+
+.accent-pick {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+}
+
+.accent-pick__card {
+  position: fixed;
+  left: calc(50% - min(11rem, 50vw - 1.25rem));
+  top: calc(50% - 10.5rem);
+  width: min(22rem, calc(100vw - 2.5rem));
+  height: 21rem;
+  border-radius: 1.6rem;
+  background: #fff;
+  border: 1px solid #2c2c2c;
+  overflow: hidden;
+}
+
+.accent-pick__card .heytea-ink-card-fill {
+  opacity: 1;
+  animation: none;
 }
 
 .heytea-ink-card-fill {

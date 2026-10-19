@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Check } from 'lucide-react';
+import { AccentPalette } from './AccentPalette';
 import { authClient, authConfigured } from '../lib/authClient';
 import { mapAuthUser } from '../lib/authUser';
 import { needsProfileOnboarding } from '../lib/profileOnboarding';
 import { PROFILE_ACCENT_PRESETS, normalizeProfileHex } from '../lib/profilePresets';
-import { pickReadableTextOnHex } from '../lib/colorValues';
 import { syncProfile } from '../lib/apiClient';
 
 const redirectUrl = () => `${window.location.origin}${window.location.pathname}`;
@@ -34,6 +33,9 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
 
   const continueAfterAuth = async () => {
     const { data } = await authClient.getSession();
+    // #region agent log
+    fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:continueAfterAuth',message:'session after auth',data:{hasSessionUser:Boolean(data?.user),hasPropUser:Boolean(user)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     const mapped = mapAuthUser(data?.user) || user;
     if (mapped && needsProfileOnboarding(mapped)) {
       const existing = mapped.user_metadata?.username?.trim();
@@ -41,16 +43,33 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
       setStep('name');
       return;
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:continueAfterAuth',message:'calling onAuthed',data:{hasMappedUser:Boolean(mapped)},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     onAuthed?.();
   };
 
   const oauthGoogle = async () => {
     if (!authConfigured) return;
     setBusy(true);
-    const { error } = await authClient.signIn.social({
-      provider: 'google',
-      callbackURL: redirectUrl(),
-    });
+    let error;
+    let data;
+    try {
+      ({ error, data } = await authClient.signIn.social({
+        provider: 'google',
+        callbackURL: redirectUrl(),
+      }));
+    } catch (e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:oauthGoogle',message:'google threw',data:{name:e?.name||'Error'},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      setBusy(false);
+      setMsg('Google 登录失败');
+      return;
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:oauthGoogle',message:'google result',data:{hasError:Boolean(error),errorCode:error?.code||error?.status||null,hasUrl:Boolean(data?.url),redirect:Boolean(data?.redirect)},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     setBusy(false);
     if (error) setMsg(error.message || 'Google 登录失败');
     else await continueAfterAuth();
@@ -81,11 +100,24 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
       return;
     }
     setBusy(true);
-    const { error } = await authClient.signIn.email({
-      email: email.trim(),
-      password,
-      callbackURL: redirectUrl(),
-    });
+    let error;
+    try {
+      ({ error } = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+        callbackURL: redirectUrl(),
+      }));
+    } catch (e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:passwordSignIn',message:'email threw',data:{name:e?.name||'Error'},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      setBusy(false);
+      setMsg('登录失败');
+      return;
+    }
+    // #region agent log
+    fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:passwordSignIn',message:'email result',data:{hasError:Boolean(error),errorCode:error?.code||error?.status||null,step},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     setBusy(false);
     if (error) setMsg(error.message || '登录失败');
     else await continueAfterAuth();
@@ -123,7 +155,10 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           className="mt-6 flex flex-1 flex-col"
           onSubmit={(e) => {
             e.preventDefault();
-            if (username.trim()) setStep('color');
+            if (username.trim()) {
+              setMsg('');
+              setStep('color');
+            }
           }}
         >
           <input
@@ -151,31 +186,7 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     body = (
       <>
         <h2 className="type-h2">你的颜色</h2>
-        <div className="mt-6 grid grid-cols-5 gap-3">
-          {PROFILE_ACCENT_PRESETS.map((c) => {
-            const selected = normalizeProfileHex(hex) === normalizeProfileHex(c);
-            return (
-              <button
-                key={c}
-                type="button"
-                className="relative mx-auto h-9 w-9 rounded-full"
-                style={{ backgroundColor: c }}
-                aria-label={c}
-                aria-pressed={selected}
-                onClick={() => setHex(c)}
-              >
-                {selected ? (
-                  <Check
-                    size={14}
-                    strokeWidth={2.5}
-                    className="absolute inset-0 m-auto"
-                    style={{ color: pickReadableTextOnHex(c) }}
-                  />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
+        <AccentPalette hex={normalizeProfileHex(hex)} onChange={setHex} />
         {msg ? <p className="type-body-sm mt-3 text-zen-vermilion">{msg}</p> : null}
         <div className="mt-auto flex justify-end pt-8">
           <button
