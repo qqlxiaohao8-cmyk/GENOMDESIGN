@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { IconSettings } from './icons/HeyteaIcons';
 import { pickReadableTextOnHex } from '../lib/colorValues';
 import { getHomeActivityCards } from '../lib/homeActivities';
 import { fetchMyMonthParticipation } from '../lib/dailyOneColorApi';
@@ -32,11 +33,12 @@ function IdentityCalendarCard({
     <button
       type="button"
       className="mine-id-square"
-      style={{ backgroundColor: hex, color: text }}
+      style={{ color: text }}
       onClick={onEdit}
       aria-label="编辑个人颜色"
       data-mine-id
     >
+      <span className="mine-id-square__face" style={{ backgroundColor: hex }} aria-hidden />
       <span className="mine-id-square__top" key="id-head">
         <span className="mine-id-square__name">{username}</span>
         <span className="mine-id-square__hex">{String(hex || '').toUpperCase()}</span>
@@ -93,6 +95,10 @@ export default function MineDrawer({
 }) {
   const [participation, setParticipation] = useState({});
   const [expanded, setExpanded] = useState(false);
+  const [heldOpen, setHeldOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const panelRef = useRef(null);
+  const wasOpenRef = useRef(false);
   const monthKey = String(dateKey || '').slice(0, 7);
   const todayDay = parseInt(String(dateKey || '').slice(8, 10), 10) || 1;
   const activities = useMemo(
@@ -118,18 +124,58 @@ export default function MineDrawer({
   }, [open, isPreview, user?.id, monthKey, todayDay, vaultItems]);
 
   useEffect(() => {
-    if (!open) {
+    const reduced = typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (open) {
+      wasOpenRef.current = true;
+      setClosing(false);
+      setHeldOpen(true);
+      if (reduced) {
+        setExpanded(true);
+        return undefined;
+      }
       setExpanded(false);
+      let raf2 = 0;
+      const raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => setExpanded(true));
+      });
+      return () => {
+        cancelAnimationFrame(raf1);
+        cancelAnimationFrame(raf2);
+      };
+    }
+
+    if (!wasOpenRef.current) return undefined;
+    wasOpenRef.current = false;
+
+    if (reduced) {
+      setExpanded(false);
+      setClosing(false);
+      setHeldOpen(false);
       return undefined;
     }
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setExpanded(true);
-      return undefined;
-    }
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setExpanded(true));
-    });
-    return () => cancelAnimationFrame(id);
+
+    setExpanded(false);
+    setClosing(true);
+    const panel = panelRef.current;
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      setClosing(false);
+      setHeldOpen(false);
+    };
+    const onEnd = (event) => {
+      if (event.target !== panel || event.propertyName !== 'max-height') return;
+      finish();
+    };
+    panel?.addEventListener('transitionend', onEnd);
+    const timer = window.setTimeout(finish, 600);
+    return () => {
+      panel?.removeEventListener('transitionend', onEnd);
+      window.clearTimeout(timer);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -143,10 +189,10 @@ export default function MineDrawer({
 
   return (
     <div
-      className={`mine-drawer${open ? ' is-open' : ''}`}
-      aria-hidden={!open}
+      className={`mine-drawer${heldOpen ? ' is-open' : ''}${closing ? ' is-closing' : ''}`}
+      aria-hidden={!heldOpen}
     >
-      {open ? (
+      {heldOpen ? (
         <button
           type="button"
           className="mine-drawer__dim"
@@ -155,11 +201,12 @@ export default function MineDrawer({
         />
       ) : null}
       <aside
+        ref={panelRef}
         className={`mine-drawer__panel${expanded ? ' is-expand' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label="我的"
-        inert={!open}
+        inert={!heldOpen || closing}
       >
         <div className="mine-drawer__wash" aria-hidden />
         <div className="mine-drawer__body">
@@ -209,8 +256,13 @@ export default function MineDrawer({
             </div>
           </div>
 
-          <button type="button" className="mine-drawer-settings" onClick={onOpenSettings}>
-            设定
+          <button
+            type="button"
+            className="mine-drawer-settings"
+            onClick={onOpenSettings}
+            aria-label="设定"
+          >
+            <IconSettings />
           </button>
         </div>
       </aside>

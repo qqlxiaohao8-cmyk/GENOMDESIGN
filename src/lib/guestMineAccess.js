@@ -1,6 +1,5 @@
 /**
- * 正式环境未登录不能进「我的」。
- * 本地开发仍可预览全部页面（含游客「我的」）。
+ * 未登录可以看色空、生色和取色，不能进收藏，也不能发布或下载。
  */
 export const PREVIEW_USER = {
   id: 'preview',
@@ -9,7 +8,7 @@ export const PREVIEW_USER = {
 };
 
 export function guestCanOpenMine() {
-  return Boolean(import.meta.env.DEV);
+  return false;
 }
 
 export function canOpenMine(user) {

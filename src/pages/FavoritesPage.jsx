@@ -43,8 +43,11 @@ export default function FavoritesPage({
   const shownVault = isPreview && vaultColorPaletteItems.length === 0
     ? previewVault
     : vaultColorPaletteItems;
-  const swatchInk = pickReadableTextOnHex(today.hex);
   const headerInk = pickReadableTextOnHex(accentHex);
+  const [, dailyMonth, dailyDay] = String(today.dateKey || '').split('-');
+  const dailyDateLabel = dailyMonth && dailyDay
+    ? `${Number(dailyMonth)}.${Number(dailyDay)}`
+    : '';
   const headerInkLight = headerInk === '#FFFFFF';
   const skipHeaderClickRef = useRef(false);
 
@@ -127,18 +130,40 @@ export default function FavoritesPage({
                   : null,
               });
             }}
-            aria-label={`每日挑战 ${today.name}，用今日色配一张卡`}
+            aria-label={`每日挑战 ${today.name}，${today.poem || ''}，用今日色配一张卡`}
           >
-            <span
-              className="home-daily__swatch"
-              style={{ backgroundColor: today.hex, color: swatchInk }}
-            >
-              <span className="home-daily__hex">{String(today.hex || '').toUpperCase()}</span>
+            <span className="home-daily__swatch" aria-hidden>
+              <svg viewBox="0 0 200 100" preserveAspectRatio="none">
+                <defs>
+                  <filter id="home-daily-brush" x="-8%" y="-30%" width="130%" height="160%">
+                    <feTurbulence
+                      type="fractalNoise"
+                      baseFrequency="0.012 0.55"
+                      numOctaves="2"
+                      seed="5"
+                      result="n"
+                    />
+                    <feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G" />
+                  </filter>
+                </defs>
+                <rect x="-28" y="-24" width="196" height="148" fill={today.hex} filter="url(#home-daily-brush)" />
+              </svg>
             </span>
             <span className="home-daily__copy">
-              <span className="home-daily__kicker">每日挑战</span>
+              <span className="home-daily__kicker">
+                <span>每日挑战</span>
+                {dailyDateLabel ? (
+                  <span className="home-daily__date">{dailyDateLabel}</span>
+                ) : null}
+              </span>
               <span className="home-daily__name">{today.name}</span>
-              <span className="home-daily__go">轻触配色</span>
+              {today.poem ? (
+                <span className="home-daily__poem">{today.poem}</span>
+              ) : null}
+              <span className="home-daily__go daily-pick-blink">
+                <span className="home-daily__go-dot" style={{ backgroundColor: today.hex }} />
+                用今日色配一张
+              </span>
             </span>
           </button>
           {shownVault.length === 0 ? (

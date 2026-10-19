@@ -141,7 +141,13 @@ export default function PublishPreviewPage({
     }
   };
 
+  const handleDownload = () => {
+    if (!requireAuth()) return;
+    onDownload?.(safeColors.map((h) => ({ hex: h })), title);
+  };
+
   const handleCopyLink = () => {
+    if (!requireAuth()) return;
     if (publishedId) {
       onCopyLink?.(publishedId);
     } else {
@@ -158,7 +164,7 @@ export default function PublishPreviewPage({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+    <div className="page-slide-left fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
       <DailySubmitSuccessModal
         open={isDailySubmit && dailySuccessOpen}
         title={clampPaletteTitle(title)}
@@ -282,7 +288,7 @@ export default function PublishPreviewPage({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => onDownload?.(safeColors.map((h) => ({ hex: h })), title)}
+              onClick={handleDownload}
               className="flex flex-1 items-center justify-center gap-2 rounded-full border border-zen-ink/15 py-3 text-[12px] font-extralight text-zen-ink hover:bg-zen-ink/[0.04] transition-colors"
             >
               <Download size={14} strokeWidth={2} aria-hidden />

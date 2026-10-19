@@ -16,10 +16,10 @@ import { PREVIEW_USER } from './lib/guestMineAccess';
 import ColorSeaPage from './pages/ColorSeaPage';
 import DailyOneColorPage from './pages/DailyOneColorPage';
 import ProfilePage from './pages/ProfilePage';
-import ProfileOnboardingPage from './pages/ProfileOnboardingPage';
 import { needsProfileOnboarding } from './lib/profileOnboarding';
 import { applyProfileFont } from './lib/profileFonts';
 import SplashDrop from './components/SplashDrop';
+import InkFilter from './components/icons/InkFilter';
 import { compressImageDataUrl } from './lib/styleImageUpload';
 
 import ExtractEditorPage from './flows/ExtractEditorPage';
@@ -104,6 +104,12 @@ export default function App() {
   const [profileSetupDone, setProfileSetupDone] = useState(false);
   const [desktopLandingOpen, setDesktopLandingOpen] = useState(false);
   const mainScrollRef = useRef(null);
+  const seenTabRef = useRef(false);
+  const slideTab = seenTabRef.current;
+
+  useEffect(() => {
+    seenTabRef.current = true;
+  }, [activeTab]);
 
   // OAuth redirect / fresh load — ensure session cookie is picked up
   useEffect(() => {
@@ -560,15 +566,7 @@ export default function App() {
 
   return (
     <>
-    {showProfileOnboarding && (
-      <ProfileOnboardingPage
-        user={user}
-        onComplete={() => {
-          setProfileSetupDone(true);
-          handleTabChange('favorites');
-        }}
-      />
-    )}
+    <InkFilter />
     <AuthModal
       open={authModalOpen}
       onClose={() => setAuthModalOpen(false)}
@@ -579,8 +577,7 @@ export default function App() {
       />
     )}
     <div
-      className={`xuan-paper relative flex h-screen max-h-dvh min-h-0 flex-col overflow-hidden font-zenSans font-extralight ${showProfileOnboarding ? 'invisible h-0 overflow-hidden' : ''}`}
-      aria-hidden={showProfileOnboarding}
+      className="xuan-paper relative flex h-screen max-h-dvh min-h-0 flex-col overflow-hidden font-zenSans font-extralight"
     >
       <div className="zen-mist-layer zen-mist-layer--subtle pointer-events-none" aria-hidden>
         <div className="zen-paper-blob zen-paper-blob--a" />
@@ -595,7 +592,12 @@ export default function App() {
           ref={mainScrollRef}
           className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-transparent pt-[env(safe-area-inset-top,0px)]"
         >
-          {renderTab()}
+          <div
+            key={activeTab}
+            className={`flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden${slideTab ? ' page-slide-left' : ''}`}
+          >
+            {renderTab()}
+          </div>
       </main>
       </ColorHuntShell>
 
@@ -661,7 +663,7 @@ export default function App() {
       })()}
 
       {settingsOpen && (
-        <div className="fixed inset-0 z-[170] flex flex-col bg-zen-paper" role="dialog" aria-modal="true" aria-label="设定">
+        <div className="page-slide-left fixed inset-0 z-[170] flex flex-col bg-zen-paper" role="dialog" aria-modal="true" aria-label="设定">
           <div className="flex justify-end px-4 pt-[max(1rem,env(safe-area-inset-top,0px))]">
             <button
               type="button"
@@ -688,7 +690,7 @@ export default function App() {
       )}
 
       {memoryOpen && (
-        <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="色彩记忆">
+        <div className="page-slide-left fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="色彩记忆">
           <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" aria-hidden />
           <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]">
             <div className="mb-3 flex w-full max-w-md justify-end">
@@ -709,7 +711,7 @@ export default function App() {
       )}
 
       {walkOpen && (
-        <div className="fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="Color Walk">
+        <div className="page-slide-left fixed inset-0 z-[200] flex flex-col" role="dialog" aria-modal="true" aria-label="Color Walk">
           <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" aria-hidden />
           <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]">
             <div className="mb-3 flex w-full max-w-md justify-end">
@@ -754,6 +756,7 @@ export default function App() {
           colorCardData={previewOverlay.colorCardData}
           onClose={() => setPreviewOverlay(null)}
           onDownload={() => {
+            if (!user) { setAuthModalOpen(true); return; }
             const colors = previewOverlay.colorCardData?.colors || [];
             const title = previewOverlay.colorCardData?.title || previewOverlay.item?.aesthetic;
             downloadColorCardPng(colors, title);
@@ -780,18 +783,19 @@ export default function App() {
       )}
 
             </div>
-      {(gate === 'splash' || (gate === 'flip' && !user)) && (
+      {(gate === 'splash' || (gate === 'flip' && !user) || showProfileOnboarding) && (
         <SplashDrop
           ready={authReady}
           user={user}
-          landOnHero={canOpenMine(user)}
+          setupProfile={showProfileOnboarding}
+          landOnHero={Boolean(user) && !showProfileOnboarding}
           accentHex={user?.user_metadata?.accent_hex || PREVIEW_USER.user_metadata.accent_hex}
           username={
             user?.user_metadata?.username
             || user?.email?.split('@')[0]
             || PREVIEW_USER.user_metadata.username
           }
-          startAtLogin={gate === 'flip'}
+          startAtLogin={gate === 'flip' || (showProfileOnboarding && gate !== 'splash')}
           onLanded={() => {
             setGate('app');
             if (!canOpenMine(user)) handleTabChange('colorSea');
@@ -802,6 +806,7 @@ export default function App() {
             handleTabChange('colorSea');
           }}
           onAuthed={() => {
+            setProfileSetupDone(true);
             setGate('app');
             handleTabChange('favorites');
           }}

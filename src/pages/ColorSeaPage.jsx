@@ -340,17 +340,18 @@ export default function ColorSeaPage({
       bodyClassName="zen-page-body-feed"
       headerExtra={(
         <>
-          {onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              className="mb-2 flex h-10 w-10 items-center justify-center text-zen-ink"
-              aria-label="返回收藏"
-            >
-              <ArrowLeft size={18} strokeWidth={1.6} />
-            </button>
-          ) : null}
-          <div ref={searchAreaRef}>
+          <div className="flex items-center gap-1">
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="-ml-2 flex h-10 w-10 shrink-0 items-center justify-center text-zen-ink"
+                aria-label="返回收藏"
+              >
+                <ArrowLeft size={22} strokeWidth={2.15} />
+              </button>
+            ) : null}
+            <div ref={searchAreaRef} className="min-w-0 flex-1">
             <div className="relative">
               <span className="pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 font-zenTypewriter text-[11px] text-zen-stone">
                 搜
@@ -396,6 +397,7 @@ export default function ColorSeaPage({
                 dailyAccentHex={dailyAccentHex}
               />
             )}
+            </div>
           </div>
 
           {similarHexFilter && (
@@ -447,8 +449,14 @@ export default function ColorSeaPage({
               }}
               mode="sea"
               onOpenInShengSe={() => onOpenInShengSe?.(cd.colors, item)}
-              onDownload={() => onDownload?.(cd.colors, item.aesthetic)}
-              onCopyLink={item.isLocalPreview ? undefined : () => onCopyLink?.(item.id)}
+              onDownload={() => {
+                if (!user) { onOpenAuth?.(); return; }
+                onDownload?.(cd.colors, item.aesthetic);
+              }}
+              onCopyLink={item.isLocalPreview ? undefined : () => {
+                if (!user) { onOpenAuth?.(); return; }
+                onCopyLink?.(item.id);
+              }}
             />
           ))}
         </MasonryColumns>

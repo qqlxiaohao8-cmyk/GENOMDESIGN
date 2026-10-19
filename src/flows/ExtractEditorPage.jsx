@@ -241,7 +241,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper">
+      <div className="page-slide-left fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper">
         <Loader2 size={32} strokeWidth={1.5} className="animate-spin text-zen-ink/40 mb-3" />
         <p className="type-body text-zen-ink/50">正在析色…</p>
       </div>
@@ -250,7 +250,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
 
   if (error) {
     return (
-      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper p-6">
+      <div className="page-slide-left fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper p-6">
         <p className="type-body mb-4 text-center text-zen-ink/60">{error}</p>
         <button type="button" onClick={onBack} className="type-body-sm rounded-full border border-zen-ink/15 px-6 py-2.5 text-zen-ink hover:bg-zen-ink/[0.04] transition-colors">
           返回
@@ -264,7 +264,7 @@ export default function ExtractEditorPage({ flow, onBack, onContinue }) {
   const activeName = activeHex ? getPoeticColorName(activeHex) : '';
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+    <div className="page-slide-left fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
       <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zen-ink/10">
         <button
           type="button"

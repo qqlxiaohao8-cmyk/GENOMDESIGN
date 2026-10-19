@@ -39,7 +39,7 @@ export default function PaletteAnalysisPage({
 
   if (!analysis) {
     return (
-      <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper px-6">
+      <div className="page-slide-left fixed inset-0 z-[200] flex flex-col items-center justify-center bg-zen-paper px-6">
         <p className="type-body text-zen-ink/50">无法读取色卡数据</p>
         <button type="button" onClick={onBack} className="type-flow-action mt-4">
           返回
@@ -56,7 +56,7 @@ export default function PaletteAnalysisPage({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
+    <div className="page-slide-left fixed inset-0 z-[200] flex flex-col bg-zen-paper overflow-hidden">
       <div className="shrink-0 flex items-center border-b border-zen-ink/10 px-4 py-3">
         <button
           type="button"

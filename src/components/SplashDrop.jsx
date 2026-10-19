@@ -3,7 +3,6 @@ import LoginFlipPrompt from './LoginFlipPrompt';
 
 const INTRO_SRC = '/sekong-ink-intro.mp4?v=1s';
 const INTRO_POSTER = '/sekong-ink-intro-poster.png?v=1s';
-const LAST_FRAME_HOLD_MS = 300;
 const HANDOFF_EARLIEST_AT = 1.72;
 const HANDOFF_FALLBACK_AT = 1.86;
 const LAND_HOLD_MS = 16;
@@ -158,6 +157,7 @@ export default function SplashDrop({
   onNeedLogin,
   onSkip,
   onAuthed,
+  setupProfile = false,
 }) {
   const videoRef = useRef(null);
   const linkedRef = useRef(false);
@@ -168,7 +168,7 @@ export default function SplashDrop({
   const [land, setLand] = useState(null);
   const [heroBox, setHeroBox] = useState(null);
   const [heroBloom, setHeroBloom] = useState(false);
-  const toHero = Boolean((user || landOnHero) && !startAtLogin);
+  const toHero = Boolean((user || landOnHero) && !startAtLogin && !setupProfile);
 
   const reduceMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -198,7 +198,12 @@ export default function SplashDrop({
       }
       linkedRef.current = true;
       if (video && !video.paused) video.pause();
-      later(() => onLanded?.(), force ? 0 : LAST_FRAME_HOLD_MS);
+      if (reduceMotion || hardError) {
+        onLanded?.();
+        return;
+      }
+      setPhase('exit');
+      later(() => onLanded?.(), 1120);
       return;
     }
     const landAt = presetLand || pendingLandRef.current || (video ? findInkInFrame(video) : null) || fallbackDrop(video);
@@ -334,7 +339,7 @@ export default function SplashDrop({
         : undefined;
 
   const showVideo = !startAtLogin && phase !== 'login' && !(phase === 'reveal' && !toHero);
-  const showDrop = phase !== 'play';
+  const showDrop = phase !== 'play' && phase !== 'exit';
   const showLogin = !toHero && (phase === 'spread' || phase === 'login');
 
   return (
@@ -364,7 +369,7 @@ export default function SplashDrop({
             <span className="heytea-ink-fill" style={{ color: ink }} />
           ) : null}
           {showLogin ? (
-            <LoginFlipPrompt embedded onSkip={onSkip} onAuthed={onAuthed} />
+            <LoginFlipPrompt embedded user={user} onSkip={onSkip} onAuthed={onAuthed} />
           ) : null}
         </div>
       ) : null}
