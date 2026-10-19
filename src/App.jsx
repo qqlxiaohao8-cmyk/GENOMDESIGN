@@ -74,7 +74,7 @@ const PLACEHOLDER_IMAGE =
 export default function App() {
   const app = useColorApp();
   const {
-    user, session, authReady, recoveryMode, setRecoveryMode, signOut,
+    user, session, authReady, libraryReady, recoveryMode, setRecoveryMode, signOut,
     colorPaletteExploreFeed, vaultColorPaletteItems, favoritedExploreStyleIds, vaultFavoriteBusyId,
     communityTagList, bumpTagClick,
     toggleVaultFavoriteFromExplore, persistColorCardVaultRow, deleteVaultItem, removeFromVault,
@@ -497,6 +497,7 @@ export default function App() {
           <FavoritesPage
             user={user}
             authReady={authReady}
+            libraryReady={libraryReady}
             vaultColorPaletteItems={vaultColorPaletteItems}
             onOpenAuth={() => setGate('flip')}
             onDeleteItem={(id) => removeFromVault(id)}
@@ -785,7 +786,7 @@ export default function App() {
             </div>
       {(gate === 'splash' || (gate === 'flip' && !user) || showProfileOnboarding) && (
         <SplashDrop
-          ready={authReady}
+          ready={authReady && libraryReady}
           user={user}
           setupProfile={showProfileOnboarding}
           landOnHero={Boolean(user) && !showProfileOnboarding}

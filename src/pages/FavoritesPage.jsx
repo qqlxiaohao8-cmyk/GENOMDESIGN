@@ -16,6 +16,7 @@ import { IconSea } from '../components/icons/HeyteaIcons';
 export default function FavoritesPage({
   user,
   authReady,
+  libraryReady = true,
   vaultColorPaletteItems = [],
   onDeleteItem,
   onOpenInShengSe,
@@ -116,7 +117,7 @@ export default function FavoritesPage({
       </header>
 
       <div className="home-sheet">
-        <div className="home-stage">
+        <div className={`home-stage${shownVault.length === 0 ? ' is-empty' : ''}`}>
           <button
             type="button"
             className="home-daily"
@@ -166,8 +167,8 @@ export default function FavoritesPage({
               </span>
             </span>
           </button>
-          {shownVault.length === 0 ? (
-            <p className="px-1 pt-6 text-[1rem] text-zen-stone">还没有收下颜色</p>
+          {!libraryReady && shownVault.length === 0 ? null : shownVault.length === 0 ? (
+            <p className="home-empty text-[1rem] text-zen-stone">还没有收藏的颜色</p>
           ) : (
             <MasonryColumns className={`${FAVORITES_MASONRY_CLASS} zen-feed-scrap`} gap={PALETTE_FEED_MASONRY_GAP}>
               {shownVault.map((item) => {

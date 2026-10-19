@@ -111,6 +111,7 @@ export default function useColorApp() {
   const [recoveryMode, setRecoveryMode] = useState(false);
 
   const [personalLibrary, setPersonalLibrary] = useState([]);
+  const [libraryReady, setLibraryReady] = useState(false);
   const [exploreFeed, setExploreFeed] = useState([]);
   const [likedStyleIds, setLikedStyleIds] = useState(() => new Set());
   const [communityLikeBusyId, setCommunityLikeBusyId] = useState(null);
@@ -179,7 +180,12 @@ export default function useColorApp() {
   }, [user?.id]);
 
   useEffect(() => {
-    refreshStyles();
+    let cancelled = false;
+    setLibraryReady(false);
+    refreshStyles().finally(() => {
+      if (!cancelled) setLibraryReady(true);
+    });
+    return () => { cancelled = true; };
   }, [refreshStyles]);
 
   useEffect(() => {
@@ -756,7 +762,7 @@ export default function useColorApp() {
 
   return {
     // Auth
-    session, user, authReady, recoveryMode,
+    session, user, authReady, libraryReady, recoveryMode,
     setRecoveryMode,
     signOut,
     // Data

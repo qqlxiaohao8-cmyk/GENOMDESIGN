@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, Lock, Pipette, X } from 'lucide-react';
 import { normalizeHex } from '../lib/randomInspiration';
 import { generatePaletteTags } from '../lib/paletteTags';
 import { pickReadableTextOnHex } from '../lib/colorValues';
+import { uniquePoeticNamesForSwatches } from '../lib/poeticColorNaming';
 
 const SLOT_COUNT = 5;
 const DAILY_SLOT_INDEX = 0;
@@ -223,21 +224,29 @@ function DailyFixedStripe({ hex, name }) {
   );
 }
 
-function EmptyStripe({ hex, filled, onPick }) {
+function EmptyStripe({ hex, filled, name, onPick }) {
+  const textColor = filled ? pickReadableTextOnHex(hex) : undefined;
   return (
     <button
       type="button"
       onClick={onPick}
-      className="relative flex min-h-[3.5rem] flex-1 cursor-pointer items-center justify-center border-0 transition-colors"
+      className={`relative flex min-h-[3.5rem] flex-1 cursor-pointer items-center border-0 transition-colors ${filled ? '' : 'justify-center'}`}
       style={{ backgroundColor: hex }}
-      aria-label={filled ? '已选色，点击修改' : '轻触选色'}
+      aria-label={filled ? `${name}，点击修改` : '轻触选色'}
     >
-      {!filled ? (
+      {filled ? (
+        <span
+          className="pointer-events-none ml-4 font-zenSerif text-lg font-medium tracking-[0.12em] md:text-xl"
+          style={{ color: textColor }}
+        >
+          {name}
+        </span>
+      ) : (
         <span className="daily-pick-blink flex items-center gap-1.5 text-[11px] font-extralight tracking-wide text-zen-ink/55">
           <Pipette size={13} strokeWidth={2} aria-hidden />
           轻触选色
         </span>
-      ) : null}
+      )}
     </button>
   );
 }
@@ -263,6 +272,16 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
   const [pickerIdx, setPickerIdx] = useState(null);
 
   const allFilled = touched.every(Boolean);
+  const slotNames = useMemo(() => {
+    const filled = hexes.map((hex, i) => {
+      if (i === DAILY_SLOT_INDEX) return { hex, name: initial.dailyName };
+      if (!touched[i]) return null;
+      return { hex };
+    });
+    const named = uniquePoeticNamesForSwatches(filled.filter(Boolean));
+    let cursor = 0;
+    return filled.map((item) => (item ? named[cursor++] : ''));
+  }, [hexes, touched, initial.dailyName]);
 
   const updateSlot = useCallback((idx, hex) => {
     const n = normalizeHex(hex);
@@ -322,6 +341,7 @@ export default function DailyChallengePage({ flow, onBack, onNext }) {
               key={i}
               hex={hex}
               filled={!isEmpty}
+              name={slotNames[i]}
               onPick={() => setPickerIdx(i)}
             />
           );

@@ -37,7 +37,7 @@ export default function PageShell({
         </div>
       </div>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        <div className={`zen-page-enter ${bodyClassName} min-h-full`}>{children}</div>
+        <div className={`${bodyClassName} min-h-full`}>{children}</div>
       </div>
     </div>
   );
