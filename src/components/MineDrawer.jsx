@@ -104,6 +104,7 @@ export default function MineDrawer({
   const [closing, setClosing] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [draftHex, setDraftHex] = useState(accentHex);
+  const [draftName, setDraftName] = useState(username);
   const [colorBusy, setColorBusy] = useState(false);
   const [colorMsg, setColorMsg] = useState('');
   const panelRef = useRef(null);
@@ -211,15 +212,19 @@ export default function MineDrawer({
       return;
     }
     setDraftHex(normalizeProfileHex(accentHex));
+    setDraftName(username || '');
     setColorMsg('');
     setColorOpen(true);
   };
 
   const saveColor = async () => {
+    const nextName = draftName.trim().slice(0, 20);
+    if (!nextName) return;
     setColorBusy(true);
     setColorMsg('');
     try {
       const { error } = await authClient.updateUser({
+        username: nextName,
         accent_hex: normalizeProfileHex(draftHex),
       });
       if (error) throw error;
@@ -316,9 +321,11 @@ export default function MineDrawer({
         ? createPortal(
           <AccentColorDialog
             hex={draftHex}
+            name={draftName}
             busy={colorBusy}
             message={colorMsg}
             onChange={setDraftHex}
+            onNameChange={setDraftName}
             onConfirm={saveColor}
             onClose={() => { if (!colorBusy) setColorOpen(false); }}
           />,

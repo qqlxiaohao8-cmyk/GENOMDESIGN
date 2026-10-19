@@ -18,7 +18,7 @@ function hsvToHex(h, s, v) {
   return hslToHex(h, sat * 100, l * 100);
 }
 
-export function AccentPalette({ hex, onChange }) {
+export function AccentPalette({ hex, onChange, compact = false }) {
   const start = hexToHsl(hex) || { h: 348, s: 56, l: 50 };
   const hsv = hslToHsv(start.h, start.s, start.l);
   const [h, setH] = useState(hsv.h);
@@ -61,10 +61,10 @@ export function AccentPalette({ hex, onChange }) {
   };
 
   return (
-    <div className="mt-4">
+    <div className={compact ? 'mt-3' : 'mt-4'}>
       <div
         ref={fieldRef}
-        className="profile-palette__field"
+        className={`profile-palette__field${compact ? ' is-compact' : ''}`}
         style={{
           background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, hsl(${h}, 100%, 50%))`,
         }}
@@ -107,28 +107,47 @@ export function AccentPalette({ hex, onChange }) {
   );
 }
 
-export function AccentColorDialog({ hex, busy, message, onChange, onConfirm, onClose }) {
+export function AccentColorDialog({
+  hex,
+  name,
+  busy,
+  message,
+  onChange,
+  onNameChange,
+  onConfirm,
+  onClose,
+}) {
   return (
     <div className="accent-pick" onClick={onClose}>
       <div
         className="accent-pick__card"
         role="dialog"
         aria-modal="true"
-        aria-label="你的颜色"
+        aria-label="编辑档案"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="heytea-ink-card-fill flex flex-col">
-          <h2 className="type-h2">你的颜色</h2>
-          <AccentPalette hex={normalizeProfileHex(hex)} onChange={onChange} />
+          <h2 className="type-h2">编辑档案</h2>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value.slice(0, 20))}
+            placeholder="输入名称"
+            className="zen-input mt-3"
+            autoComplete="nickname"
+            aria-label="名称"
+            maxLength={20}
+          />
+          <AccentPalette hex={normalizeProfileHex(hex)} onChange={onChange} compact />
           {message ? <p className="type-body-sm mt-3 text-zen-vermilion">{message}</p> : null}
-          <div className="mt-auto flex justify-end pt-8">
+          <div className="mt-auto flex justify-end pt-4">
             <button
               type="button"
               className="zen-action disabled:opacity-40"
-              disabled={busy}
+              disabled={busy || !String(name || '').trim()}
               onClick={onConfirm}
             >
-              {busy ? '保存中' : '进入'}
+              {busy ? '保存中' : '选好了'}
             </button>
           </div>
         </div>
