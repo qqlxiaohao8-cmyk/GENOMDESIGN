@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import LoginFlipPrompt from './LoginFlipPrompt';
 
-const INTRO_SRC = '/sekong-ink-intro.mp4?v=rev2';
-const INTRO_POSTER = '/sekong-ink-intro-poster.png?v=rev2';
+const INTRO_SRC = '/sekong-ink-intro.mp4?v=1s';
+const INTRO_POSTER = '/sekong-ink-intro-poster.png?v=1s';
+const LAST_FRAME_HOLD_MS = 300;
 const HANDOFF_EARLIEST_AT = 1.72;
 const HANDOFF_FALLBACK_AT = 1.86;
 const LAND_HOLD_MS = 16;
 const SPREAD_MS = 780;
 const HERO_BLOOM_MS = 1180;
 const REVEAL_MS = 160;
-const FAILSAFE_MS = 10000;
+const FAILSAFE_MS = 14000;
 const PLAYBACK_RATE = 1;
 const HERO_HEIGHT = 180;
 const INK_WATCH_W = 90;
@@ -196,8 +197,8 @@ export default function SplashDrop({
         return;
       }
       linkedRef.current = true;
-      if (video) video.pause();
-      onLanded?.();
+      if (video && !video.paused) video.pause();
+      later(() => onLanded?.(), force ? 0 : LAST_FRAME_HOLD_MS);
       return;
     }
     const landAt = presetLand || pendingLandRef.current || (video ? findInkInFrame(video) : null) || fallbackDrop(video);

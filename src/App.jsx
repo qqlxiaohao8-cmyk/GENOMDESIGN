@@ -747,34 +747,6 @@ export default function App() {
         onChange={handleExtractFile}
       />
 
-      {(gate === 'splash' || (gate === 'flip' && !user)) && (
-        <SplashDrop
-          ready={authReady}
-          user={user}
-          landOnHero={canOpenMine(user)}
-          accentHex={user?.user_metadata?.accent_hex || PREVIEW_USER.user_metadata.accent_hex}
-          username={
-            user?.user_metadata?.username
-            || user?.email?.split('@')[0]
-            || PREVIEW_USER.user_metadata.username
-          }
-          startAtLogin={gate === 'flip'}
-          onLanded={() => {
-            setGate('app');
-            if (!canOpenMine(user)) handleTabChange('colorSea');
-          }}
-          onNeedLogin={() => setGate('flip')}
-          onSkip={() => {
-            setGate('app');
-            handleTabChange('colorSea');
-          }}
-          onAuthed={() => {
-            setGate('app');
-            handleTabChange('favorites');
-          }}
-        />
-      )}
-
       {/* ── Color card preview overlay (deep-link / share) ── */}
       {previewOverlay?.colorCardData && (
         <ColorCardPreviewOverlay
@@ -808,6 +780,33 @@ export default function App() {
       )}
 
             </div>
+      {(gate === 'splash' || (gate === 'flip' && !user)) && (
+        <SplashDrop
+          ready={authReady}
+          user={user}
+          landOnHero={canOpenMine(user)}
+          accentHex={user?.user_metadata?.accent_hex || PREVIEW_USER.user_metadata.accent_hex}
+          username={
+            user?.user_metadata?.username
+            || user?.email?.split('@')[0]
+            || PREVIEW_USER.user_metadata.username
+          }
+          startAtLogin={gate === 'flip'}
+          onLanded={() => {
+            setGate('app');
+            if (!canOpenMine(user)) handleTabChange('colorSea');
+          }}
+          onNeedLogin={() => setGate('flip')}
+          onSkip={() => {
+            setGate('app');
+            handleTabChange('colorSea');
+          }}
+          onAuthed={() => {
+            setGate('app');
+            handleTabChange('favorites');
+          }}
+        />
+      )}
     </>
   );
 }

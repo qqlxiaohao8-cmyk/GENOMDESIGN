@@ -1441,48 +1441,27 @@
     display: flex;
     width: 100%;
     max-width: none;
-    height: calc(100dvh - env(safe-area-inset-top, 0px) - 5.2rem);
-    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 5.2rem);
+    max-height: 0;
     flex-direction: column;
-    overflow: visible;
-    background: transparent;
-    border-radius: 2.5rem 2.5rem 0 0;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 18px 36px rgba(20, 18, 14, 0.12);
+    border-radius: 2.5rem;
     opacity: 0;
-    visibility: hidden;
     transition: none;
     padding: 1.35rem 1rem max(0.9rem, env(safe-area-inset-bottom, 0px));
   }
   .mine-drawer.is-open .mine-drawer__panel {
+    max-height: 8.5rem;
     opacity: 1;
-    visibility: visible;
-  }
-  .mine-drawer__wash {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    z-index: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    background: #fff;
-    border-radius: 2.5rem 2.5rem 0 0;
-    opacity: 0;
-    transform: translateX(-50%) scale(0.34, 0.08);
-    transform-origin: 50% 0%;
-    filter: blur(28px);
     transition: none;
   }
-  .mine-drawer.is-open .mine-drawer__wash {
-    opacity: 1;
+  .mine-drawer.is-open .mine-drawer__panel.is-expand {
+    max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 5.2rem);
+    transition: max-height 0.52s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .mine-drawer.is-open .mine-drawer__panel.is-expand .mine-drawer__wash {
-    transform: translateX(-50%) scale(1, 1);
-    filter: blur(0);
-    box-shadow: 0 18px 36px rgba(20, 18, 14, 0.12);
-    transition:
-      transform 0.64s cubic-bezier(0.22, 1, 0.36, 1),
-      filter 0.52s ease,
-      box-shadow 0.4s ease;
+  .mine-drawer__wash {
+    display: none;
   }
   .mine-drawer__body {
     position: relative;
@@ -1491,12 +1470,6 @@
     min-height: 0;
     flex: 1;
     flex-direction: column;
-    opacity: 0;
-    transition: none;
-  }
-  .mine-drawer.is-open .mine-drawer__panel.is-expand .mine-drawer__body {
-    opacity: 1;
-    transition: opacity 0.34s ease 0.16s;
   }
   .mine-drawer__scroll {
     display: flex;
@@ -1777,16 +1750,11 @@
     }
     .mine-drawer__dim,
     .mine-drawer__panel,
-    .mine-drawer__wash,
     .mine-drawer__body {
       transition: none !important;
     }
-    .mine-drawer.is-open .mine-drawer__wash {
-      transform: translateX(-50%) scale(1, 1);
-      filter: blur(0);
-      opacity: 1;
-    }
-    .mine-drawer.is-open .mine-drawer__body {
+    .mine-drawer.is-open .mine-drawer__panel {
+      max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 5.2rem);
       opacity: 1;
     }
     .create-fab,
