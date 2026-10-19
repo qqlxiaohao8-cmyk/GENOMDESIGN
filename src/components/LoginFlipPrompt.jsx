@@ -13,7 +13,8 @@ const redirectUrl = () => `${window.location.origin}${window.location.pathname}`
  */
 export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = false }) {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [step, setStep] = useState('signup');
@@ -75,51 +76,52 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     else await continueAfterAuth();
   };
 
-  const passwordSignUp = async (e) => {
-    e.preventDefault();
-    if (!authConfigured || !email.trim() || !password) {
-      setMsg('请填写邮箱和密码');
-      return;
-    }
-    setBusy(true);
-    const { error } = await authClient.signUp.email({
-      email: email.trim(),
-      password,
-      name: email.trim().split('@')[0],
-      callbackURL: redirectUrl(),
-    });
-    setBusy(false);
-    if (error) setMsg(error.message || '注册失败');
-    else await continueAfterAuth();
+  const otpError = (error, fallback) => {
+    const code = error?.code || '';
+    if (code === 'OTP_EXPIRED') return '验证码已过期，请重新发送';
+    if (code === 'INVALID_OTP') return '验证码不正确';
+    if (code === 'TOO_MANY_ATTEMPTS') return '试太多次了，请重新发送';
+    return error?.message || fallback;
   };
 
-  const passwordSignIn = async (e) => {
-    e.preventDefault();
-    if (!authConfigured || !email.trim() || !password) {
-      setMsg('请填写邮箱和密码');
+  const sendEmailCode = async () => {
+    if (!authConfigured || !email.trim()) {
+      setMsg('请填写邮箱');
       return;
     }
     setBusy(true);
-    let error;
-    try {
-      ({ error } = await authClient.signIn.email({
-        email: email.trim(),
-        password,
-        callbackURL: redirectUrl(),
-      }));
-    } catch (e) {
-      // #region agent log
-      fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:passwordSignIn',message:'email threw',data:{name:e?.name||'Error'},timestamp:Date.now(),hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      setBusy(false);
-      setMsg('登录失败');
+    setMsg('');
+    const { error } = await authClient.emailOtp.sendVerificationOtp({
+      email: email.trim(),
+      type: 'sign-in',
+    });
+    setBusy(false);
+    if (error) {
+      setMsg(otpError(error, '验证码发送失败'));
       return;
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7831/ingest/ef65ef3c-3104-4c0a-be13-54602fb0d2b1',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b16066'},body:JSON.stringify({sessionId:'b16066',location:'LoginFlipPrompt.jsx:passwordSignIn',message:'email result',data:{hasError:Boolean(error),errorCode:error?.code||error?.status||null,step},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
+    setCodeSent(true);
+    setMsg('验证码已发到邮箱');
+  };
+
+  const verifyEmailCode = async (e) => {
+    e.preventDefault();
+    if (!codeSent) {
+      await sendEmailCode();
+      return;
+    }
+    if (!otp.trim()) {
+      setMsg('请填写验证码');
+      return;
+    }
+    setBusy(true);
+    setMsg('');
+    const { error } = await authClient.signIn.emailOtp({
+      email: email.trim(),
+      otp: otp.trim(),
+    });
     setBusy(false);
-    if (error) setMsg(error.message || '登录失败');
+    if (error) setMsg(otpError(error, '登录失败'));
     else await continueAfterAuth();
   };
 
@@ -218,29 +220,36 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           用 Google 继续
         </button>
 
-        <form className="mt-3 space-y-3" onSubmit={passwordSignIn}>
+        <form className="mt-3 space-y-3" onSubmit={verifyEmailCode}>
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setCodeSent(false);
+              setOtp('');
+            }}
             placeholder="邮箱"
             className="zen-input"
             autoComplete="email"
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="密码"
-            className="zen-input"
-            autoComplete="current-password"
-          />
+          {codeSent ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="验证码"
+              className="zen-input"
+            />
+          ) : null}
           <button
             type="submit"
             disabled={busy}
             className="zen-action disabled:opacity-40"
           >
-            登录
+            {busy ? (codeSent ? '登录中' : '发送中') : codeSent ? '登录' : '发送验证码'}
           </button>
         </form>
 
@@ -276,24 +285,35 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           用 Google 继续
         </button>
 
-        <form className="mt-4 space-y-3" onSubmit={passwordSignUp}>
+        <form className="mt-4 space-y-3" onSubmit={verifyEmailCode}>
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setCodeSent(false);
+              setOtp('');
+            }}
             placeholder="邮箱"
             className="zen-input"
             autoComplete="email"
           />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="密码"
-            className="zen-input"
-            autoComplete="new-password"
-          />
-          <button type="submit" className="sr-only">注册</button>
+          {codeSent ? (
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="验证码"
+              className="zen-input"
+            />
+          ) : null}
+          <div className="flex justify-end">
+            <button type="submit" disabled={busy} className="zen-action disabled:opacity-40">
+              {busy ? (codeSent ? '注册中' : '发送中') : codeSent ? '注册' : '发送验证码'}
+            </button>
+          </div>
         </form>
 
         <div className="mt-auto flex flex-col items-center gap-4 pt-6">

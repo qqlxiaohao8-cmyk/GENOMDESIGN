@@ -3,6 +3,8 @@
  * https://better-auth.com/docs/integrations/cloudflare
  */
 import { betterAuth } from 'better-auth';
+import { emailOTP } from 'better-auth/plugins';
+import { sendLoginCode } from './lib/sendLoginCode';
 
 export type WorkerEnv = {
   DB: D1Database;
@@ -59,14 +61,18 @@ export function createAuth(env: WorkerEnv) {
     database: env.DB,
     // Vite dev (5173) proxies /api → Wrangler (8787); browser Origin stays 5173.
     trustedOrigins: trustedOrigins(env),
-    emailAndPassword: {
-      enabled: true,
-      sendResetPassword: async ({ user, url }) => {
-        // Dev: no mailer yet — log link so you can test reset flow locally.
-        console.log(`[better-auth] Password reset for ${user.email}: ${url}`);
-      },
-    },
     ...(socialProviders ? { socialProviders } : {}),
+    plugins: [
+      emailOTP({
+        otpLength: 6,
+        expiresIn: 300,
+        storeOTP: 'hashed',
+        async sendVerificationOTP({ email, otp, type }) {
+          if (type !== 'sign-in') return;
+          await sendLoginCode(env, email, otp);
+        },
+      }),
+    ],
     user: {
       additionalFields: {
         username: { type: 'string', required: false },

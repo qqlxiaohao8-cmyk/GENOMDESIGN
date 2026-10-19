@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Loader2, Mail, Lock } from 'lucide-react';
+import { X, Loader2, Mail } from 'lucide-react';
 import { authClient, authConfigured } from '../lib/authClient';
 import { buildFullName } from '../lib/pendingProfile';
 
@@ -32,7 +32,8 @@ export default function AuthModal({ open, onClose }) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState(null);
   const [panel, setPanel] = useState('main');
@@ -44,7 +45,8 @@ export default function AuthModal({ open, onClose }) {
     setPanel('main');
     setFirstName('');
     setLastName('');
-    setPassword('');
+    setOtp('');
+    setCodeSent(false);
   }, [open]);
 
   useEffect(() => {
@@ -104,81 +106,49 @@ export default function AuthModal({ open, onClose }) {
     }
   };
 
-  const passwordSignIn = async (e) => {
-    e?.preventDefault?.();
+  const sendEmailCode = async () => {
     if (!authConfigured || !email.trim()) {
       setMsg({ type: 'err', text: 'Enter your email.' });
       return;
     }
-    if (!password) {
-      setMsg({ type: 'err', text: 'Enter your password.' });
-      return;
-    }
     resetMsg();
     setLoading(true);
-    const { error } = await authClient.signIn.email({
+    const { error } = await authClient.emailOtp.sendVerificationOtp({
       email: email.trim(),
-      password,
-      callbackURL: redirectUrl(),
+      type: 'sign-in',
     });
     setLoading(false);
-    if (error) setMsg({ type: 'err', text: error.message });
+    if (error) setMsg({ type: 'err', text: error.message || 'Could not send the code.' });
     else {
-      onClose();
-      setPassword('');
+      setCodeSent(true);
+      setMsg({ type: 'ok', text: 'Verification code sent to your email.' });
     }
   };
 
-  const sendPasswordReset = async () => {
-    if (!authConfigured || !email.trim()) {
-      setMsg({ type: 'err', text: 'Enter your email above first.' });
-      return;
-    }
-    resetMsg();
-    setLoading(true);
-    const { error } = await authClient.requestPasswordReset({
-      email: email.trim(),
-      redirectTo: redirectUrl(),
-    });
-    setLoading(false);
-    if (error) setMsg({ type: 'err', text: error.message });
-    else
-      setMsg({
-        type: 'ok',
-        text: 'If that email is registered, check the API console for the reset link (dev mode).',
-      });
-  };
-
-  const passwordSignUp = async (e) => {
+  const verifyEmailCode = async (e) => {
     e?.preventDefault?.();
-    const fn = firstName.trim();
-    const ln = lastName.trim();
-    if (!authConfigured || !email.trim()) {
-      setMsg({ type: 'err', text: 'Enter your email.' });
+    if (!codeSent) {
+      await sendEmailCode();
       return;
     }
-    if (!fn || !ln) {
-      setMsg({ type: 'err', text: 'Enter your first and last name.' });
-      return;
-    }
-    if (!password) {
-      setMsg({ type: 'err', text: 'Choose a password.' });
+    if (!otp.trim()) {
+      setMsg({ type: 'err', text: 'Enter the code from your email.' });
       return;
     }
     resetMsg();
     const meta = profilePayload();
     setLoading(true);
-    const { error } = await authClient.signUp.email({
+    const { error } = await authClient.signIn.emailOtp({
       email: email.trim(),
-      password,
-      name: meta.full_name,
-      callbackURL: redirectUrl(),
+      otp: otp.trim(),
+      ...(panel === 'signup' && meta.full_name ? { name: meta.full_name } : {}),
     });
     setLoading(false);
-    if (error) setMsg({ type: 'err', text: error.message });
+    if (error) setMsg({ type: 'err', text: error.message || 'Sign-in failed.' });
     else {
       onClose();
-      setPassword('');
+      setOtp('');
+      setCodeSent(false);
     }
   };
 
@@ -240,11 +210,11 @@ export default function AuthModal({ open, onClose }) {
                   <div className="w-full border-t border-zen-ink/10" />
                 </div>
                 <div className="relative flex justify-center zen-micro-label">
-                  <span className="bg-white px-3 text-zen-ink/45">Or email &amp; password</span>
+                  <span className="bg-white px-3 text-zen-ink/45">Or email code</span>
                 </div>
               </div>
 
-              <form className="space-y-3" onSubmit={passwordSignIn}>
+              <form className="space-y-3" onSubmit={verifyEmailCode}>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
                   <input
@@ -252,34 +222,30 @@ export default function AuthModal({ open, onClose }) {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setCodeSent(false);
+                      setOtp('');
+                    }}
                     placeholder="you@email.com"
                     autoComplete="email"
                     className="zen-input pl-11"
                   />
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
+                {codeSent ? (
                   <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    autoComplete="current-password"
-                    className="zen-input pl-11"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Email code"
+                    className="zen-input"
                   />
-                </div>
+                ) : null}
                 <button type="submit" disabled={!authConfigured || loading} className="btn-primary w-full py-4 rounded-lg text-[13px]">
                   {loading ? <Loader2 className="animate-spin" size={18} /> : null}
-                  Sign in
-                </button>
-                <button
-                  type="button"
-                  disabled={!authConfigured || loading}
-                  onClick={sendPasswordReset}
-                  className="w-full text-center zen-micro-label text-zen-vermilion/90 hover:underline decoration-zen-vermilion/30 underline-offset-4 transition-colors duration-[2000ms]"
-                >
-                  Forgot password?
+                  {codeSent ? 'Sign in' : 'Send code'}
                 </button>
               </form>
 
@@ -338,39 +304,37 @@ export default function AuthModal({ open, onClose }) {
                 </div>
               </div>
 
-              <form
-                className="space-y-3"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  passwordSignUp(e);
-                }}
-              >
+              <form className="space-y-3" onSubmit={verifyEmailCode}>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
                   <input
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setCodeSent(false);
+                      setOtp('');
+                    }}
                     placeholder="you@email.com"
                     autoComplete="email"
                     className="zen-input pl-11"
                   />
                 </div>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zen-ink/35 w-4 h-4 pointer-events-none" />
+                {codeSent ? (
                   <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Choose a password"
-                    autoComplete="new-password"
-                    className="zen-input pl-11"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Email code"
+                    className="zen-input"
                   />
-                </div>
+                ) : null}
                 <button type="submit" disabled={!authConfigured || loading} className="btn-art w-full py-4 rounded-lg text-[13px]">
                   {loading ? <Loader2 className="animate-spin" size={18} /> : null}
-                  Create account
+                  {codeSent ? 'Create account' : 'Send code'}
                 </button>
               </form>
 
