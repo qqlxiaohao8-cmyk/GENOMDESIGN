@@ -4,3 +4,4 @@
 {"sessionId":"b16066","location":"dailyPalette.js:verify","message":"daily hex order check","data":{"direct":"#664B77","afterMonth":"#664B77","home":"#664B77","same":true,"ms":1173},"timestamp":1792395812876,"hypothesisId":"order"}
 {"sessionId":"b16066","location":"dailyPalette.js:verify","message":"daily hex unified","data":{"direct":"#433F02","afterMonth":"#433F02","home":"#433F02","again":"#433F02","same":true,"ms":0},"timestamp":1792395845866,"hypothesisId":"order"}
 {"sessionId":"b16066","location":"LoginFlipPrompt.jsx:continueAfterAuth","message":"session after auth","data":{"hasSessionUser":true,"hasPropUser":false},"timestamp":1792396396847,"hypothesisId":"B"}
+{"sessionId":"b16066","location":"LoginFlipPrompt.jsx:continueAfterAuth","message":"session after auth","data":{"hasSessionUser":true,"hasPropUser":true},"timestamp":1792410589995,"hypothesisId":"B"}

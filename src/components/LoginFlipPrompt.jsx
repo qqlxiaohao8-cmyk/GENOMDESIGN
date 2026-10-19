@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AccentPalette } from './AccentPalette';
 import { authClient, authConfigured } from '../lib/authClient';
 import { mapAuthUser } from '../lib/authUser';
@@ -13,15 +13,18 @@ const redirectUrl = () => `${window.location.origin}${window.location.pathname}`
  */
 export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = false }) {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [step, setStep] = useState('signup');
+  const pendingPassword = useRef(false);
   const [username, setUsername] = useState('');
   const [hex, setHex] = useState(PROFILE_ACCENT_PRESETS[0]);
 
   useEffect(() => {
+    if (pendingPassword.current) return;
     if ((step !== 'login' && step !== 'signup') || !user) return;
     if (!needsProfileOnboarding(user)) {
       onAuthed?.();
@@ -81,6 +84,8 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     if (code === 'OTP_EXPIRED') return '验证码已过期，请重新发送';
     if (code === 'INVALID_OTP') return '验证码不正确';
     if (code === 'TOO_MANY_ATTEMPTS') return '试太多次了，请重新发送';
+    if (code === 'PASSWORD_TOO_SHORT') return '密码至少 8 位';
+    if (code === 'INVALID_EMAIL_OR_PASSWORD') return '邮箱或密码不正确';
     return error?.message || fallback;
   };
 
@@ -91,6 +96,17 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     }
     setBusy(true);
     setMsg('');
+    const status = await authClient.signup.emailStatus({ email: email.trim() });
+    if (status?.error) {
+      setBusy(false);
+      setMsg(otpError(status.error, '验证码发送失败'));
+      return;
+    }
+    if (status?.data?.hasPassword) {
+      setBusy(false);
+      setMsg('这个邮箱已注册，请直接登录');
+      return;
+    }
     const { error } = await authClient.emailOtp.sendVerificationOtp({
       email: email.trim(),
       type: 'sign-in',
@@ -104,7 +120,7 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
     setMsg('验证码已发到邮箱');
   };
 
-  const verifyEmailCode = async (e) => {
+  const verifySignupCode = async (e) => {
     e.preventDefault();
     if (!codeSent) {
       await sendEmailCode();
@@ -114,6 +130,7 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
       setMsg('请填写验证码');
       return;
     }
+    pendingPassword.current = true;
     setBusy(true);
     setMsg('');
     const { error } = await authClient.signIn.emailOtp({
@@ -121,8 +138,57 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
       otp: otp.trim(),
     });
     setBusy(false);
+    if (error) {
+      pendingPassword.current = false;
+      setMsg(otpError(error, '验证失败'));
+      return;
+    }
+    setPassword('');
+    setMsg('');
+    setStep('password');
+  };
+
+  const signInWithPassword = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      setMsg('请填写邮箱和密码');
+      return;
+    }
+    setBusy(true);
+    setMsg('');
+    const { error } = await authClient.signIn.email({
+      email: email.trim(),
+      password,
+    });
+    setBusy(false);
     if (error) setMsg(otpError(error, '登录失败'));
     else await continueAfterAuth();
+  };
+
+  const saveSignupPassword = async (e) => {
+    e.preventDefault();
+    if (password.length < 8) {
+      setMsg('密码至少 8 位');
+      return;
+    }
+    setBusy(true);
+    setMsg('');
+    const { error } = await authClient.setPassword({ newPassword: password });
+    setBusy(false);
+    if (error) {
+      if (error.code === 'PASSWORD_ALREADY_SET') {
+        pendingPassword.current = false;
+        await authClient.signOut();
+        setPassword('');
+        setStep('login');
+        setMsg('这个邮箱已注册，请直接登录');
+        return;
+      }
+      setMsg(otpError(error, '密码设置失败'));
+      return;
+    }
+    pendingPassword.current = false;
+    await continueAfterAuth();
   };
 
   const finishProfile = async () => {
@@ -202,6 +268,29 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
         </div>
       </>
     );
+  } else if (step === 'password') {
+    body = (
+      <>
+        <h2 className="type-h2 text-center">定密码</h2>
+        {msg ? <p className="type-body-sm mt-2 text-center text-zen-vermilion">{msg}</p> : null}
+        <form className="mt-6 space-y-3" onSubmit={saveSignupPassword}>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="密码"
+            className="zen-input"
+            autoComplete="new-password"
+            autoFocus
+          />
+          <div className="flex justify-end">
+            <button type="submit" disabled={busy || password.length < 8} className="zen-action disabled:opacity-40">
+              {busy ? '注册中' : '注册'}
+            </button>
+          </div>
+        </form>
+      </>
+    );
   } else if (step === 'login') {
     body = (
       <>
@@ -220,36 +309,29 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           用 Google 继续
         </button>
 
-        <form className="mt-3 space-y-3" onSubmit={verifyEmailCode}>
+        <form className="mt-3 space-y-3" onSubmit={signInWithPassword}>
           <input
             type="email"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setCodeSent(false);
-              setOtp('');
-            }}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="邮箱"
             className="zen-input"
             autoComplete="email"
           />
-          {codeSent ? (
-            <input
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              placeholder="验证码"
-              className="zen-input"
-            />
-          ) : null}
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="密码"
+            className="zen-input"
+            autoComplete="current-password"
+          />
           <button
             type="submit"
             disabled={busy}
             className="zen-action disabled:opacity-40"
           >
-            {busy ? (codeSent ? '登录中' : '发送中') : codeSent ? '登录' : '发送验证码'}
+            {busy ? '登录中' : '登录'}
           </button>
         </form>
 
@@ -285,7 +367,7 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           用 Google 继续
         </button>
 
-        <form className="mt-4 space-y-3" onSubmit={verifyEmailCode}>
+        <form className="mt-4 space-y-3" onSubmit={verifySignupCode}>
           <input
             type="email"
             value={email}
@@ -311,7 +393,7 @@ export default function LoginFlipPrompt({ onSkip, onAuthed, user, embedded = fal
           ) : null}
           <div className="flex justify-end">
             <button type="submit" disabled={busy} className="zen-action disabled:opacity-40">
-              {busy ? (codeSent ? '注册中' : '发送中') : codeSent ? '注册' : '发送验证码'}
+              {busy ? (codeSent ? '验证中' : '发送中') : codeSent ? '下一步' : '发送验证码'}
             </button>
           </div>
         </form>

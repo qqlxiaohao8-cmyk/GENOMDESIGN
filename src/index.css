@@ -1445,13 +1445,13 @@
     display: flex;
     width: 100%;
     align-items: center;
-    min-height: 7.35rem;
+    min-height: 9.35rem;
     margin-bottom: 1.35rem;
     overflow: hidden;
     background: #fff;
     border: 1px solid #2c2c2c;
     border-radius: 1.15rem;
-    padding: 0.72rem 0.95rem 0.72rem 50%;
+    padding: 1.05rem 0.95rem 1.05rem 50%;
     text-align: left;
     color: #2c2c28;
     isolation: isolate;
@@ -1624,16 +1624,19 @@
   .mine-id-square {
     position: relative;
     display: flex;
-    width: 100%;
-    height: 19.5rem;
+    width: min(100%, 32rem);
+    height: auto;
+    flex: none;
+    align-self: center;
     flex-direction: column;
     overflow: hidden;
     background: #fff;
     border: 1px solid #2c2c2c;
     border-radius: 1.15rem;
-    padding: 1.05rem 0.9rem 0.7rem;
+    padding: 1.05rem 0.9rem 0.85rem;
     text-align: left;
     isolation: isolate;
+    container-type: inline-size;
   }
   .mine-id-square::before {
     content: "";
@@ -1715,29 +1718,36 @@
   }
   .mine-cal {
     display: grid;
-    min-height: 0;
-    flex: 1;
+    width: 100%;
+    flex: none;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 0.18rem;
-    align-content: stretch;
+    gap: clamp(0.12rem, 1.15cqi, 0.32rem);
+    align-content: start;
+    justify-items: stretch;
   }
   .mine-cal-wd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
     text-align: center;
-    font-size: 0.52rem;
-    letter-spacing: 0.08em;
+    font-size: clamp(0.5rem, 2.5cqi, 0.72rem);
+    letter-spacing: 0.06em;
+    line-height: 1;
     opacity: 0.55;
   }
   .mine-cal-cell {
     position: relative;
     display: flex;
-    min-height: 0;
+    width: 100%;
+    min-width: 0;
+    height: auto;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
     background: transparent;
     aspect-ratio: 1;
-    max-height: 100%;
   }
   .mine-cal-cell.is-blank {
     border-color: transparent;
@@ -1758,7 +1768,7 @@
     border-color: transparent;
   }
   .mine-cal-day {
-    font-size: 0.58rem;
+    font-size: clamp(0.58rem, 3.15cqi, 0.82rem);
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
@@ -2634,6 +2644,20 @@ body:has(.heytea-splash:not(.is-reveal):not(.is-exit)) [data-mine-hero] {
   object-fit: cover;
   background: #ffffff;
   opacity: 1;
+}
+
+@media (min-width: 768px) {
+  .heytea-splash-video {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: auto;
+    height: min(78vh, 44rem);
+    aspect-ratio: 9 / 16;
+    max-width: calc(100vw - 3rem);
+    object-fit: contain;
+    transform: translate(-50%, -50%);
+  }
 }
 
 .heytea-splash.is-play .heytea-splash-video,
